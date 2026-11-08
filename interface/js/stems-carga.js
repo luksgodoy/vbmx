@@ -59,7 +59,7 @@
         if (deps.navegador && await deps.navegador.disponivel()) {
           if (!vale()) return 'descartado';
           mostrar(letra, { fase: 'separando', progresso: 0 });
-          const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', progresso: p.etapa === 'separar' ? p.fracao : 0 }); });
+          const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', progresso: p.etapa === 'separar' ? p.fracao : p.etapa === 'modelo' ? p.fracao * 0.05 : 0 }); });
           if (!vale()) return 'descartado';
           for (const n of NOMES) {
             if (stems[n].sampleRate === buf.sampleRate) continue;

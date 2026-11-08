@@ -6,7 +6,9 @@
 (function (raiz) {
   'use strict';
   const TAXA = 44100;
-  const BASE = new URL('modelo/', document.currentScript ? document.currentScript.src : location.href).href;
+  // document.currentScript só existe durante a execução do script: guardar agora (depois é null e o Worker 404)
+  const AQUI = document.currentScript ? document.currentScript.src : new URL('interface/plugins/sidra/plugin.js', location.href).href;
+  const BASE = new URL('modelo/', AQUI).href;
   let trab = null, ocupado = Promise.resolve();
 
   function base() { const p = new URLSearchParams(location.search).get('modelo'); return p ? (p.endsWith('/') ? p : p + '/') : BASE; }
@@ -17,7 +19,7 @@
   }
 
   function worker() {
-    if (!trab) trab = new Worker(new URL('trabalhador.js', document.currentScript ? document.currentScript.src : location.href), { type: 'module' });
+    if (!trab) trab = new Worker(new URL('trabalhador.js', AQUI), { type: 'module' });
     return trab;
   }
 
@@ -38,6 +40,7 @@
         if (m.tipo === 'brutos') { w.onmessage = null; ok(m.lista); }
       };
       w.onmessage = (ev) => brutos(ev.data);
+      w.onerror = (ev) => { w.onerror = null; trab = null; erro(new Error('o Worker do Sidra não carregou: ' + ((ev && ev.message) || 'arquivo não encontrado'))); };
       w.postMessage({ tipo: 'separar', esq, dir, base: base(), backend: 'auto', overlap: 0.25 }, [esq.buffer, dir.buffer]);
     });
   }
