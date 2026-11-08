@@ -30,7 +30,7 @@
   // grave mais forte nela.
   // 9 em 2026-11-08 (Dancin): ticks do Essentia no contratempo do bumbo a faixa inteira; a grade passa a ir para o
   // bumbo (subida no meio do tick + varredura de pitch de bumbo). A v8 deixava o 1 na caixa e o SYNC fora de fase.
-  const VERSAO_ANALISE = 9;
+  const VERSAO_ANALISE = 10;
 
   function extensao(nome) {
     const m = /\.([A-Za-z0-9]+)$/.exec(String(nome || ''));

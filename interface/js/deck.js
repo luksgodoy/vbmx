@@ -195,6 +195,7 @@ function atualizarTransporte(letra){
     if (bp) { bp.disabled = !d.buffer; bp.classList.toggle("cue-ativo", !!d.cupApertado); }
     const br = div.querySelector("[data-reverso]");
     if (br) { br.disabled = !d.buffer; br.classList.toggle("cue-ativo", !!d.reverso); br.setAttribute("aria-pressed", String(!!d.reverso)); }
+    if (typeof syncBendPintar === "function") syncBendPintar(letra);   // ◀ ▶ do bend: habilitam quando o buffer chega (sync.js)
     const c = div.querySelector(".carga-deck");
     if (c) { c.textContent = d.carga; c.className = `carga-deck ${d.cargaCls}`; }
     pintarPosicao(letra);

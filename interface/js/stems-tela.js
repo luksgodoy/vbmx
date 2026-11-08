@@ -51,7 +51,7 @@
       return `<div class="stems-lin" title="${r} ${fmtDb(v)} dB · duplo clique zera">
         <span class="nome">${r}</span>
         <input type="range" min="${EQ_MIN}" max="${EQ_MAX}" step="0.5" value="${v}" data-ctl="eq" data-canal="${nome}" data-banda="${b}" aria-label="EQ ${r} do stem ${rot}, deck ${letra}, de ${EQ_MIN} a +${EQ_MAX} dB">
-        <button class="kill${kill ? ' ligado' : ''}" data-ctl="kill" data-canal="${nome}" data-banda="${b}" aria-pressed="${kill}" title="Kill ${r}" aria-label="Kill ${r} do stem ${rot}, deck ${letra}">K</button></div>`;
+        <button class="kill${kill ? ' ligado' : ''}" data-ctl="kill" data-canal="${nome}" data-banda="${b}" aria-pressed="${kill}" title="Kill ${r}" aria-label="Kill ${r} do stem ${rot}, deck ${letra}">K</button><span class="val mono">${fmtDb(v)}</span></div>`;
     }).join('');
     const fx = e.fx;
     const opcoes = `<option value="">sem fx</option>` + FX.map(([i, r]) => `<option value="${i}"${fx && fx.id === i ? ' selected' : ''}>${r}</option>`).join('');
@@ -198,13 +198,36 @@
     aoPedir(fn) { pedir = typeof fn === 'function' ? fn : null; return () => { if (pedir === fn) pedir = null; }; },
     redesenhar(letra) { for (const l of letra ? [letra] : LETRAS) desenhar(l); },
   };
+  // ---- ações de teclado/MIDI: deck{A|B}.stem.<voz>.<controle> (VbMxUI.acao). Mesmo caminho da tela: VbMxStems.definir ----
+  // Comandos e escalas em motor/mapa-controle.js (STEMS_VOZES, parcialDoStem); aqui só a ponte para o motor de stems.
+  if (raiz.VbMxUI && typeof raiz.VbMxUI.registrar === 'function') {
+    const reg = (nome, fn) => raiz.VbMxUI.registrar('acao', nome, fn);
+    const MC = () => raiz.VbMxMapaControle;
+    for (const letra of LETRAS) for (const voz of NOMES_PADRAO) {
+      const base = `deck${letra}.stem.${voz}.`;
+      const alterna = campo => v => { const atual = !!estadoDe(letra, voz)[campo]; definir(letra, voz, { [campo]: typeof v === 'boolean' ? v : !atual }); };
+      reg(base + 'mudo', alterna('mudo'));
+      reg(base + 'solo', alterna('solo'));
+      for (const campo of ['volume', 'hi', 'mid', 'low', 'filtro', 'fxParam', 'fxMix']) {
+        reg(base + campo, v => {
+          const m = MC(), cmd = m && m.comandoPorId(`stem.${voz}.${campo}`); if (!cmd) return;
+          const p = m.parcialDoStem(cmd, v, estadoDe(letra, voz)); if (p) definir(letra, voz, p);
+        });
+      }
+      reg(base + 'fxProx', () => {      // sem efeito → delay → reverb → … → sem efeito
+        const atual = estadoDe(letra, voz).fx, i = atual ? FX.findIndex(f => f[0] === atual.id) : -1;
+        const prox = FX[i + 1];
+        definir(letra, voz, { fx: prox ? { id: prox[0], param: atual ? num(atual.param, 0.5) : 0.5, mix: atual ? num(atual.mix, 0.5) : 0.5 } : null });
+      });
+    }
+  }
   raiz.VbMxStemsTela = api;
   if (raiz.VbMxUI && typeof raiz.VbMxUI.aoIniciar === 'function') {
     raiz.VbMxUI.aoIniciar(() => {
       if (!raiz.document) return;
       // sem o servidor de stems (hospedagem estática) o painel inteiro fica recolhido: nada para o DJ clicar
       const B = raiz.VbMxBiblioteca, loc = raiz.location;
-      if (B && B.stemsDisponiveis && loc && loc.protocol !== 'file:' && !B.stemsDisponiveis(loc)) return;
+      if (B && B.stemsDisponiveis && loc && loc.protocol !== 'file:' && !B.stemsDisponiveis(loc) && !raiz.VbMxSidra) return;   // o plugin Sidra separa no navegador: vale em hospedagem estática
       for (const l of LETRAS) { const el = raiz.document.querySelector(`[data-stems="${l}"]`); if (el) montar(l, el); }
     });
   }

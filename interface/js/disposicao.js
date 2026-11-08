@@ -8,6 +8,8 @@
 //   (aba BIBLIOTECA)                                browser à esquerda em ≤1500px: coluna recolhida numa aba, abre por cima; não persiste
 //   layout.grade-visivel                            barra de ajuste da GRADE (slot deck-X-grade): OCULTA por padrão, botão "Grade ▸" no topo
 //   layout.mixer-compacto                           mixer só com canais, crossfader e master
+//   layout.stems-detalhe                            GLOBAL (os dois decks, como fx e mixer): oculta hot cues e loops e o espaço vai para os stems em
+//                                                   versão detalhada (valores numéricos, medidor maior); botão "Stems+" no topo. Global porque as linhas da grade dos decks são compartilhadas
 //   (abas do browser)                               D1 do VB-UI-ROLAGEM: pastas, importar .nml, preparação, histórico e gravador
 //                                                   moram em abas do browser (os nós são MOVIDOS uma vez no boot, nunca recriados)
 //   (gaveta embaixo)                                D4: janela baixa (≤860px) com o browser embaixo vira gaveta com aba de 30px
@@ -21,6 +23,7 @@ for (const l of ["a", "b"]) {
 VbMxPrefs.declarar("layout.fx-recolhido", false, { tipo: "booleano", modulo: "layout", rotulo: "FX recolhido" });
 VbMxPrefs.declarar("layout.grade-visivel", false, { tipo: "booleano", modulo: "layout", rotulo: "Barra de GRADE visível (oculta por padrão)" });
 VbMxPrefs.declarar("layout.mixer-compacto", false, { tipo: "booleano", modulo: "layout", rotulo: "Mixer compacto" });
+VbMxPrefs.declarar("layout.stems-detalhe", false, { tipo: "booleano", modulo: "layout", rotulo: "Stems detalhados (oculta hot cues e loops)" });
 
 // Estado → lista de classes do <body>. Valor desconhecido de `browser` cai em "baixo".
 function dispClasses(e) {
@@ -32,13 +35,14 @@ function dispClasses(e) {
   if (e.fx) c.push("fx-recolhido");
   if (e.mixer) c.push("mixer-compacto");
   if (e.grade) c.push("grade-visivel");
+  if (e.stemsDetalhe) c.push("stems-detalhe");
   return c;
 }
-const DISP_TODAS = ["browser-baixo", "browser-esq", "mini-A", "mini-B", "stems-rec-A", "stems-rec-B", "fx-recolhido", "mixer-compacto", "grade-visivel"];
+const DISP_TODAS = ["browser-baixo", "browser-esq", "mini-A", "mini-B", "stems-rec-A", "stems-rec-B", "fx-recolhido", "mixer-compacto", "grade-visivel", "stems-detalhe"];
 function dispEstado() {
   const L = VbMxPrefs.ler;
   return { browser: L("layout.browser"), miniA: L("deck.mini-a"), miniB: L("deck.mini-b"), stemsA: L("layout.stems-recolhido-a"),
-    stemsB: L("layout.stems-recolhido-b"), fx: L("layout.fx-recolhido"), mixer: L("layout.mixer-compacto"), grade: L("layout.grade-visivel") };
+    stemsB: L("layout.stems-recolhido-b"), fx: L("layout.fx-recolhido"), mixer: L("layout.mixer-compacto"), grade: L("layout.grade-visivel"), stemsDetalhe: L("layout.stems-detalhe") };
 }
 function dispAlternar(chave) { VbMxPrefs.gravar(chave, !VbMxPrefs.ler(chave)); }
 // Chaves de preferência por nome curto, usado pelos botões (data-recolher="mini-A", "stems-B", "fx", "mixer").
@@ -100,6 +104,7 @@ function dispAplicar() {
     dispBotoes.querySelector("[data-disp-mixer]").setAttribute("aria-pressed", String(est.mixer));
     const g = dispBotoes.querySelector("[data-disp-grade]");
     g.setAttribute("aria-pressed", String(!!est.grade)); g.textContent = est.grade ? "Grade ▾" : "Grade ▸";
+    dispBotoes.querySelector("[data-disp-stems-detalhe]").setAttribute("aria-pressed", String(!!est.stemsDetalhe));
   }
   const topo = document.querySelector("header.topo");
   if (topo) document.documentElement.style.setProperty("--topo-h", `${topo.offsetHeight}px`);
@@ -113,12 +118,14 @@ VbMxUI.aoIniciar(() => {
     dispBotoes.innerHTML = `<button type="button" class="disp-bt" data-disp-browser title="Alternar o browser entre embaixo e à esquerda (fica guardado)" aria-label="Posição do browser: alternar entre embaixo e à esquerda"></button>
       <button type="button" class="disp-bt" data-disp-fx aria-pressed="false" title="Recolher ou mostrar as faixas de FX" aria-label="Recolher FX">FX ▾</button>
       <button type="button" class="disp-bt" data-disp-grade aria-pressed="false" title="Mostrar ou ocultar a barra de ajuste da grade (BPM, 1ª batida, TAP, TICK…); oculta por padrão" aria-label="Barra de grade">Grade ▸</button>
+      <button type="button" class="disp-bt" data-disp-stems-detalhe aria-pressed="false" title="Stems detalhados: oculta hot cues e loops e dá o espaço aos stems, com os valores de cada controle (fica guardado)" aria-label="Stems detalhados, sem hot cues e loops">Stems+</button>
       <button type="button" class="disp-bt" data-disp-mixer aria-pressed="false" title="Mixer compacto: só canais, crossfader e master" aria-label="Mixer compacto">Mixer ▾</button>`;
     topo.insertBefore(dispBotoes, topo.querySelector(".estado-global"));
     dispBotoes.querySelector("[data-disp-browser]").addEventListener("click", () =>
       VbMxPrefs.gravar("layout.browser", VbMxPrefs.ler("layout.browser") === "baixo" ? "esquerda" : "baixo"));
     dispBotoes.querySelector("[data-disp-fx]").addEventListener("click", () => dispAlternar("layout.fx-recolhido"));
     dispBotoes.querySelector("[data-disp-grade]").addEventListener("click", () => dispAlternar("layout.grade-visivel"));
+    dispBotoes.querySelector("[data-disp-stems-detalhe]").addEventListener("click", () => dispAlternar("layout.stems-detalhe"));
     dispBotoes.querySelector("[data-disp-mixer]").addEventListener("click", () => dispAlternar("layout.mixer-compacto"));
   }
   // aba do browser à esquerda em janela estreita (≤1500px, ver disposicao.css): abre/fecha a gaveta; não persiste
@@ -144,7 +151,7 @@ VbMxUI.aoIniciar(() => {
     const ch = b && dispChave(b.dataset.recolher);
     if (ch) dispAlternar(ch);
   });
-  for (const ch of ["layout.browser", "deck.mini-a", "deck.mini-b", "layout.stems-recolhido-a", "layout.stems-recolhido-b", "layout.fx-recolhido", "layout.mixer-compacto", "layout.grade-visivel"])
+  for (const ch of ["layout.browser", "deck.mini-a", "deck.mini-b", "layout.stems-recolhido-a", "layout.stems-recolhido-b", "layout.fx-recolhido", "layout.mixer-compacto", "layout.grade-visivel", "layout.stems-detalhe"])
     VbMxPrefs.ouvir(ch, dispAplicar);
   window.addEventListener("resize", () => { const t = document.querySelector("header.topo"); if (t) document.documentElement.style.setProperty("--topo-h", `${t.offsetHeight}px`); });
   dispAplicar();

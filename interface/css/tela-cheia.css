@@ -1,16 +1,21 @@
 /* tela-cheia.css — VB-UI-ROLAGEM, passo 4 (decisões D1–D5 do Lucas, 2026-11-08; proposta em interface/propostas/ui-rolagem-100vh.html).
-   A tela inteira cabe em 100vh a partir de 901 px de largura: decks, stems, mixer, FX e browser sem rolar a PÁGINA; a única rolagem
-   vertical que sobra é a de dentro da tabela de músicas, da lista de sugestões e das abas do browser. Carregado POR ÚLTIMO: só ajusta
-   altura e arranjo dos blocos — a pele (cores, peças) continua nos arquivos de cada módulo. Portão: PORTAO=1 node interface/medir-rolagem.js.
+   DECK DE ALTURA FIXA (2026-11-08, noite): o deck vale --deck-h com faixa ou vazio (não estica para encher a 1ª tela); a 1ª tela é só o conteúdo
+   dos decks e a sobra da janela vai para a tabela (browser embaixo). Medir os dois estados: VAZIOS=1 node interface/medir-rolagem.js.
+   CONTRATO REVISTO em 2026-11-08 (pedido do Lucas: "poucas linhas da tabela ficam visíveis"): a PRIMEIRA tela continua sendo 100vh —
+   topo + decks, stems, mixer e FX inteiros, sem encolher nada — mas a PÁGINA pode rolar na vertical para chegar à tabela de músicas,
+   que ganha altura própria (--tabela-h: o maior entre 80vh e 640 px, ≥ 10 linhas). Browser embaixo: a tabela vem sob os decks, rolando
+   a página. Janela baixa (≤860 px) com o browser embaixo: não rola; a gaveta sobe do rodapé quase na altura da janela. Browser à
+   esquerda: coluna de pelo menos --tabela-h. Carregado POR ÚLTIMO: só ajusta altura e arranjo dos blocos — a pele (cores, peças)
+   continua nos arquivos de cada módulo. Portão: PORTAO=1 node interface/medir-rolagem.js (tabela ≥ 10 linhas, nada cortado nem sobreposto).
      D1  pastas, importar .nml, preparação, histórico e gravador viram abas do browser (js/disposicao.js move os nós)
      D2  stems em faixa horizontal: M/S + fx no alto, fader horizontal, HI/MID/LOW/FLT em knobs de 22 px; 4 tiras lado a lado sempre
      D3  medidores LED entre os canais A e B do mixer, na altura dos faders (js/mixer.js e js/medidores.js os põem lá)
      D4  janela baixa (≤860 px) com o browser embaixo: gaveta que sobe do rodapé, aba fixa de 30 px
-     D5  piso do deck: 300 px (330 em janela ≥1000 px de altura); a onda de zoom é a parte que cresce */
+     D5  piso do deck: 312 px (330 em janela ≥1000 px de altura); a onda de zoom é a parte que cresce */
 @media (min-width: 901px) {
-  :root { --deck-h: 300px; --vao: 6px; }
-  html, body { height: 100%; }
-  body { height: 100vh; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+  :root { --deck-h: 312px; --vao: 6px; --tabela-h: max(80vh, 640px); }
+  html, body { height: auto; }
+  body { height: auto; min-height: 100vh; grid-template-rows: auto auto; }
 
   /* ---- topo numa linha só (44 px): a origem da biblioteca vira selo curto, o texto inteiro no title (js/disposicao.js) ---- */
   .topo { flex-wrap: nowrap; align-items: center; gap: 12px; padding-block: 6px; min-width: 0; }
@@ -20,16 +25,22 @@
   .estado-global { white-space: nowrap; }
 
   /* ---- a tela ocupa o resto da janela ---- */
-  .tela { min-height: 0; height: 100%; padding-block: var(--vao); gap: var(--vao); }
-  .decks { min-height: 0; }
+  .tela { min-height: calc(100vh - var(--topo-h, 44px)); height: auto; padding-block: var(--vao); gap: var(--vao); }
+  /* DECK DE ALTURA FIXA (pedido do Lucas, 2026-11-08): o deck NÃO estica para encher a primeira tela — com faixa ou vazio ele tem sempre
+     --deck-h; a sobra de altura vai para a tabela de músicas (linha 2 elástica), não para o deck vazio */
+  .decks { min-height: 0; align-content: start; grid-template-rows: repeat(7, auto); }   /* sem 1fr: a ordem do deck (--linhas-deck) só troca a posição, a altura é a do conteúdo */
+  .decks > .deck:not(.mini) { align-self: start; }
   .decks > :not([hidden]):not(.mixer) { margin-bottom: var(--vao); }
   .decks > .mixer { margin-bottom: var(--vao); }
-  body.browser-baixo .tela { grid-template-rows: auto minmax(0, 1fr); }
+  /* a 1ª linha é a primeira tela (100vh − topo − vãos); a tabela vem logo abaixo, com altura própria */
+  body.browser-baixo .tela { grid-template-rows: max-content minmax(var(--tabela-h), 1fr); }
   body.browser-baixo .tela > .decks { grid-row: 1; }
-  body.browser-baixo .tela > .browser { grid-row: 2; height: auto; min-height: 0; }
-  body.browser-esq .tela { grid-template-rows: minmax(0, 1fr); align-items: stretch; }
-  body.browser-esq .tela > .decks { height: 100%; }
-  body.browser-esq .tela > .browser { grid-row: 1; position: static; height: auto; min-height: 0; }
+  body.browser-baixo .tela > .browser { grid-row: 2; height: auto; min-height: var(--tabela-h); contain: size; }   /* contain: a lista não empurra a linha; ela só cresce com a sobra da janela */
+  /* à esquerda: os decks ficam na primeira tela (altura fixa de 100vh − topo); a coluna do browser pode passar disso — 10 linhas de
+     61 px + cabeçalho/filtros + faixa de sugestões — e a página rola até o fim dela */
+  body.browser-esq .tela { grid-template-rows: auto; align-items: start; }
+  body.browser-esq .tela > .decks { height: auto; }
+  body.browser-esq .tela > .browser { grid-row: 1; position: static; height: auto; align-self: stretch; min-height: max(var(--tabela-h), 1160px); grid-template-rows: auto minmax(0, 1fr) 260px; }
 
   /* ---- D5: deck elástico com piso; a onda de zoom cresce ---- */
   .decks > .deck:not(.mini) { min-height: var(--deck-h); }
@@ -105,6 +116,25 @@
   .stems-canal .pc-knob { --tam: 22px !important; gap: 0; }
   .stems-canal .pc-knob .pc-rotulo, .stems-canal .pc-knob .pc-valor { display: none; }
 
+  /* ---- stems DETALHADOS (layout.stems-detalhe): hot cues e loops saem (css/disposicao.css) e a faixa cresce para ocupar o lugar deles;
+         cada tira mostra o valor de cada controle (volume %, dB do EQ, filtro, PAR/MIX do fx) e um medidor maior. Só dados que o painel já tem. ---- */
+  body.stems-detalhe .stems { padding: 4px 8px 5px; gap: 4px; }
+  body.stems-detalhe .stems-canal { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome ms" "fx fx" "vol vol" "val val" "eq eq" "flt flt"; gap: 2px 4px; padding: 4px 6px 4px; }
+  body.stems-detalhe .stems-canal > .stems-nome { font-size: 13px; }
+  body.stems-detalhe .stems-canal > .stems-ms .stems-btn { height: 22px; min-width: 22px; font-size: 11px; }
+  body.stems-detalhe .stems-canal > select { height: 22px; font-size: 11px; }
+  body.stems-detalhe .stems-canal > .stems-vol { grid-template-columns: minmax(0, 1fr) 10px; gap: 5px; }
+  body.stems-detalhe .stems-pico { width: 10px; height: 26px; }
+  body.stems-detalhe .stems-canal > .stems-val { display: block; grid-area: val; text-align: center; font-size: 11px; color: var(--fg-2); }
+  body.stems-detalhe .stems-canal > .stems-eq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+  body.stems-detalhe .stems-canal > .stems-eq .stems-lin { grid-column: auto; grid-template-columns: auto; justify-items: center; gap: 1px; }
+  body.stems-detalhe .stems-canal .stems-lin .nome { font-size: 10px; }
+  body.stems-detalhe .stems-canal .stems-lin .val, body.stems-detalhe .stems-eq .stems-lin .val { display: block; font-size: 10px; min-width: 0; text-align: center; color: var(--fg-2); white-space: nowrap; }
+  body.stems-detalhe .stems-canal .stems-lin .kill { height: 16px; min-width: 22px; font-size: 10px; }
+  body.stems-detalhe .stems-canal .pc-knob { --tam: 28px !important; }
+  body.stems-detalhe .stems-canal > .stems-lin:not(.stems-eq .stems-lin) { grid-area: flt; grid-template-columns: auto auto auto; justify-content: center; align-items: center; gap: 6px; }
+  body.stems-detalhe .stems-canal > .stems-lin ~ .stems-lin { grid-area: auto; grid-column: 1 / -1; grid-template-columns: auto auto auto; justify-content: center; align-items: center; gap: 6px; }
+
   /* ---- hot cues e loops: pads numa linha, cabeçalho na linha de baixo ---- */
   .hotcues { padding: 4px 8px; gap: 3px; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "grade grade" "lista cab"; }
   .hotcues > .hotcues-grade { grid-area: grade; }
@@ -156,7 +186,6 @@
 
   /* ---- browser: abas (D1) ---- */
   .browser { grid-template-rows: auto minmax(0, 1fr); row-gap: 6px; }
-  body.browser-esq .tela > .browser { grid-template-rows: auto minmax(0, 1fr) minmax(0, 42%); }
   .browser-abas { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
   .browser-aba-bt { font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; font-size: 12px; padding: 3px 10px; white-space: nowrap;
     color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; }
@@ -170,14 +199,15 @@
 
   /* ---- browser embaixo em janela baixa (≤860 px): gaveta que sobe do rodapé, aba fixa de 30 px (D4) ---- */
   @media (max-height: 860px) {
-    body.browser-baixo .tela { grid-template-rows: minmax(0, 1fr) 30px; }
+    body.browser-baixo { height: 100vh; min-height: 0; }
+    body.browser-baixo .tela { height: 100%; grid-template-rows: minmax(0, 1fr) 30px; }
     body.browser-baixo .tela > .decks { height: 100%; }
     body.browser-baixo .tela > .browser-aba { display: block; grid-row: 2; grid-column: 1; height: 30px; padding: 0; font-family: var(--fonte-display); font-weight: 600;
       letter-spacing: .08em; font-size: 12px; color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; }
     body.browser-baixo .tela > .browser-aba::after { content: " ▴"; }
     body.browser-baixo.browser-aberto .tela > .browser-aba::after { content: " ▾"; }
     body.browser-baixo .tela > .browser-aba:hover, body.browser-baixo.browser-aberto .tela > .browser-aba { color: var(--acento); border-color: var(--acento); }
-    body.browser-baixo .tela > .browser { position: fixed; z-index: 30; left: 8px; right: 8px; bottom: 44px; height: min(520px, 64vh);
+    body.browser-baixo .tela > .browser { position: fixed; z-index: 30; left: 8px; right: 8px; bottom: 44px; height: calc(100vh - var(--topo-h, 44px) - 60px);
       background: var(--bg-2); box-shadow: 0 0 0 1px var(--linha), 0 -8px 24px rgba(0, 0, 0, .55); padding: 8px; border-radius: 6px;
       transform: translateY(calc(100% + 60px)); visibility: hidden; transition: transform .14s ease-out; }
     body.browser-baixo.browser-aberto .tela > .browser { transform: none; visibility: visible; }

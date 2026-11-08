@@ -201,10 +201,13 @@ function renderBiblio(filtro){
   const seta = c => e.coluna===c ? (e.direcao==="asc"?" ▲":" ▼") : "";
   const lista = biblioListaAtual();
   div.classList.toggle("compacto", VbMxPrefs.ler("biblio.densidade")==="compacta");
+  const vistaArvore = arvvVista()==="arvore";                // js/arvore-vista.js: a árvore toma o lugar da tabela (mesma caixa)
+  div.classList.toggle("vista-arvore", vistaArvore);
   let pos = 0;                                              // índice na lista mostrada (para ▲▼ da playlist)
   div.innerHTML = `
     <div class="biblio-cab">
       <span class="rotulo">Biblioteca</span>
+      ${arvvBotaoHTML()}
       <input type="search" id="busca" placeholder="título, artista, gênero ou casa (ex.: 8A) · artista:nome · comentario:texto" value="${esc(e.texto)}" aria-label="Buscar na biblioteca">
       <span class="cont">${itens.length}/${lista?"lista":BIBLIOTECA.length} · clique = selecionar · arraste para um deck</span>
     </div>
@@ -222,11 +225,11 @@ function renderBiblio(filtro){
       <label>Grupos <select id="bib-agrupar" aria-label="Agrupar a lista">${BIBLIO_AGRUPAR.map(([v,r])=>`<option value="${v}"${v===e.agrupar?" selected":""}>${r}</option>`).join("")}</select></label>
       ${biblioTemFiltro() || e.coluna ? `<button type="button" class="bib-limpar" id="bib-limpar">Limpar</button>` : ""}
     </div>
-    <div class="lista">
+    ${vistaArvore ? `<div class="lista lista-arvore">${arvoreVistaHTML()}</div>` : `<div class="lista">
       <div class="lista-cab">${BIBLIO_COLUNAS.map(([c,r,cls])=>c ? `<button type="button" class="rotulo ord ${cls} ${e.coluna===c?"ativa":""}" data-ordem="${c}" aria-label="Ordenar por ${r}${e.coluna===c?(e.direcao==="asc"?" (crescente)":" (decrescente)"):""}">${r}${seta(c)}</button>` : `<span class="rotulo ${cls}">${r}</span>`).join("")}</div>
       ${itens.length ? grupos.map(g=>`${e.agrupar?`<div class="grupo-cab"><span class="rotulo">${esc(e.agrupar==="camelot"&&g.rotulo?tomTexto(g.rotulo):g.rotulo)}</span><span class="grupo-n">${g.faixas.length}</span></div>`:""}${g.faixas.map(f=>biblioLinha(f, pos++, itens.length)).join("")}`).join("")
         : `<div class="vazio-biblio">${lista && lista.tipo==="playlist" && !lista.chaves.length ? "Lista vazia. Escolha a lista em “Adicionar ao” e use ＋ nas faixas da coleção." : "Nenhuma faixa com esses filtros."} ${biblioTemFiltro()?`<button type="button" class="bib-limpar" id="bib-limpar-vazio">Limpar filtros</button>`:""}</div>`}
-    </div>`;
+    </div>`}`;
   if (focoId) { const n = document.getElementById(focoId); if (n) { n.focus(); if (sel && n.setSelectionRange && /^(text|search)$/.test(n.type||"")) { try { n.setSelectionRange(sel[0], sel[1]); } catch(_){} } } }
   else if (e.editandoComent) { const n = document.getElementById("bib-coment-edit"); if (n) { n.focus(); n.select(); } }
   else if (e.modoNome) { const n = document.getElementById("bib-nome"); if (n) { n.focus(); n.select(); } }
@@ -275,6 +278,8 @@ async function biblioConfirmarNome(){
 
 function biblioLigar(div){
   const e = biblioEstado;
+  const bv = div.querySelector("#bib-vista"); if (bv) bv.addEventListener("click", arvvAlternar);   // tabela ↔ árvore (js/arvore-vista.js)
+  if (arvvVista()==="arvore") arvvAposRender();
   const campo = (id, chaveEstado, tipo) => { const n = div.querySelector("#"+id); if (n) n.addEventListener(tipo||"input", ev=>{ e[chaveEstado] = ev.target.value; renderBiblio(); }); };
   campo("busca", "texto"); campo("bib-bpm-min", "bpmMin"); campo("bib-bpm-max", "bpmMax");
   campo("bib-casa", "casa", "change"); campo("bib-genero", "genero", "change"); campo("bib-ano", "ano", "change"); campo("bib-agrupar", "agrupar", "change");

@@ -12,6 +12,15 @@ const TECLADO_PADRAO = [
   ["KeyZ", "play", "A"], ["KeyX", "cue", "A"], ["KeyC", "sync", "A"],
   ["KeyN", "play", "B"], ["KeyM", "cue", "B"], ["Comma", "sync", "B"],
 ];
+// Stems (4 vozes por deck; ordem vocals, drums, bass, outros): mudo em 1–4 (A) e 7–0 (B), solo em Q W E R (A) e U I O P (B).
+// Só valem na primeira abertura; quem já tem mapeamento salvo atribui pelo painel Controles (comandos "Stem …").
+const TECLADO_STEMS = [];
+[["A", ["Digit1", "Digit2", "Digit3", "Digit4"], ["KeyQ", "KeyW", "KeyE", "KeyR"]],
+ ["B", ["Digit7", "Digit8", "Digit9", "Digit0"], ["KeyU", "KeyI", "KeyO", "KeyP"]]].forEach(([alvo, mudos, solos]) => {
+  ["vocals", "drums", "bass", "instrumental"].forEach((v, i) => {
+    TECLADO_STEMS.push([mudos[i], "stem." + v + ".mudo", alvo], [solos[i], "stem." + v + ".solo", alvo]);
+  });
+});
 
 function tecladoEhCampo(alvo) {
   if (!alvo || !alvo.tagName) return false;

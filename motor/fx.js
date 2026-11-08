@@ -21,6 +21,12 @@
   const BPM_PADRAO = 120;                  // sem deck mestre, o tempo cai aqui
   const BATIDAS_POR_COMPASSO = 4;
   const TIPOS = ['filtro', 'delay', 'reverb', 'flanger', 'phaser', 'gater'];
+  // Rota da unidade no canal (VB-62b, spec §6): inserção (antes do fader, padrão: som igual ao de sempre), pós-fader
+  // (depois do fader, antes do crossfader) ou envio (cópia do canal depois do crossfader → unidade 100% processada → soma
+  // do master, com nível de envio). Nível de envio padrão 0,5 (ganho linear, ≈ −6 dB): audível sem dobrar o canal.
+  const ROTAS = Object.freeze(['insercao', 'pos-fader', 'envio']);
+  const ROTULOS_ROTA = Object.freeze({ insercao: 'inserção', 'pos-fader': 'pós-fader', envio: 'envio' });
+  const NIVEL_ENVIO_PADRAO = 0.5;
   const NOMES = { filtro: 'Filtro', delay: 'Delay', reverb: 'Reverb', flanger: 'Flanger', phaser: 'Phaser', gater: 'Gater' };
 
   // frações de compasso (4/4 = 1 compasso inteiro)
@@ -104,7 +110,7 @@
   function efeitoPadrao(tipo) { return { tipo, params: paramsPadrao(tipo), botoes: [false, false], dw: DEFS[tipo].dw }; }
   function unidadePadrao(n) {
     return {
-      n, modo: 'unico', ligada: false, atribuicao: { A: false, B: false },
+      n, modo: 'unico', ligada: false, rota: 'insercao', nivelEnvio: NIVEL_ENVIO_PADRAO, atribuicao: { A: false, B: false },
       unico: efeitoPadrao(n === 2 ? 'delay' : 'filtro'),
       grupo: { dw: 0.5, slots: [0, 1, 2].map(i => { const t = ['filtro', 'delay', 'reverb'][i]; return { tipo: t, valor: DEFS[t].params[0].padrao, ligado: false }; }) },
       snapshots: {},
@@ -123,6 +129,16 @@
   function trocarModo(est, n, modo) {
     if (modo !== 'unico' && modo !== 'grupo') throw new Error('VbMxFx.trocarModo: modo ' + modo);
     return trocarUnidade(est, n, u => ({ ...u, modo }));
+  }
+  function definirRota(est, n, rota) {
+    if (!ROTAS.includes(rota)) throw new Error('VbMxFx.definirRota: rota ' + rota);
+    return trocarUnidade(est, n, u => ({ ...u, rota }));
+  }
+  function proximaRota(est, n) { const u = est.unidades.find(x => x.n === n); return definirRota(est, n, ROTAS[(ROTAS.indexOf(u.rota) + 1) % ROTAS.length]); }
+  function definirNivelEnvio(est, n, valor) {
+    const v = Number(valor);
+    if (!Number.isFinite(v)) throw new Error('VbMxFx.definirNivelEnvio: ' + valor);
+    return trocarUnidade(est, n, u => ({ ...u, nivelEnvio: limitar(v, 0, 1) }));
   }
   // snapshot: guarda parâmetros, botões e D/W do efeito do modo único para a próxima vez que ele for escolhido
   function salvarSnapshot(est, n) {
@@ -202,6 +218,7 @@
   }
 
   return {
+    ROTAS, ROTULOS_ROTA, NIVEL_ENVIO_PADRAO, definirRota, proximaRota, definirNivelEnvio,
     UNIDADES, CANAIS, BPM_PADRAO, TIPOS, NOMES, DEFS, TAXAS_DELAY, ROTULOS_DELAY, TAXAS_GATER, ROTULOS_GATER,
     PERIODOS_LFO, ROTULOS_LFO, HZ_LIVRE,
     segundosDaFracao, frequenciaDaFracao, tempoDelay, frequenciaGater, frequenciaLfo, filtroBipolar, mistura,

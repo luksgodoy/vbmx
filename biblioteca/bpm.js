@@ -280,6 +280,12 @@
     if (!melhor || melhor.bumbos < CONTRATEMPO.cobertura * env.valores.length * env.passo / periodo) {
       const ct = bumboNoContratempo(env, periodo, fase);
       if (ct && (!melhor || ct.bumbos > melhor.bumbos)) melhor = ct;
+    } else if (!(varredura(env, melhor) >= CONTRATEMPO.varre)) {
+      // VB-69 (1): ancorou bem, mas o que bate lá NÃO varre como bumbo (baixo no contratempo, house com baixo no
+      // off-beat) e o grave perto do outro lado dos ticks sobe mais que perto deles: tenta o contratempo; só troca
+      // se lá o som varre. varredura NaN (sem `sinal`) não troca nada.
+      const ct = bumboNoContratempo(env, periodo, fase);
+      if (ct) melhor = ct;
     }
     if (melhor) {
       melhor.compasso = escolherCompasso(env, melhor);

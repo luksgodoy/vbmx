@@ -9,7 +9,7 @@
 // é alinhada à grade (isso depende do relógio mestre); só a taxa acompanha o BPM.
 //
 // API (global `VbMxFxNos`):
-//   criarUnidadeCanal(ctx, obterBpm) → {entrada, saida, aplicar(cfg, ativo), tempo(), descartar()}
+//   criarUnidadeCanal(ctx, obterBpm) → {entrada, saida, aplicar(cfg, ativo, envio), tempo(), descartar()}
 //     cfg = VbMxFx.efeitosEfetivos(unidade) = {ligada, dw, efeitos: [{tipo, params, botoes, ligado}] (até 3)}
 //     ativo = a unidade está ligada E atribuída a este canal; falso deixa o sinal passar intacto.
 //   criarEfeito(ctx, tipo, obterBpm) → {entrada, saida, aplicar(params, botoes), tempo(), descartar()}
@@ -201,11 +201,13 @@ const VbMxFxNos = (function () {
     posicoes[2].saida.connect(molhado); molhado.connect(saida);
     return {
       entrada, saida,
-      aplicar(cfg, ativo) {
+      aplicar(cfg, ativo, envio) {
         cfg.efeitos.forEach((def, i) => posicoes[i].aplicar(def));
         for (let i = cfg.efeitos.length; i < posicoes.length; i++) posicoes[i].aplicar(null);
         // sem nenhum efeito ligado a cadeia é cópia do sinal: misturá-la com o seco somaria o mesmo som duas vezes
-        const m = ativo && cfg.efeitos.some(e => e.ligado) ? F.mistura(cfg.dw) : { seco: 1, molhado: 0 };
+        // envio (VB-62b): a unidade só entrega o processado (o seco já segue pelo canal); sem efeito ligado, nada
+        const proc = ativo && cfg.efeitos.some(e => e.ligado);
+        const m = envio ? { seco: 0, molhado: proc ? 1 : 0 } : proc ? F.mistura(cfg.dw) : { seco: 1, molhado: 0 };
         mudar(ctx, seco.gain, m.seco); mudar(ctx, molhado.gain, m.molhado);
       },
       tempo() { for (const p of posicoes) p.tempo(); },

@@ -1,0 +1,39 @@
+/* ---------- biblioteca em vista de ÁRVORE (js/arvore-vista.js): toma o lugar da tabela, na mesma caixa ---------- */
+/* Só a barra do cabeçalho fica; filtros e listas da tabela somem. A linha elástica passa a ser a da árvore (mesma altura da tabela). */
+.biblio.vista-arvore { grid-template-rows: auto minmax(0, 1fr); }
+.biblio.vista-arvore > :not(.biblio-cab):not(.lista-arvore) { display: none; }
+.biblio-cab .alternador { flex: none; }
+.lista-arvore { overflow: auto; min-height: 0; }
+.arvore-rolo { overflow-x: auto; min-width: 0; padding: 4px 0 8px 4px; }
+/* o quadro de 1456 × 470 escalado para caber (--escala vem do js/arvore-vista.js) */
+.arvore { position: relative; --escala: 1; }
+.arvore-quadro { position: relative; transform: scale(var(--escala)); transform-origin: 0 0; }
+.arvore-ligacoes { position: absolute; inset: 0; pointer-events: none; }
+.lig { fill: none; stroke: var(--fg-3); stroke-width: 1.5; opacity: .55; }
+.lig.hist { stroke-dasharray: 2 4; opacity: .35; }
+.lig.n1.candidata { stroke: var(--acento); opacity: 1; stroke-width: 2; }
+.lig.n2 { stroke-dasharray: 4 3; stroke: var(--acento); opacity: .6; }
+.coluna { position: absolute; top: 2px; font-family: var(--fonte-display); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); white-space: nowrap; }
+.arvore .cab { position: absolute; font-size: 10px; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); white-space: nowrap; }
+.arvore .no { position: absolute; display: flex; align-items: center; gap: 6px; height: 26px; width: 250px; padding: 0 6px 0 0; border-radius: 6px; background: var(--bg-3); border: 1px solid var(--linha); box-sizing: border-box; color: var(--fg); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.arvore .no-cor { align-self: stretch; width: 4px; background: var(--cor, var(--fg-3)); flex: none; }
+.arvore .no-chave { font-size: 11px; color: var(--cor, var(--fg-2)); flex: none; min-width: 22px; }
+.arvore .no-titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.arvore .no-delta { font-size: 11px; flex: none; }
+.arvore .no-delta.perto { color: var(--ok); }
+.arvore .no-delta.longe { color: var(--aviso); }
+.arvore .no .para-deck { flex: none; }
+.arvore .no.n1, .arvore .no.n2 { cursor: pointer; }
+.arvore .no.n1:hover, .arvore .no.n1:focus-visible, .arvore .no.n2:hover, .arvore .no.n2:focus-visible { background: var(--bg-2); border-color: var(--fg-3); outline: none; }
+.arvore .no.n1.candidata { border-color: var(--acento); }
+.arvore .no.n1.candidata .no-titulo { color: var(--acento); font-weight: 600; }
+.arvore .no.n2 { width: 220px; color: var(--fg-2); }
+.arvore .no.hist { width: 136px; opacity: .6; color: var(--fg-2); }
+.arvore .no.hist .no-ordem { font-size: 10px; color: var(--fg-3); padding-right: 4px; }
+.arvore .no.raiz { width: 200px; height: 56px; padding-right: 10px; gap: 10px; border-color: var(--acento); }
+.arvore .no.raiz .no-cor { width: 6px; }
+.arvore .raiz-txt { display: grid; min-width: 0; line-height: 1.25; }
+.arvore .raiz-txt b { overflow: hidden; text-overflow: ellipsis; }
+.arvore .raiz-txt span { color: var(--fg-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.arvore .no.vazio { width: auto; background: none; border: 0; color: var(--fg-3); font-style: italic; }
+.vazio-arvore { padding: 24px 16px; color: var(--fg-2); }

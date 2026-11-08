@@ -64,6 +64,46 @@
   C({ id: 'mixer.xfade', rotulo: 'Crossfader', alvo: 'global', nome: 'mixer.xfade', tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [-100, 100] });
   C({ id: 'mixer.master-vol', rotulo: 'Volume master', alvo: 'global', nome: 'mixer.master-vol', tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
 
+  // Stems dos decks (VB-stems-atalhos): 4 vozes × (mudo, solo, volume, EQ, filtro, fx). Alvo 'deck', então a ação em
+  // VbMxUI é `deckA.stem.<voz>.<controle>` (registrada em js/stems-tela.js). `stem` e `campo` dizem de onde ler o
+  // valor atual (valorDoStem) e como virar o parcial de VbMxStems.definir (parcialDoStem).
+  const STEMS_VOZES = [['vocals', 'vocals'], ['drums', 'drums'], ['bass', 'bass'], ['instrumental', 'outros']];
+  for (const [v, r] of STEMS_VOZES) {
+    const S = (id, rotulo, extra) => C(Object.assign({ id: 'stem.' + v + '.' + id, rotulo: 'Stem ' + r + ': ' + rotulo, alvo: 'deck', nome: 'stem.' + v + '.' + id, stem: v, campo: id }, extra));
+    S('mudo', 'mudo (alterna)', {});
+    S('solo', 'solo (alterna)', {});
+    S('volume', 'volume', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 150] });
+    for (const b of ['hi', 'mid', 'low']) S(b, 'EQ ' + b, { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [-26, 6] });
+    S('filtro', 'filtro', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [-100, 100] });
+    S('fxProx', 'próximo efeito', {});
+    S('fxParam', 'efeito: parâmetro', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
+    S('fxMix', 'efeito: mix', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
+  }
+  // Valor atual do campo do comando de stem, na escala do comando (para fader direct/soft takeover e encoder).
+  function valorDoStem(cmd, est) {
+    est = est || {};
+    const c = cmd.campo, n = (x, p) => (typeof x === 'number' && isFinite(x) ? x : p);
+    if (c === 'volume') return n(est.volume, 1) * 100;
+    if (c === 'hi' || c === 'mid' || c === 'low') return n(est.eq && est.eq[c], 0);
+    if (c === 'filtro') return n(est.filtro, 0) * 100;
+    if (c === 'fxParam') return n(est.fx && est.fx.param, 0.5) * 100;
+    if (c === 'fxMix') return n(est.fx && est.fx.mix, 0.5) * 100;
+    return 0;
+  }
+  // Valor na escala do comando → parcial de VbMxStems.definir; null se não há o que definir (fx sem efeito escolhido).
+  function parcialDoStem(cmd, v, est) {
+    const c = cmd.campo; v = Number(v);
+    if (!isFinite(v)) return null;
+    if (c === 'volume') return { volume: v / 100 };
+    if (c === 'hi' || c === 'mid' || c === 'low') return { eq: { [c]: v } };
+    if (c === 'filtro') return { filtro: v / 100 };
+    if (c === 'fxParam' || c === 'fxMix') {
+      const fx = est && est.fx; if (!fx) return null;
+      return { fx: { id: fx.id, param: c === 'fxParam' ? v / 100 : fx.param, mix: c === 'fxMix' ? v / 100 : fx.mix } };
+    }
+    return null;
+  }
+
   const comandoPorId = (id) => COMANDOS.find((c) => c.id === id) || null;
 
   // Nome da ação em VbMxUI para um comando e um alvo ('A'|'B'|null). `passo` ('mais'|'menos') escolhe o
@@ -270,7 +310,7 @@
   }
 
   return {
-    COMANDOS, TIPOS, MODOS_BOTAO, MODOS_FADER, CODIFICACOES, TAMANHOS_LOOP, TOLERANCIA_TOMADA, FORMATO, VERSAO,
+    COMANDOS, STEMS_VOZES, valorDoStem, parcialDoStem, TIPOS, MODOS_BOTAO, MODOS_FADER, CODIFICACOES, TAMANHOS_LOOP, TOLERANCIA_TOMADA, FORMATO, VERSAO,
     comandoPorId, nomeDaAcao, nomeTamanho, rotuloTamanho, chaveFisico, interpretarMidi,
     estBotaoInicial, processarBotao, deveAplicarDireto,
     estFaderInicial, processarFader, soltarTomada, aplicarResolucao,

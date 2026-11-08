@@ -165,3 +165,6 @@ body.mini-A [data-deck="A"] > .disp-alca, body.mini-B [data-deck="B"] > .disp-al
 .deck-corpo { align-items: center; }
 .pitch-corpo { height: 104px; }
 .deck-prato .deck-info { padding: 6px 8px; gap: 8px 12px; }
+
+/* stems detalhados (layout.stems-detalhe, 08/11/2026): hot cues e loops saem do fluxo e o espaço é dos stems — ver tela-cheia.css */
+body.stems-detalhe .decks > [data-slot$="-hotcues"], body.stems-detalhe .decks > [data-slot$="-loops"] { display: none !important; }

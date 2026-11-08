@@ -49,6 +49,14 @@ function syncBpmEfetivo(l){ return VbMxFase.bpmEfetivo(syncGrade(l), syncTaxa(l)
 function syncPintarBotao(l){
   const b = document.querySelector(`[data-deck="${l}"] [data-sync]`);
   if (b) { b.classList.toggle("tocando", !!decks[l].sync); b.setAttribute("aria-pressed", String(!!decks[l].sync)); }
+  syncBendPintar(l);
+}
+// As setas ◀ ▶ do deck (tempo bend) valem com faixa tocável, com SYNC ligado ou não (o SYNC só suspende a fase
+// contínua enquanto a seta está apertada, syncManual). Chamado por atualizarTransporte (deck.js): a carga assíncrona
+// do buffer habilita as setas, que nascem desabilitadas no desenho do deck.
+function syncBendPintar(l){
+  const d = decks[l];
+  for (const b of document.querySelectorAll(`[data-deck="${l}"] [data-bend]`)) b.disabled = !(d && d.buffer);
 }
 
 // Só o andamento: põe no deck l o pitch que iguala o BPM efetivo dele ao do outro e aplica a taxa.

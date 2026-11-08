@@ -1,5 +1,5 @@
 // ===================== VbMxCadeia: o grafo de áudio, com pontos nomeados (VB-11) =====================
-// Por canal:  fonte → gain → eq → filtro → fx → fader → crossfader ─┐
+// Por canal:  fonte → gain → eq → filtro → fx → fader → posfader → crossfader ─┐
 //                                        └→ derivação "pre-fader" (PFL do fone)
 // Master:     soma → limiter → saida → AudioContext.destination
 //                                └→ derivação "master" (gravador e medidores)
@@ -16,7 +16,8 @@
 //   crossfader controle (ganho do crossfader para o canal)
 //   saida      controle (volume master)
 //   limiter    limitador de pico (ganho 0,5 + WaveShaper de VbMxMixer.curvaLimitador), ligado ou transparente
-//   fx         vazio, só inserção
+//   fx         vazio, só inserção (antes do fader)
+//   posfader   vazio, só inserção (depois do fader, antes do crossfader; VB-62b)
 // (filtro e limiter continuam aceitando inserir(): quem insere tira o núcleo do caminho até remover.)
 // O som padrão é o mesmo de antes do VB-11: fader × crossfader = VbMxReproducao.ganhoDoCanal.
 //
@@ -26,6 +27,8 @@
 //   ponto(letra, nome)             letra "A"|"B" com PONTOS.canal, ou "master" com PONTOS.master
 //   inserir(letra, nome, {entrada, saida}) → remover()   liga um processador DENTRO do ponto
 //                                  (só filtro, fx e limiter; um por ponto — encadear é com quem insere)
+//   enviar(letra, {entrada, saida}) → {nivel, remover}   envio em paralelo (VB-62b): cópia do canal depois do crossfader →
+//                                  nivel (GainNode, 0 ao nascer) → entrada…saida → soma do master. Não mexe no caminho do canal
 //   derivar(nome, letra?)          GainNode que recebe uma cópia do sinal: ("pre-fader", "A"|"B"), ("master") ou
 //                                  ("master-sem-clique"); derivar("clique") é a entrada do clique do metrônomo (VB-51).
 //                                  Não vai a lugar nenhum até quem pediu ligá-lo
@@ -40,8 +43,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (raiz) {
   'use strict';
   const CANAIS = ['A', 'B'];
-  const PONTOS = Object.freeze({ canal: ['gain', 'eq', 'filtro', 'fx', 'fader', 'crossfader'], master: ['soma', 'limiter', 'saida'] });
-  const INSERIVEIS = new Set(['filtro', 'fx', 'limiter']);
+  const PONTOS = Object.freeze({ canal: ['gain', 'eq', 'filtro', 'fx', 'fader', 'posfader', 'crossfader'], master: ['soma', 'limiter', 'saida'] });
+  const INSERIVEIS = new Set(['filtro', 'fx', 'posfader', 'limiter']);
   const SUAVE = 0.01;   // s, constante de tempo das mudanças de ganho (sem clique)
   let ctx = null;
   const grafo = {};      // grafo[letra][nome] = ponto
@@ -154,6 +157,13 @@
       p.entrada.disconnect(); try { no.saida.disconnect(p.saida); } catch (_) { /* já desligado */ }
       p.inserido = null; ligarNucleo(p);
     };
+  }
+  function enviar(letra, no) {
+    if (!CANAIS.includes(letra)) throw new Error(`VbMxCadeia.enviar: canal desconhecido ${letra}`);
+    if (!no || !no.entrada || !no.saida) throw new Error('VbMxCadeia.enviar: precisa de {entrada, saida}');
+    const origem = ponto(letra, 'crossfader').saida, soma = ponto('master', 'soma').entrada, nivel = ganho(0);
+    origem.connect(nivel); nivel.connect(no.entrada); no.saida.connect(soma);
+    return { nivel, remover() { try { origem.disconnect(nivel); } catch (_) { /* já desligado */ } try { nivel.disconnect(); } catch (_) { /* idem */ } try { no.saida.disconnect(soma); } catch (_) { /* idem */ } } };
   }
   function derivar(nome, letra) {
     const chave = nome === 'pre-fader' ? `pre-fader:${letra}` : nome;
@@ -283,6 +293,6 @@
   // entrada onde o tick da grade (tick.js) se liga para sair só no fone; cria o ramo do fone se ainda não houver
   function entradaTick() { if (!ctx) return null; if (!fone) fone = montarFone(); return fone.tick; }
 
-  const api = { CANAIS, PONTOS, montar, montada, ponto, inserir, derivar, entradaDoCanal, aplicarMixer, definirModoEq, modoEq, rotearSaida, aplicarFone, planoDaSaida, entradaTick, maxCanaisDaSaida };
+  const api = { CANAIS, PONTOS, montar, montada, ponto, inserir, enviar, derivar, entradaDoCanal, aplicarMixer, definirModoEq, modoEq, rotearSaida, aplicarFone, planoDaSaida, entradaTick, maxCanaisDaSaida };
   return api;
 });

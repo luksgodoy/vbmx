@@ -1,0 +1,35 @@
+{
+ "modelo": "htdemucs_fp16.onnx",
+ "tipo": "fp16",
+ "bytes": 90354253,
+ "sha256": "b477bbfbcc49194a0bcbae6c853eb2294646d7366d28ee375e3b203d23219ff3",
+ "segmento": 343980,
+ "origem": "htdemucs (Demucs v4, Meta/FAIR, MIT), assinatura 955717e8",
+ "partes": [
+  {
+   "arquivo": "htdemucs_fp16.b477bbfbcc.parte00",
+   "bytes": 20000000,
+   "sha256": "4996039a7533acceac3234212fbce7e25367ca26013734f20205a15181f67315"
+  },
+  {
+   "arquivo": "htdemucs_fp16.b477bbfbcc.parte01",
+   "bytes": 20000000,
+   "sha256": "6947c4a992245a4e65e8a3c03006bf06763447f4df5f9e137df3d7091ccef78d"
+  },
+  {
+   "arquivo": "htdemucs_fp16.b477bbfbcc.parte02",
+   "bytes": 20000000,
+   "sha256": "1620c2092b4d65303a1e67375000d9a2139aca001e65238e0696789646e2d36e"
+  },
+  {
+   "arquivo": "htdemucs_fp16.b477bbfbcc.parte03",
+   "bytes": 20000000,
+   "sha256": "00e6f1eb81671dfbe6e46893a62ae9c483d4d5ca73d34c902570968832251da4"
+  },
+  {
+   "arquivo": "htdemucs_fp16.b477bbfbcc.parte04",
+   "bytes": 10354253,
+   "sha256": "8d3e1e60adbc00e0d57d6538ea84593d0f561376f8d0d25cfdef391778c7d489"
+  }
+ ]
+}

@@ -20,7 +20,7 @@
 
   // deps: fetch(url, init) · ctx() → AudioContext|null · stems (VbMxStems) · tela (VbMxStemsTela) · preferencia() → bool
   //       arquivoDe(letra) → Promise<File|Blob+name> · bufferDe(letra) → AudioBuffer|null · esperar(ms) → Promise
-  //       reamostrar(buffer, taxa) → Promise<AudioBuffer> (opcional) · intervaloMs (padrão 1000)
+  //       navegador (plugin Sidra: disponivel(), separar(arquivo, onProgresso)) · reamostrar(buffer, taxa) → Promise<AudioBuffer> (opcional) · intervaloMs (padrão 1000)
   function criar(deps) {
     const tok = {};                         // letra → número do processo vigente
     const andando = {};                     // letra → true enquanto há processo
@@ -55,6 +55,22 @@
         const arq = await deps.arquivoDe(letra);
         if (!vale()) return 'descartado';
         if (!arq) throw new Error('esta faixa não tem acesso ao arquivo original');
+        // Plugin Sidra (opcional): separa no próprio navegador, sem servidor. Sem ele (ou sem o modelo), segue pelo servidor.
+        if (deps.navegador && await deps.navegador.disponivel()) {
+          if (!vale()) return 'descartado';
+          mostrar(letra, { fase: 'separando', progresso: 0 });
+          const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', progresso: p.etapa === 'separar' ? p.fracao : 0 }); });
+          if (!vale()) return 'descartado';
+          for (const n of NOMES) {
+            if (stems[n].sampleRate === buf.sampleRate) continue;
+            if (!deps.reamostrar) throw new Error(`o stem ${n} veio a ${stems[n].sampleRate} Hz e a faixa está a ${buf.sampleRate} Hz`);
+            stems[n] = await deps.reamostrar(stems[n], buf.sampleRate);
+          }
+          const res = deps.stems.carregar(letra, stems);
+          if (!res || !res.ok) throw new Error(`não consegui ligar os stems: ${(res && res.motivo) || 'recusado'}`);
+          mostrar(letra, { fase: 'pronto', progresso: 1 });
+          return 'pronto';
+        }
         let r;
         try { r = await deps.fetch(`/stems/enviar?nome=${encodeURIComponent(arq.name || 'faixa')}`, { method: 'POST', body: arq }); }
         catch (_) { throw new Error('o servidor de stems está fora do ar (rode servir.py); o deck segue só com a faixa'); }
@@ -115,6 +131,8 @@
     r.VbMxPrefs.declarar(PREF, true, { tipo: 'booleano', modulo: 'stems', rotulo: 'Separar stems ao carregar' });
     const c = criar({
       fetch: (u, i) => r.fetch(u, i),
+      // localhost usa o servidor (servir.py), como sempre; o plugin Sidra só entra em hospedagem estática (GitHub Pages)
+      navegador: (r.VbMxSidra && !(r.VbMxBiblioteca && r.VbMxBiblioteca.stemsDisponiveis && r.location && r.VbMxBiblioteca.stemsDisponiveis(r.location))) ? r.VbMxSidra : null,
       ctx: () => (typeof ctxAudio !== 'undefined' ? ctxAudio : null),
       get stems() { return r.VbMxStems; },
       get tela() { return r.VbMxStemsTela; },

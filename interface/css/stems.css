@@ -44,3 +44,5 @@
 .stems-lin { grid-template-columns: 26px minmax(0, 1fr) auto; }
 .stems-lin input[type=range] { height: 18px; }
 @media (max-width: 560px) { .stems-canais { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* o valor em dB do EQ só aparece nos stems detalhados (body.stems-detalhe, css/tela-cheia.css) */
+.stems-eq .stems-lin .val { display: none; }

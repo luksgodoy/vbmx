@@ -33,7 +33,7 @@ function controlesCarregar() {
 function controlesMapaPadrao() {
   const M = VbMxMapaControle;
   const m = M.novoMapeamento("Teclado");
-  for (const [codigo, comando, alvo] of TECLADO_PADRAO) m.atribuicoes.push(M.novaAtribuicao({ fisico: { tipo: "tecla", codigo }, comando, alvo }));
+  for (const [codigo, comando, alvo] of TECLADO_PADRAO.concat(TECLADO_STEMS)) m.atribuicoes.push(M.novaAtribuicao({ fisico: { tipo: "tecla", codigo }, comando, alvo }));
   return m;
 }
 
@@ -45,6 +45,7 @@ function controlesEstadoLogico(cmd, alvo) {          // estado ligado/desligado 
   return false;
 }
 function controlesValorAtual(cmd, alvo) {            // valor do parâmetro na faixa dele
+  if (cmd.stem) return VbMxMapaControle.valorDoStem(cmd, typeof VbMxStems !== "undefined" ? VbMxStems.estado(alvo, cmd.stem) : null);
   if (cmd.id === "mixer.xfade") return mixer.xfade;
   if (cmd.id === "mixer.master-vol") return mixer.master.vol;
   return mixer[alvo][cmd.nome];
