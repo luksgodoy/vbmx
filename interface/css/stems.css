@@ -1,0 +1,46 @@
+/* stems.css — faixa de STEMS por deck (js/stems-tela.js). O slot mora fora do deck (renderDeck reescreve o
+   innerHTML dele); a posição na grade .decks está em css/disposicao.css (proposta A).
+   Recolhida (modo desligado): só o cabeçalho, uma linha; os 4 canais saem do fluxo. Cor por stem em --cor. */
+.stems { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 6px 12px; display: grid; gap: 8px; min-width: 0; container-type: inline-size; }
+.stems[hidden] { display: none; }
+.stems-cab { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.stems-titulo { font-family: var(--fonte-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); }
+.stems-estado { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-3); margin-right: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stems-estado.separando, .stems-estado.enviando { color: var(--acento); }
+.stems-estado.pronto { color: var(--ok); }
+.stems-estado.erro { color: #e5655b; }
+.stems-btn { min-width: 26px; height: 24px; padding: 0 8px; font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; font-size: 12px; color: var(--fg-2);
+  background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; cursor: pointer; }
+.stems-btn:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-3); }
+.stems-btn:disabled { opacity: .45; cursor: default; }
+.stems-btn.ligado { color: #0d0f12; background: var(--cor, var(--acento)); border-color: var(--cor, var(--acento)); }
+.stems-liga.ligado { --cor: var(--acento); }
+.stems-btn:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.stems-canais { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@container (max-width: 470px) { .stems-canais { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stems-canal { --cor: var(--fg-2); display: grid; gap: 4px; align-content: start; justify-items: center; min-width: 0; padding: 6px 6px 8px; background: var(--bg); border: 1px solid var(--linha); border-top: 2px solid var(--cor); border-radius: 4px; }
+.stems-canal[data-canal="vocals"] { --cor: #e879a6; }
+.stems-canal[data-canal="drums"] { --cor: #5fb4e8; }
+.stems-canal[data-canal="bass"] { --cor: #9b7bf0; }
+.stems-canal[data-canal="instrumental"] { --cor: #7ad48c; }
+.stems-canal.mudo { opacity: .55; }
+.stems-nome { font-family: var(--fonte-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--cor); }
+.stems-ms { display: flex; gap: 4px; }
+.stems-vol { display: flex; gap: 6px; align-items: stretch; }
+.stems-vol input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 150px; margin: 0; accent-color: var(--cor); }
+.stems-pico { position: relative; width: 8px; height: 150px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+.stems-pico i { position: absolute; inset: 0; background: var(--cor); transform-origin: bottom; transform: scaleY(0); transition: transform 60ms linear; }
+.stems-val { font-size: 10px; color: var(--fg-3); }
+.stems-eq { display: grid; gap: 2px; width: 100%; }
+.stems-lin { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 4px; width: 100%; min-width: 0; }
+.stems-lin .nome { font-family: var(--fonte-dados); font-size: 9px; color: var(--fg-2); letter-spacing: .06em; }
+.stems-lin .val { font-size: 9px; color: var(--fg-3); text-align: right; white-space: nowrap; min-width: 30px; }
+.stems-lin input[type=range] { width: 100%; min-width: 0; margin: 0; height: 16px; accent-color: var(--cor); }
+.stems-canal select { width: 100%; min-width: 0; font: inherit; font-size: 10px; color: var(--fg-2); background: var(--bg-2); border: 1px solid var(--linha); border-radius: 3px; padding: 1px 2px; }
+@media (prefers-reduced-motion: reduce) { .stems-pico i { transition: none; } }
+/* faixas maiores (proposta A, correção do Lucas): o espaço que sobrava sob o deck é dos stems — fader e medidor de 150 px,
+   EQ e FX sempre visíveis; ≤560px empilha 2×2 */
+.stems-canal { padding: 8px 8px 10px; gap: 6px; }
+.stems-lin { grid-template-columns: 26px minmax(0, 1fr) auto; }
+.stems-lin input[type=range] { height: 18px; }
+@media (max-width: 560px) { .stems-canais { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

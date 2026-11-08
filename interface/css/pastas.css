@@ -1,0 +1,14 @@
+/* --- biblioteca por pastas (VB-07) --- */
+.pastas { padding: 8px 20px; border-bottom: 1px solid var(--bg-3); display: grid; gap: 6px; }
+.pastas-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.botao-pasta { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg-3); border: 1px solid var(--fg-3); border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+.botao-pasta:disabled { opacity: .5; cursor: default; }
+.pastas-estado { color: var(--fg-2); font-size: 12px; }
+.pastas-lista { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.pastas-lista li { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-2); border: 1px solid var(--bg-3); border-radius: 4px; padding: 2px 4px 2px 8px; font-size: 12px; }
+.pastas-lista .n { color: var(--fg-3); font-family: var(--fonte-dados); }
+.pastas-lista button { font: inherit; color: var(--fg-2); background: none; border: 0; cursor: pointer; }
+.linha.sem-analise { opacity: .6; cursor: default; }
+.linha .sem-tom { font-size: 11px; color: var(--aviso); }
+.tag-exemplo { color: var(--aviso); }
+

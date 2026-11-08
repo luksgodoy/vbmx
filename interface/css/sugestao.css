@@ -1,0 +1,71 @@
+/* ---------- painel de sugestão ---------- */
+.sugestao { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; display: grid; grid-template-rows: auto auto auto auto 1fr; min-height: 0; min-width: 0; }
+.sugestao-cab { padding: 10px 12px; border-bottom: 1px solid var(--linha); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: start; }
+.sugestao-cab h3 { margin: 0; font-family: var(--fonte-display); font-size: 18px; font-weight: 700; letter-spacing: .03em; }
+.sugestao-cab .resumo { color: var(--fg-2); font-size: 12px; grid-column: 1; }
+.sugestao-cab .resumo b { color: var(--fg); }
+.sugestao-cab .contagem { color: var(--fg); }
+.alternador {
+  grid-column: 2; grid-row: 1 / 3; align-self: center;
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 4px;
+  border: 1px solid var(--linha); color: var(--fg-2);
+  font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 12px;
+}
+.alternador svg { width: 14px; height: 14px; }
+.alternador[aria-pressed="true"] { border-color: var(--acento); color: var(--acento); background: color-mix(in srgb, var(--acento) 10%, var(--bg-2)); }
+.alternador:hover { background: var(--bg-3); }
+.regras { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--linha); }
+.regra { font-family: var(--fonte-dados); font-size: 10px; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--linha); color: var(--fg-2); }
+.regra.ativa { border-color: var(--acento); color: var(--acento); }
+.regra.depois { opacity: .5; }
+
+/* a roda, dentro do painel */
+.roda { border-bottom: 1px solid var(--linha); padding: 10px 12px; display: grid; gap: 6px; justify-items: center; }
+.roda svg { width: 100%; max-width: 250px; height: auto; display: block; }
+.roda .dica { font-size: 11px; color: var(--fg-3); text-align: center; }
+.setor { cursor: pointer; }
+.setor path { stroke: var(--bg); stroke-width: 1.5; transition: opacity .15s; }
+.setor text { font-family: var(--fonte-dados); font-size: 13px; font-weight: 600; fill: #0d0f12; pointer-events: none; }
+.setor .cont { font-size: 10px; font-weight: 500; fill: #0d0f12; opacity: .75; }
+.setor.apagado { cursor: default; }
+.setor.apagado path { opacity: .14; }
+.setor.apagado text { fill: var(--fg-3); }
+.setor.atual path { stroke: var(--acento); stroke-width: 3; }
+.setor.filtro path { stroke: var(--fg); stroke-width: 3; stroke-dasharray: 4 3; }
+.setor:not(.apagado):hover path { filter: brightness(1.15); }
+.setor:focus-visible { outline: none; }
+.setor:focus-visible path { stroke: var(--fg); stroke-width: 2; }
+.centro-txt { font-family: var(--fonte-display); fill: var(--fg); font-weight: 700; text-anchor: middle; }
+.centro-sub { font-family: var(--fonte-dados); fill: var(--fg-2); text-anchor: middle; font-size: 11px; }
+
+/* filtro ativo */
+.filtro-ativo { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--linha); font-size: 12px; color: var(--fg-2); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 8px; border-radius: 12px; border: 1px solid var(--acento); color: var(--acento); font-family: var(--fonte-dados); font-size: 11px; }
+.chip button { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; line-height: 1; }
+.chip button:hover { background: color-mix(in srgb, var(--acento) 20%, transparent); }
+.limpar { margin-left: auto; color: var(--fg-2); font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+.limpar:hover { color: var(--fg); background: var(--bg-3); }
+
+.cards { overflow: auto; min-height: 0; display: grid; align-content: start; gap: 1px; }
+.card {
+  display: grid; grid-template-columns: 6px 44px minmax(0, 1fr) auto auto; gap: 10px; align-items: center;
+  width: 100%; text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--linha); color: var(--fg);
+}
+.card:hover { background: var(--bg-3); }
+.card .faixa-cor { width: 6px; align-self: stretch; background: var(--cor); border-radius: 0 2px 2px 0; }
+.card .c-nome { display: grid; min-width: 0; }
+.card .c-nome b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .c-nome span { color: var(--fg-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .c-motivo { display: grid; justify-items: end; gap: 2px; max-width: 150px; text-align: right; }
+.motivo { font-family: var(--fonte-display); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); white-space: nowrap; }
+.dbpm { font-family: var(--fonte-dados); font-size: 12px; line-height: 1.25; }
+.dbpm.perto { color: var(--ok); }
+.dbpm.longe { color: var(--aviso); }
+.vazio-sug { padding: 24px 12px; color: var(--fg-3); text-align: center; font-style: italic; }
+
+
+/* tom resultante (VB-12): nota na sugestão e chip no deck */
+.sugestao-cab .tom-efetivo { color: var(--acento); font-family: var(--fonte-dados); font-size: 11px; }
+.dado .tom-res { display: inline-flex; align-items: center; gap: 6px; }
+.dado .tom-res[hidden] { display: none; }
+.dado .tom-res .tom-desvio { font-family: var(--fonte-dados); font-size: 10px; color: var(--fg-2); }

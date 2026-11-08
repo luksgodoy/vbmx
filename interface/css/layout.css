@@ -1,0 +1,37 @@
+/* layout.css — dono: VB-26. Layouts (painéis ocultos por classe no <body>) e o painel de preferências.
+   Seletores com o prefixo do módulo; tokens de cor de base.css. Contrato: docs/contratos.md. */
+body.layout-sem-fx [data-slot^="fx-"] { display: none !important; }
+body.layout-sem-mestre #mestre-painel { display: none !important; }
+body.layout-sem-biblioteca .biblio, body.layout-sem-biblioteca .pastas { display: none !important; }
+
+.lay-abrir { width: auto; padding: 0 10px; font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; }
+.lay-abrir[aria-expanded="true"] { color: var(--acento); }
+.lay-painel {
+  position: fixed; z-index: 40; right: 0; top: env(safe-area-inset-top, 0px); bottom: 0;
+  width: min(420px, 100vw); overflow-y: auto; overscroll-behavior: contain;
+  padding-block: 12px;
+  padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg-2); border-left: 1px solid var(--linha); box-shadow: -8px 0 24px rgba(0, 0, 0, .45);
+}
+.lay-painel[hidden] { display: none; }
+.lay-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.lay-cab h2 { margin: 0; font-family: var(--fonte-display); font-size: 20px; letter-spacing: .04em; }
+.lay-cab .botao, .lay-btn { width: auto; padding: 0 10px; min-height: 28px; }
+.lay-sec { border-top: 1px solid var(--linha); padding-block: 8px; display: grid; gap: 6px; }
+.lay-sec h3 { margin: 0; }
+.lay-botoes, .lay-paineis { display: flex; flex-wrap: wrap; gap: 6px; }
+.lay-btn[aria-pressed="true"] { color: var(--acento); border-color: var(--acento); }
+.lay-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+.lay-linha input[type="checkbox"] { flex: none; accent-color: var(--acento); }
+.lay-linha input[type="number"], .lay-linha input[type="text"], .lay-linha select {
+  flex: none; width: 140px; max-width: 45%; background: var(--bg-3); color: var(--fg);
+  border: 1px solid var(--linha); border-radius: 4px; padding: 3px 6px; font: inherit;
+}
+.lay-paineis .lay-linha { justify-content: flex-start; }
+.lay-painel textarea {
+  width: 100%; resize: vertical; background: var(--bg-3); color: var(--fg); border: 1px solid var(--linha);
+  border-radius: 4px; padding: 6px; font-family: var(--fonte-dados); font-size: 11px;
+}
+.lay-arquivo { cursor: pointer; display: inline-flex; align-items: center; }
+.lay-msg { min-height: 1.4em; margin: 4px 0 0; font-size: 12px; color: var(--ok); }
+.lay-msg.erro { color: var(--aviso); }

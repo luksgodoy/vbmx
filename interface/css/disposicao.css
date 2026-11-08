@@ -1,0 +1,167 @@
+/* disposicao.css — a disposição da tela (proposta A, aprovada em 2026-11-07), dono: js/disposicao.js.
+   Decks A e B nas pontas, mixer ao centro, e o browser (biblioteca + sugestões) ESCOLHIDO pelo usuário:
+   embaixo (padrão) ou à esquerda — classe `browser-baixo`/`browser-esq` no <body>, preferência layout.browser.
+   Sem buraco: o mixer ocupa todas as linhas da grade dos decks e a linha do DECK (2) é a única elástica,
+   então a sobra de altura vai para a ONDA DE ZOOM (que cresce); a faixa de stems fica colada embaixo do deck. */
+
+/* ---- grade dos decks: FX · deck · hotcues · loops · grade · avisos · stems ---- */
+.decks { display: grid; gap: 0 10px; grid-template-columns: minmax(0, 1fr) 330px minmax(0, 1fr);
+  grid-template-rows: var(--linhas-deck, auto minmax(min-content, 1fr) auto auto auto auto auto); align-items: stretch; }   /* disposicao-deck.js troca pela ordem gravada */
+.decks > .mixer { grid-column: 2; grid-row: 1 / -1; margin-bottom: 10px; align-content: start; }
+.decks > [data-deck="A"] { grid-column: 1; grid-row: var(--linha, 2); }
+.decks > [data-deck="B"] { grid-column: 3; grid-row: var(--linha, 2); }
+.decks > [data-slot="fx-1"] { grid-column: 1; grid-row: var(--linha, 1); }
+.decks > [data-slot="fx-2"] { grid-column: 3; grid-row: var(--linha, 1); }
+.decks > [data-slot^="deck-A-"] { grid-column: 1; }
+.decks > [data-slot^="deck-B-"] { grid-column: 3; }
+/* Pedido do Lucas (07/11/2026): os stems ficam logo ABAIXO do prato+transporte, na largura inteira do deck; hot cues e loops descem. */
+.decks > [data-slot$="-stems"] { grid-row: var(--linha, 3); }
+.decks > [data-slot$="-hotcues"] { grid-row: var(--linha, 4); }
+.decks > [data-slot$="-loops"] { grid-row: var(--linha, 5); }
+.decks > [data-slot$="-grade"] { grid-row: var(--linha, 6); }
+.decks > [data-slot$="-avisos"] { grid-row: 7; }
+.decks > :not([hidden]):not(.mixer) { margin-bottom: 10px; }
+.decks > [data-slot="mixer-fone"], .decks > [data-slot="mixer-medidores"] { grid-column: 2; }
+
+/* deck: a onda de zoom cresce com a sobra; a régua e o corpo mantêm a altura natural */
+.deck { display: flex; flex-direction: column; }
+.deck > .ondas { flex: 1 1 auto; grid-template-rows: minmax(96px, 1fr) 28px auto; min-height: 130px; }
+.deck > .ondas .onda-caixa { position: relative; min-height: 96px; }   /* caixa elástica: o canvas a preenche sem realimentar a altura */
+.deck > .ondas .onda.zoom { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* hotcues: 8 numa linha quando cabe (proposta A § 4) */
+.hotcues-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hotcues { container-type: inline-size; }
+@container (min-width: 420px) { .hotcues-grade { grid-template-columns: repeat(8, minmax(0, 1fr)); } .hotcues-slot { min-height: 34px; } }
+
+/* ---- browser: biblioteca + sugestões ---- */
+.browser { display: grid; gap: 10px; min-width: 0; min-height: 0; }
+.browser > .biblio, .browser > .sugestao { min-height: 0; max-height: none; }
+.browser > .sugestao { overflow: hidden; }
+
+/* embaixo: tabela larga + sugestões como coluna direita do browser */
+body.browser-baixo .tela { grid-template-columns: minmax(0, 1fr); }
+body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 340px; height: max(340px, 38vh); }
+
+/* à esquerda: browser em coluna de altura da janela (sticky), decks à direita; sugestões em faixa sob a tabela */
+body.browser-esq .tela { grid-template-columns: clamp(300px, 24vw, 440px) minmax(0, 1fr); align-items: start; }
+body.browser-esq .tela > .decks { grid-column: 2; grid-row: 1; }
+body.browser-esq .tela > .browser { grid-column: 1; grid-row: 1; position: sticky; top: calc(var(--topo-h, 48px) + 10px);
+  height: calc(100vh - var(--topo-h, 48px) - 24px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 42%); }
+
+/* ---- topo: alternador do browser e recolhedores ---- */
+.disp-botoes { display: inline-flex; gap: 6px; align-items: center; }
+.disp-bt { font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; font-size: 12px; padding: 3px 9px;
+  color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; white-space: nowrap; }
+.disp-bt:hover { color: var(--fg); border-color: var(--fg-3); }
+.disp-bt[aria-pressed="true"] { color: var(--acento); border-color: var(--acento); }
+
+/* ---- recolher: MINI DECK (uma linha: título, BPM, tempo, play/cue, sync) ---- */
+.deck-recolher { margin-left: auto; width: 24px; height: 22px; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-2); font-size: 11px; line-height: 1; flex: none; }
+.deck-recolher::before { content: "▾"; }
+.deck-recolher:hover { color: var(--fg); border-color: var(--fg-3); }
+.deck-cab { padding-right: 0; }
+.moldura::after { display: none; }
+body.mini-A [data-deck="A"] .deck-recolher::before, body.mini-B [data-deck="B"] .deck-recolher::before { content: "▸"; }
+body.mini-A [data-deck="A"], body.mini-B [data-deck="B"] { flex-direction: row; flex-wrap: nowrap; align-items: center; align-self: start; gap: 10px; padding-block: 6px; overflow: hidden; }
+body.mini-A [data-deck="A"] > :is(.ondas, .carga-deck, .aviso-sync), body.mini-B [data-deck="B"] > :is(.ondas, .carga-deck, .aviso-sync) { display: none; }
+body.mini-A [data-deck="A"] :is(.prato, .pitch-v, .artista, .dado:has(.chave), .dado .rotulo, .dado .orig, .medidor-fase, .keylock),
+body.mini-B [data-deck="B"] :is(.prato, .pitch-v, .artista, .dado:has(.chave), .dado .rotulo, .dado .orig, .medidor-fase, .keylock) { display: none; }
+body.mini-A [data-deck="A"] :is(.deck-corpo, .deck-prato, .deck-info), body.mini-B [data-deck="B"] :is(.deck-corpo, .deck-prato, .deck-info) { display: contents; }
+body.mini-A [data-deck="A"] .transporte > :not([data-cue]):not([data-play]):not([data-sync]),
+body.mini-B [data-deck="B"] .transporte > :not([data-cue]):not([data-play]):not([data-sync]) { display: none; }
+body.mini-A [data-deck="A"] .deck-cab, body.mini-B [data-deck="B"] .deck-cab { flex: 1 1 auto; }
+body.mini-A [data-deck="A"] .transporte, body.mini-B [data-deck="B"] .transporte { flex: none; }
+/* o que mora sob o deck some junto (o módulo continua montado, só não ocupa a grade) */
+body.mini-A .decks > [data-slot^="deck-A-"], body.mini-B .decks > [data-slot^="deck-B-"] { display: none !important; }
+/* stems recolhido à mão: só o cabeçalho */
+body.stems-rec-A [data-stems="A"] .stems-canais, body.stems-rec-B [data-stems="B"] .stems-canais { display: none; }
+body.stems-rec-A [data-stems="A"] .stems-recolher::before, body.stems-rec-B [data-stems="B"] .stems-recolher::before { content: "▸"; }
+/* FX recolhido: some a faixa dos dois lados */
+body.fx-recolhido .decks > [data-slot^="fx-"] { display: none !important; }
+/* mixer compacto: só canais, crossfader e master; opções, fone e medidores saem */
+body.mixer-compacto .mixer :is(.mixer-opcoes, .fone, [data-slot="mixer-fone"], .so-avancado) { display: none !important; }
+
+/* barra de GRADE oculta por padrão (pedido de 07/11/2026): o módulo grade-ui.js segue montando o slot (ids, SYNC e portões intactos);
+   display:none tira o bloco da grade dos decks, e a linha auto colapsa — a onda de zoom (elástica) ocupa o espaço. Botão "Grade" no topo. */
+body:not(.grade-visivel) .decks > [data-slot$="-grade"] { display: none !important; }
+
+/* ---- larguras (proposta A § 4): em 1440 o mixer encolhe, em 1280 mais ainda ---- */
+@media (max-width: 1500px) { body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 330px; } }
+@media (max-width: 1320px) { body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 300px; } }
+@media (max-width: 1100px) { body.browser-esq .tela { grid-template-columns: minmax(0, 1fr); } body.browser-esq .tela > .browser { position: static; height: 70vh; grid-column: 1; grid-row: 2; } body.browser-esq .tela > .decks { grid-column: 1; } }
+@media (max-width: 900px) {
+  .decks { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
+  .decks > .mixer { grid-column: 1 / -1; grid-row: auto; order: 3; }
+  .decks > [data-deck="A"], .decks > [data-slot^="deck-A-"], .decks > [data-slot="fx-1"] { grid-column: 1; grid-row: auto; }
+  .decks > [data-deck="B"], .decks > [data-slot^="deck-B-"], .decks > [data-slot="fx-2"] { grid-column: 2; grid-row: auto; }
+  body.browser-baixo .browser { grid-template-columns: 1fr; height: auto; }
+  .browser > .biblio { max-height: 420px; } .browser > .sugestao { max-height: 560px; }
+}
+@media (max-width: 560px) { .decks { grid-template-columns: 1fr; } .decks > :is([data-deck], [data-slot], .mixer) { grid-column: 1 !important; } }
+.stems-recolher { min-width: 24px; padding: 0; }
+.stems-recolher::before { content: "▾"; }
+/* preparação e histórico (preparacao.css os põe nas colunas 1 e 2 da tela antiga): aqui ficam sob o browser, em coluna única */
+body.browser-baixo .tela > :is(.prep, .hist) { grid-column: 1; }
+body.browser-esq .tela > :is(.prep, .hist) { grid-column: 2; }
+body.browser-esq .tela > .browser { grid-row: 1 / span 3; }
+/* flex do deck: nada encolhe, só a onda cresce */
+.deck > * { flex: 0 0 auto; }
+.deck > .ondas { flex: 1 0 auto; }
+.disp-botoes { margin-left: 4px; }
+/* browser nunca vaza para os decks; a tabela rola por dentro */
+.browser, .browser > .biblio, .browser > .sugestao { overflow: hidden; }
+.browser > .biblio .lista { overflow: auto; }
+/* deck estreito (browser à esquerda em 1280): o prato sai, o transporte quebra linha; o mini deck resolve de vez */
+.deck { container-type: inline-size; container-name: deck; }
+.transporte { flex-wrap: wrap; justify-content: center; }
+/* o prato só sai quando o deck fica estreito DE VERDADE (≤330px): em 1280 com o browser embaixo o deck tem ~420px e a
+   coluna do pitch (~300px) deixava um vazio sob o BPM/transporte — o prato volta a ocupar esse espaço (decisão de 2026-11-07) */
+@container deck (max-width: 330px) { .prato { display: none; } .deck-corpo { gap: 6px; } }
+/* nada de sobra na coluna esquerda do corpo: o prato em cima, e o painel BPM/transporte cresce até a base da coluna do pitch */
+/* Prato e display+transporte LADO A LADO (pedido do Lucas, print de 07/11/2026 21:24): o prato à esquerda cresce com a
+   largura do deck (desenho do jog intocado, só a escala), o bloco de BPM/TOM/transporte à direita estica na altura da
+   coluna do PITCH — sem vazio sob o display. */
+.deck-prato { align-content: stretch; align-items: center; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 12px; }
+.deck-prato .prato { --prato: clamp(110px, 19cqi, 168px); width: var(--prato); height: var(--prato); }
+.deck-prato .prato-miolo { width: calc(var(--prato) * 0.4); height: calc(var(--prato) * 0.4); }
+.deck-prato .deck-info { align-self: stretch; align-content: center; width: 100%; box-sizing: border-box; padding: 10px 8px; border: 1px solid var(--linha); border-radius: 6px; background: var(--bg); }
+@container deck (max-width: 330px) { .deck-prato { grid-template-columns: minmax(0, 1fr); } }
+
+/* browser à esquerda em janela estreita (≤1500px): a coluna da biblioteca RECOLHE sozinha numa aba de 34px e abre por cima dos decks
+   (decisão da sessão de 2026-11-07: em 1280 a coluna fixa deixava cada deck com ~290px e os stems espremidos). Fora disso a aba não existe. */
+.browser-aba { display: none; }
+@media (max-width: 1500px) and (min-width: 1101px) {
+  body.browser-esq .tela { grid-template-columns: 34px minmax(0, 1fr); }
+  body.browser-esq .tela > .browser-aba { display: block; grid-column: 1; grid-row: 1; position: sticky; top: calc(var(--topo-h, 48px) + 10px);
+    height: 150px; width: 34px; padding: 0; writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--fonte-display); font-weight: 600;
+    letter-spacing: .08em; font-size: 12px; color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; }
+  body.browser-esq .tela > .browser-aba:hover, body.browser-esq.browser-aberto .tela > .browser-aba { color: var(--acento); border-color: var(--acento); }
+  body.browser-esq .tela > .browser { position: fixed; z-index: 30; left: 0; top: calc(var(--topo-h, 48px) + 4px); bottom: 4px; width: min(440px, 92vw); height: auto;
+    background: var(--bg-2); box-shadow: 0 0 0 1px var(--linha), 8px 0 24px rgba(0, 0, 0, .55); transform: translateX(-102%); visibility: hidden;
+    transition: transform .14s ease-out; grid-row: auto; }
+  body.browser-esq.browser-aberto .tela > .browser { transform: none; visibility: visible; }
+  body.browser-esq .tela > .decks { grid-column: 2; }
+  body.browser-esq .tela > :is(.prep, .hist) { grid-column: 2; }
+}
+
+/* UI D (2026-11-07): arrastar e reorganizar os blocos do deck — alça ⠿ no alto de cada bloco, indicador de destino, bloco em arrasto */
+.decks > [data-bloco] { position: relative; }
+.disp-alca { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 3; width: 34px; height: 12px; padding: 0; line-height: 10px;
+  font-size: 11px; color: var(--fg-3); background: var(--bg-2); border: 1px solid var(--linha); border-top: 0; border-radius: 0 0 6px 6px; cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none; opacity: .55; }
+.decks > [data-bloco]:hover > .disp-alca, .disp-alca:focus-visible { opacity: 1; color: var(--fg); }
+.disp-alca:active { cursor: grabbing; }
+.disp-arrastando { opacity: .45; outline: 1px dashed var(--acento); }
+body.disp-reordenando { cursor: grabbing; }
+body.disp-reordenando .decks > [data-bloco] > :not(.disp-alca) { pointer-events: none; }   /* o destino é o bloco, não o que há dentro */
+.disp-destino-antes::before, .disp-destino-depois::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--acento); z-index: 4;
+  box-shadow: 0 0 8px var(--acento); border-radius: 2px; }
+.disp-destino-antes::before { top: -2px; }
+.disp-destino-depois::after { bottom: -2px; }
+body.mini-A [data-deck="A"] > .disp-alca, body.mini-B [data-deck="B"] > .disp-alca { display: none; }   /* mini deck: uma linha, sem alça por cima do título */
+
+/* faixa do prato mais baixa (pedido de 07/11/2026): o corpo não estica mais o pitch; fader mais curto, painel BPM/transporte compacto */
+.deck-corpo { align-items: center; }
+.pitch-corpo { height: 104px; }
+.deck-prato .deck-info { padding: 6px 8px; gap: 8px 12px; }

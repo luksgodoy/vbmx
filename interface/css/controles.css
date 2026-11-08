@@ -1,0 +1,30 @@
+/* controles.css — painel Controles (teclado, MIDI learn, modos). VB-25 + VB-40. */
+.ctl-raiz { position: fixed; right: 12px; bottom: 12px; z-index: 50; font-family: var(--fonte-texto); font-size: 12px; color: var(--fg); }
+.ctl-abrir { background: var(--bg-3); color: var(--fg); border: 1px solid var(--linha); border-radius: 4px; padding: 6px 12px; cursor: pointer; font-family: var(--fonte-display); letter-spacing: .06em; text-transform: uppercase; }
+.ctl-abrir[aria-expanded="true"] { border-color: var(--acento); color: var(--acento); }
+.ctl-painel { position: absolute; right: 0; bottom: 40px; width: min(560px, calc(100vw - 24px)); max-height: 70vh; overflow: auto;
+  background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 10px 12px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+.ctl-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ctl-topo .ctl-mudo { flex: 1; }
+.ctl-mudo { color: var(--fg-3); }
+.ctl-secao { border-top: 1px solid var(--linha); padding: 8px 0; }
+.ctl-linha, .ctl-grade { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 6px; }
+.ctl-painel label { display: inline-flex; align-items: center; gap: 4px; color: var(--fg-2); }
+.ctl-painel select, .ctl-painel input[type="number"], .ctl-painel button:not(.ctl-x):not(.ctl-link) {
+  background: var(--bg-3); color: var(--fg); border: 1px solid var(--linha); border-radius: 3px; padding: 3px 6px; font: inherit; }
+.ctl-painel input[type="number"] { width: 4.5em; }
+.ctl-painel button { cursor: pointer; }
+.ctl-painel button:disabled { opacity: .4; cursor: default; }
+.ctl-arquivo { border: 1px solid var(--linha); border-radius: 3px; padding: 3px 6px; cursor: pointer; background: var(--bg-3); }
+.ctl-aprender.ligado { border-color: var(--acento); color: var(--acento); animation: ctl-pulso 1s ease-in-out infinite; }
+@keyframes ctl-pulso { 50% { opacity: .55; } }
+.ctl-mapa { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.ctl-mapa.atual .ctl-link { color: var(--acento); }
+.ctl-link, .ctl-x { background: none; border: 0; color: var(--fg); font: inherit; padding: 0 4px; cursor: pointer; }
+.ctl-x { color: var(--fg-3); font-size: 15px; }
+.ctl-x:hover { color: var(--aviso); }
+.ctl-tabela { overflow-x: auto; }
+.ctl-tabela table { border-collapse: collapse; width: 100%; font-family: var(--fonte-dados); font-size: 11px; }
+.ctl-tabela th, .ctl-tabela td { text-align: left; padding: 2px 8px 2px 0; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+.ctl-tabela th { color: var(--fg-3); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { .ctl-aprender.ligado { animation: none; } }

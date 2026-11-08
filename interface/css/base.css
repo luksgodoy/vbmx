@@ -1,0 +1,62 @@
+/* Layout: modelo A (decisão do Lucas, 2026-10-24) — 2 decks com o mixer-moldura entre eles no
+   alto, biblioteca embaixo, painel de sugestão na lateral direita. A roda de Camelot mora dentro
+   do painel, atrás do botão "Roda", e serve só de FILTRO da lista de sugestões.
+   Tema único escuro, de propósito: cabine de DJ é escura. As cores por casa Camelot são as únicas
+   cores saturadas da página; o âmbar de VU marca só o que está tocando e o filtro ativo. */
+:root {
+  --bg: #0d0f12;
+  --bg-2: #14171c;
+  --bg-3: #1b1f26;
+  --linha: #262b34;
+  --fg: #e6e8ec;
+  --fg-2: #9aa3b2;
+  --fg-3: #5f6875;
+  --acento: #f2b134;
+  --ok: #7ad48c;
+  --aviso: #e0a84a;
+  --fonte-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --fonte-texto: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --fonte-dados: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="dark"], :root[data-theme="light"] { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--fonte-texto); font-size: 14px; line-height: 1.4;
+  display: grid; grid-template-rows: auto auto auto; align-content: start; min-height: 100%;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.mono { font-family: var(--fonte-dados); font-variant-numeric: tabular-nums; }
+.rotulo { font-family: var(--fonte-display); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--fg-2); }
+
+/* ---------- topo ---------- */
+.topo {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg-2); border-bottom: 1px solid var(--linha);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg-2); }
+.marca { font-family: var(--fonte-display); font-weight: 700; font-size: 22px; letter-spacing: .04em; }
+.marca small { font-family: var(--fonte-texto); font-weight: 400; font-size: 12px; color: var(--fg-2); margin-left: 8px; letter-spacing: 0; }
+.estado-global { margin-left: auto; color: var(--fg-2); font-size: 12px; }
+.estado-global b { color: var(--acento); font-weight: 600; }
+
+/* ---------- a tela ---------- */
+/* A disposição (decks em cima, browser embaixo ou à esquerda, mixer ao centro) mora em css/disposicao.css
+   (proposta A, 2026-11-07). Aqui só o que vale em qualquer disposição. */
+.tela {
+  display: grid; min-height: 0; gap: 10px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (max-width: 900px) {
+  body { display: block; height: auto; }
+}

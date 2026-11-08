@@ -1,0 +1,14 @@
+/* --- importar o collection.nml (VB-27) --- */
+.importar { padding: 6px 20px; border-bottom: 1px solid var(--bg-3); display: grid; gap: 6px; }
+.importar-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.importar-corpo { display: grid; gap: 6px; font-size: 12px; }
+.importar-corpo:empty { display: none; }
+.importar-corpo p { margin: 0; }
+.importar-resumo { color: var(--fg); }
+.importar-nota { color: var(--fg-3); }
+.importar-aviso { color: var(--aviso); }
+.importar-erro { color: var(--aviso); }
+.importar-sob { color: var(--fg-2); display: flex; align-items: center; gap: 6px; }
+.importar-corpo details { color: var(--fg-2); }
+.importar-corpo summary { cursor: pointer; }
+.importar-corpo ul { margin: 4px 0 0; padding-left: 18px; max-height: 160px; overflow-y: auto; font-family: var(--fonte-dados); }

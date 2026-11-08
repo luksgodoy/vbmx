@@ -1,0 +1,147 @@
+<meta charset="utf-8">
+<title>VbMx Clássico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<!-- Esqueleto da página (VB-10, decisão P1 de 2026-10-25): CSS e JS moram em css/ e js/, um
+     arquivo por módulo, carregados NESTA ordem — a cascata do CSS e as declarações do JS dependem
+     dela. Mapa "mudei X → rode Y": docs/testes.md. -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/deck.css">
+<link rel="stylesheet" href="css/mixer.css">
+<link rel="stylesheet" href="css/biblio.css">
+<link rel="stylesheet" href="css/sugestao.css">
+<link rel="stylesheet" href="css/pastas.css">
+<link rel="stylesheet" href="css/importar.css">
+<!-- css dos módulos (esqueletos do VB-11; dono de cada um em docs/contratos.md) -->
+<link rel="stylesheet" href="css/hotcues.css">
+<link rel="stylesheet" href="css/loops.css">
+<link rel="stylesheet" href="css/preparacao.css">
+<link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/mestre.css">
+<link rel="stylesheet" href="css/stems.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/disposicao.css">
+<link rel="stylesheet" href="css/movimento.css">
+<link rel="stylesheet" href="css/controles.css">
+<link rel="stylesheet" href="css/pecas-controle.css">
+<link rel="stylesheet" href="css/tela-cheia.css">
+
+<header class="topo">
+  <div class="marca">VbMx <small id="marca-origem">modelo clássico · <span class="tag-exemplo">faixas de exemplo (fictícias)</span> · faixas de exemplo não tocam</small></div>
+  <div class="estado-global">Tocando: <b id="estado-tocando">—</b></div>
+</header>
+<section class="pastas" id="pastas" aria-label="Pastas da biblioteca"></section>
+
+<main class="tela">
+  <div class="decks">
+    <div class="deck tocando moldura" data-deck="A"></div>
+    <div class="mixer moldura" id="mixer" aria-label="Mixer"></div>
+    <div class="deck moldura" data-deck="B"></div>
+    <!-- SLOTS dos módulos futuros (VbMxUI.slot(nome), VB-11). Ficam `hidden` e fora dos decks e
+         do mixer porque renderDeck/renderMixer reescrevem o innerHTML deles; o módulo que ocupa
+         um slot o põe no lugar e tira o `hidden`. -->
+    <div data-slot="deck-A-hotcues" hidden></div>
+    <div data-slot="deck-A-loops" hidden></div>
+    <div data-slot="deck-A-grade" hidden></div>
+    <div data-slot="deck-A-avisos" hidden></div>
+    <div data-slot="deck-B-hotcues" hidden></div>
+    <div data-slot="deck-B-loops" hidden></div>
+    <div data-slot="deck-B-grade" hidden></div>
+    <div data-slot="deck-B-avisos" hidden></div>
+    <!-- stems (js/stems-tela.js): faixa de 4 canais por deck; fica recolhida até o modo ligar -->
+    <div data-slot="deck-A-stems" data-stems="A" hidden></div>
+    <div data-slot="deck-B-stems" data-stems="B" hidden></div>
+    <div data-slot="mixer-medidores" hidden></div>
+    <div data-slot="mixer-fone" hidden></div>
+    <div data-slot="fx-1" hidden></div>
+    <div data-slot="fx-2" hidden></div>
+  </div>
+  <!-- browser (proposta A): biblioteca + sugestões; embaixo ou à esquerda, por preferência (js/disposicao.js) -->
+  <section class="browser" aria-label="Biblioteca e sugestões">
+    <div class="biblio" id="biblio"></div>
+    <aside class="sugestao" id="sugestao" aria-label="Próximas possíveis"></aside>
+  </section>
+  <div data-slot="preparacao" hidden></div>
+  <div data-slot="historico" hidden></div>
+  <div data-slot="gravador" hidden></div>
+  <div data-slot="preferencias" hidden></div>
+</main>
+
+<!-- lógica pura (UMD, testada em Node por motor/testar-*.js) -->
+<script src="../motor/recomendar.js"></script>
+<script src="../motor/pitch.js"></script>
+<script src="../motor/reproducao.js"></script>
+<script src="../motor/waveform.js"></script>
+<script src="../motor/grade.js"></script>
+<script src="../motor/transporte.js"></script>
+<script src="../motor/tom.js"></script>
+<script src="../motor/notacao.js"></script>
+<script src="../motor/cues.js"></script>
+<script src="../motor/loops.js"></script>
+<script src="../motor/mixer.js"></script>
+<script src="../motor/fx.js"></script>
+<script src="../motor/fase.js"></script>
+<script src="../motor/fone.js"></script>
+<script src="../motor/mapa-controle.js"></script>
+<script src="../motor/scratch.js"></script>
+<script src="../motor/stems.js"></script>
+<script src="../analise/camelot.js"></script>
+<script src="../biblioteca/bpm.js"></script>
+<script src="../biblioteca/biblioteca.js"></script>
+<script src="../biblioteca/painel.js"></script>
+<script src="../biblioteca/colecao.js"></script>
+<script src="../biblioteca/metadados.js"></script>
+<script src="../biblioteca/historico.js"></script>
+<script src="../motor/gravacao.js"></script>
+<script src="../biblioteca/marcadores.js"></script>
+<script src="../biblioteca/nml.js"></script>
+<script src="../biblioteca/meta.js"></script>
+<!-- a página. Nenhum js/*.js mexe no DOM no carregamento: declara, registra no VbMxUI e pede
+     VbMxUI.aoIniciar(fn). Eventos e boot moram em js/principal.js, que é SEMPRE o último.
+     ui.js (barramento) é o PRIMEIRO; preferencias.js, cadeia.js e tocador.js vêm antes de quem os usa.
+     Contrato das APIs comuns e dono de cada arquivo: docs/contratos.md (VB-11). -->
+<script src="js/ui.js"></script>
+<script src="js/pecas-controle.js"></script>
+<script src="js/preferencias.js"></script>
+<script src="js/notacao.js"></script>
+<script src="js/dados-exemplo.js"></script>
+<script src="js/estado.js"></script>
+<script src="js/cadeia.js"></script>
+<script src="js/tocador.js"></script>
+<script src="js/stems.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/deck.js"></script>
+<script src="js/filtro.js"></script>
+<script src="js/pecas.js"></script>
+<script src="js/ondas.js"></script>
+<script src="js/deck-tela.js"></script>
+<script src="js/mixer.js"></script>
+<script src="js/biblio.js"></script>
+<script src="js/sugestao.js"></script>
+<script src="js/arrastar.js"></script>
+<!-- módulos (esqueletos do VB-11 até o dono preencher) -->
+<script src="js/tick.js"></script>
+<script src="js/grade-ui.js"></script>
+<script src="js/hotcues.js"></script>
+<script src="js/loops.js"></script>
+<script src="js/medidores.js"></script>
+<script src="js/preparacao.js"></script>
+<script src="js/historico.js"></script>
+<script src="js/avisos.js"></script>
+<script src="js/mestre.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/fx-nos.js"></script>
+<script src="js/fx-canal.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/saidas.js"></script>
+<script src="js/gravador.js"></script>
+<script src="js/scratch.js"></script>
+<script src="js/teclado.js"></script>
+<script src="js/midi.js"></script>
+<script src="js/stems-tela.js"></script>
+<script src="js/stems-carga.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/disposicao.js"></script>
+<script src="js/disposicao-deck.js"></script>
+<script src="js/importar.js"></script>
+<script src="js/principal.js"></script>

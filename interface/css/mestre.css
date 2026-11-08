@@ -1,0 +1,13 @@
+/* mestre.css — dono: VB-35. Painel global do tempo mestre (no topo) e botão MASTER do deck. */
+.mestre-painel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-family: var(--fonte-dados); font-size: 12px; }
+.mestre-painel .mestre-btn { width: auto; padding: 0 7px; min-width: 26px; font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; }
+.mestre-quem { color: var(--fg-3); text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
+.mestre-bpm { min-width: 52px; text-align: right; color: var(--fg); font-size: 14px; }
+.mestre-bpm[contenteditable="true"] { outline: 1px solid var(--fg-3); background: var(--bg-3); }
+.mestre-desloc { min-width: 36px; color: var(--ok); }
+.transporte .botao.master { font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; width: auto; padding: 0 8px; }
+/* VB-34: setas de bend e medidor de fase no deck; VB-36: QUANT e SNAP no painel global */
+.transporte .botao.bend { width: auto; padding: 0 8px; }
+.medidor-fase { min-width: 44px; text-align: center; font-size: 12px; color: var(--fg-3); align-self: center; }
+.medidor-fase[data-estado="alinhado"] { color: var(--ok); }
+.medidor-fase[data-estado="adiantado"], .medidor-fase[data-estado="atrasado"] { color: var(--fg); }

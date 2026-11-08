@@ -1,0 +1,23 @@
+/* fx.css — dono: VB-22 (onda 2). Unidades de FX (slots fx-1 e fx-2); prefixo .fx-*; tokens de base.css.
+   Aceso (aria-pressed=true) usa o âmbar de acento, como o kill e os botões do deck. */
+.fx { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+.fx[hidden] { display: none; }
+.fx-un { display: grid; gap: 6px; }
+.fx-cab { display: flex; align-items: center; gap: 6px; }
+.fx-titulo { font-family: var(--fonte-display); font-size: 15px; color: var(--acento); margin-right: auto; }
+.fx-canais { display: flex; gap: 3px; }
+.fx-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-knobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.fx-grupo { display: grid; gap: 4px; }
+.fx-slot { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.fx-knob { display: grid; gap: 1px; min-width: 0; }
+.fx-knob .fx-nome { font-family: var(--fonte-dados); font-size: 9px; color: var(--fg-2); letter-spacing: .08em; text-transform: uppercase; }
+.fx-knob .fx-val { font-family: var(--fonte-dados); font-size: 9px; color: var(--fg-3); }
+.fx-knob input[type=range] { width: 100%; min-width: 0; margin: 0; height: 16px; accent-color: var(--acento); }
+.fx-dw { flex: 1 1 90px; }
+.fx select { font: inherit; font-size: 12px; color: var(--fg-2); background: var(--bg-2); border: 1px solid var(--linha); border-radius: 3px; padding: 1px 2px; }
+.fx-bt { min-width: 24px; height: 22px; padding: 0 6px; font-family: var(--fonte-dados); font-size: 10px; line-height: 1; color: var(--fg-2);
+  background: transparent; border: 1px solid var(--linha); border-radius: 3px; cursor: pointer; }
+.fx-bt:hover { color: var(--fg); border-color: var(--fg-3); }
+.fx-bt[aria-pressed="true"] { color: var(--bg-2); background: var(--acento); border-color: var(--acento); }
+.fx-bt:focus-visible, .fx select:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }

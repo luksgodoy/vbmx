@@ -1,0 +1,226 @@
+/* pecas-controle.css — a pele das peças (proposta B, 2026-11-07). Dono: js/pecas-controle.js. Carrega DEPOIS dos css de módulo. */
+:root {   /* materiais das peças (alumínio, borracha, ranhura) e LEDs de função */
+  --pc-aluminio-claro: #a3a8b1; --pc-aluminio: #767b85; --pc-aluminio-escuro: #4a4f58;
+  --pc-borracha: #1c1f25; --pc-borracha-claro: #363b44; --pc-borracha-escuro: #0e1014;
+  --pc-ranhura: #050607; --pc-branco: #f4f5f7;
+  --pc-led-play: #62d47f; --pc-led-cue: #f2b134; --pc-led-sync: #4fb6e8; --pc-led-master: #e5655b; --pc-led-loop: #7ad48c;
+}
+
+/* ===================== PEÇAS — regras comuns ===================== */
+.pc-nome { font-family: var(--fonte-dados); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-2); line-height: 1; }
+.pc-val { font-family: var(--fonte-dados); font-size: 9px; color: var(--fg-3); line-height: 1; min-height: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-compacto .pc-nome { font-size: 8px; }
+.pc-compacto .pc-val { font-size: 8px; }
+[aria-disabled="true"].pc-knob, [aria-disabled="true"].pc-fader, [aria-disabled="true"].pc-jog { opacity: .4; cursor: not-allowed !important; filter: saturate(.3); }
+/* foco visível: anel âmbar fora da peça, igual ao base.css (outline 2px) */
+.pc-knob:focus-visible .pc-knob-caixa, .pc-fader:focus-visible .pc-fader-caixa, .pc-jog:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 50%; }
+.pc-fader:focus-visible .pc-fader-caixa { border-radius: 4px; }
+button.pc-botao:focus-visible, .pc-hotcue:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+/* ===================== KNOB — alumínio escovado + capa de borracha + anel de valor ===================== */
+.pc-knob { --tam: 60px; position: relative; display: grid; justify-items: center; gap: 3px; width: max-content; user-select: none; -webkit-user-select: none; touch-action: none; cursor: ns-resize; outline: none; }
+.pc-knob.pc-compacto { --tam: 40px; }
+.pc-knob-caixa { position: relative; width: var(--tam); height: var(--tam); }
+/* anel externo: alumínio escovado (conic repetido = riscas radiais) com reflexo no topo */
+.pc-knob-anel { position: absolute; inset: 16%; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255,255,255,.22), rgba(255,255,255,0) 55%),
+    repeating-conic-gradient(from 0deg, var(--pc-aluminio-claro) 0deg 1deg, var(--pc-aluminio) 1deg 2deg, var(--pc-aluminio-escuro) 2deg 3deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,.75), 0 0 0 1px #07080a, inset 0 0 0 1px rgba(255,255,255,.10); }
+/* capa de borracha com estrias (conic suave mascarado para ficar só na borda) */
+.pc-knob-borracha { position: absolute; inset: 26%; border-radius: 50%;
+  background: radial-gradient(circle at 42% 32%, var(--pc-borracha-claro), var(--pc-borracha) 55%, var(--pc-borracha-escuro) 100%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.10), inset 0 -2px 3px rgba(0,0,0,.65), 0 1px 2px rgba(0,0,0,.9); }
+.pc-knob-borracha::before { content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255,255,255,.07) 0deg 4deg, rgba(0,0,0,0) 4deg 8deg);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%); mask: radial-gradient(circle, transparent 58%, #000 60%); }
+.pc-knob svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.pc-arco-trilho { fill: none; stroke: #20242b; stroke-width: 4; stroke-linecap: round; }
+.pc-arco-valor { fill: none; stroke: var(--acento); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(242,177,52,.55)); transition: filter .1s; }
+.pc-knob-tique { stroke: var(--fg-3); stroke-width: 1.5; stroke-linecap: round; }
+.pc-knob-tique.pc-centro { stroke: var(--fg-2); }
+.pc-knob-marcador { fill: var(--pc-branco); transition: fill .1s; }
+.pc-knob:hover .pc-knob-anel, .pc-knob.pc-hover .pc-knob-anel { filter: brightness(1.12); }
+.pc-knob.pc-arrastando .pc-arco-valor, .pc-knob.pc-ativo .pc-arco-valor { filter: drop-shadow(0 0 5px rgba(242,177,52,.9)); }
+.pc-knob.pc-arrastando .pc-knob-marcador, .pc-knob.pc-ativo .pc-knob-marcador { fill: var(--acento); }
+.pc-knob.pc-arrastando { cursor: grabbing; }
+
+/* ===================== FADER — trilho em ranhura + cabeça com estrias ===================== */
+.pc-fader { --comp: 150px; --larg: 36px; --pos: 0.5; position: relative; display: grid; justify-items: center; gap: 3px; width: max-content; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+.pc-fader.pc-compacto { --comp: 104px; --larg: 28px; }
+.pc-fader-caixa { position: relative; width: var(--larg); height: var(--comp); cursor: ns-resize; }
+.pc-fader.pc-horiz .pc-fader-caixa { width: var(--comp); height: var(--larg); cursor: ew-resize; }
+.pc-fader-caixa svg.pc-escala { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.pc-escala line { stroke: #3a414c; stroke-width: 1; }
+.pc-escala line.pc-centro { stroke: var(--fg-2); stroke-width: 1.5; }
+.pc-fader-ranhura { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 7px; transform: translateX(-50%); border-radius: 4px; background: var(--pc-ranhura);
+  box-shadow: inset 0 0 0 1px #000, inset 0 2px 4px rgba(0,0,0,.95), 0 1px 0 rgba(255,255,255,.06); }
+.pc-fader.pc-horiz .pc-fader-ranhura { top: 50%; left: 6px; right: 6px; bottom: auto; width: auto; height: 7px; transform: translateY(-50%); }
+/* cabeça: plástico texturizado, linha branca de leitura, sombra que "levanta" do painel */
+.pc-fader-cabeca { position: absolute; left: 50%; top: calc(6px + (1 - var(--pos)) * (100% - 12px)); width: calc(var(--larg) - 4px); height: 24px; transform: translate(-50%, -50%); border-radius: 3px; cursor: grab;
+  background: linear-gradient(180deg, #3d424b 0%, #22262d 42%, #171a1f 58%, #2b3038 100%);
+  box-shadow: 0 3px 6px rgba(0,0,0,.85), 0 0 0 1px #07080a, inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(0,0,0,.6); }
+.pc-fader-cabeca::before { content: ""; position: absolute; inset: 3px 4px; background: repeating-linear-gradient(180deg, rgba(255,255,255,.09) 0 1px, transparent 1px 3px); border-radius: 2px; }
+.pc-fader-cabeca::after { content: ""; position: absolute; left: 3px; right: 3px; top: 50%; height: 2px; transform: translateY(-50%); background: var(--pc-branco); border-radius: 1px; box-shadow: 0 0 2px rgba(255,255,255,.4); }
+.pc-fader.pc-horiz .pc-fader-cabeca { top: 50%; left: calc(6px + var(--pos) * (100% - 12px)); width: 24px; height: calc(var(--larg) - 4px);
+  background: linear-gradient(90deg, #3d424b 0%, #22262d 42%, #171a1f 58%, #2b3038 100%); }
+.pc-fader.pc-horiz .pc-fader-cabeca::before { background: repeating-linear-gradient(90deg, rgba(255,255,255,.09) 0 1px, transparent 1px 3px); }
+.pc-fader.pc-horiz .pc-fader-cabeca::after { left: 50%; top: 3px; bottom: 3px; right: auto; width: 2px; height: auto; transform: translateX(-50%); }
+.pc-fader.pc-compacto .pc-fader-cabeca { height: 18px; }
+.pc-fader.pc-compacto.pc-horiz .pc-fader-cabeca { width: 18px; height: calc(var(--larg) - 4px); }
+.pc-fader:hover .pc-fader-cabeca, .pc-fader.pc-hover .pc-fader-cabeca { filter: brightness(1.15); }
+.pc-fader.pc-arrastando .pc-fader-cabeca, .pc-fader.pc-ativo .pc-fader-cabeca { cursor: grabbing; filter: brightness(1.25); }
+.pc-fader.pc-arrastando .pc-fader-cabeca::after, .pc-fader.pc-ativo .pc-fader-cabeca::after { background: var(--acento); box-shadow: 0 0 4px var(--acento); }
+.pc-fader-rotulos { display: flex; justify-content: space-between; width: 100%; font-family: var(--fonte-dados); font-size: 9px; color: var(--fg-3); }
+.pc-fader.pc-vert .pc-fader-rotulos { flex-direction: column; position: absolute; right: -14px; top: 4px; bottom: 4px; width: auto; }
+.pc-fader.pc-pitch .pc-fader-ranhura { width: 9px; }
+.pc-fader.pc-pitch .pc-fader-cabeca { height: 30px; }
+
+/* ===================== BOTÃO retroiluminado ===================== */
+button.pc-botao { --cor: var(--acento); position: relative; min-width: 46px; height: 30px; padding: 0 10px; border-radius: 4px; display: inline-grid; place-items: center;
+  font-family: var(--fonte-display); font-weight: 600; letter-spacing: .08em; font-size: 12px; text-transform: uppercase; color: #8b93a0;
+  background: linear-gradient(180deg, #2b3038 0%, #1a1e24 100%); border: 1px solid #07080a;
+  box-shadow: 0 2px 3px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.09), inset 0 -2px 3px rgba(0,0,0,.5);
+  transition: box-shadow .08s, color .08s, background .08s; user-select: none; -webkit-user-select: none; touch-action: none; }
+button.pc-botao svg { width: 14px; height: 14px; fill: currentColor; display: block; }
+button.pc-botao:hover:not(:disabled), button.pc-botao.pc-hover { color: #c8ced8; box-shadow: 0 2px 3px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -2px 3px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05); }
+button.pc-botao:active:not(:disabled), button.pc-botao.pc-pressionado { transform: translateY(1px); box-shadow: 0 1px 1px rgba(0,0,0,.7), inset 0 2px 4px rgba(0,0,0,.65); }
+/* aceso: a LED por trás do acrílico — cor cheia, halo e brilho no topo */
+button.pc-botao[aria-pressed="true"]:not(:disabled), button.pc-botao.pc-aceso {
+  color: #0b0d10; border-color: color-mix(in srgb, var(--cor) 55%, #000);
+  background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--cor) 70%, #fff) 0%, var(--cor) 55%, color-mix(in srgb, var(--cor) 85%, #000) 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cor) 60%, transparent), 0 0 2px var(--cor), inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.25);
+  text-shadow: 0 0 2px rgba(255,255,255,.35); }
+button.pc-botao:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+button.pc-botao.pc-compacto { height: 22px; min-width: 34px; padding: 0 7px; font-size: 10px; }
+button.pc-botao.pc-compacto svg { width: 10px; height: 10px; }
+button.pc-botao.pc-quadrado { min-width: 30px; width: 30px; padding: 0; }
+button.pc-botao.pc-quadrado.pc-compacto { width: 22px; min-width: 22px; }
+.pc-botao--play { --cor: var(--pc-led-play); } .pc-botao--cue { --cor: var(--pc-led-cue); } .pc-botao--sync { --cor: var(--pc-led-sync); }
+.pc-botao--master { --cor: var(--pc-led-master); } .pc-botao--loop { --cor: var(--pc-led-loop); } .pc-botao--kill { --cor: var(--pc-led-master); }
+@media (prefers-reduced-motion: no-preference) { .pc-botao--play[aria-pressed="true"] { animation: pc-pulso 1.1s ease-in-out infinite; } }
+@keyframes pc-pulso { 50% { box-shadow: 0 0 6px color-mix(in srgb, var(--cor) 35%, transparent), 0 0 1px var(--cor), inset 0 1px 0 rgba(255,255,255,.4); } }
+
+/* ===================== HOT CUE — pad com LED colorida na base ===================== */
+.pc-hotcue { --cor: #4a515c; position: relative; width: 58px; height: 46px; border-radius: 5px; display: grid; align-content: center; justify-items: center; gap: 2px;
+  font-family: var(--fonte-dados); color: var(--fg-3); border: 1px solid #07080a;
+  background: linear-gradient(180deg, #1f232a 0%, #121418 100%);
+  box-shadow: 0 2px 3px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06), inset 0 -3px 0 color-mix(in srgb, var(--cor) 45%, transparent);
+  transition: box-shadow .1s, color .1s; user-select: none; -webkit-user-select: none; touch-action: none; }
+.pc-hotcue b { font-size: 13px; line-height: 1; }
+.pc-hotcue span { font-size: 9px; line-height: 1; letter-spacing: .04em; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-hotcue:hover:not(:disabled), .pc-hotcue.pc-hover { color: var(--fg-2); }
+.pc-hotcue:active:not(:disabled), .pc-hotcue.pc-pressionado { transform: translateY(1px); }
+.pc-hotcue.pc-cheio { color: #fff; border-color: color-mix(in srgb, var(--cor) 60%, #000);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cor) 28%, #14171c) 0%, color-mix(in srgb, var(--cor) 12%, #0d0f12) 100%);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--cor) 45%, transparent), inset 0 0 14px color-mix(in srgb, var(--cor) 35%, transparent), inset 0 -3px 0 var(--cor), inset 0 1px 0 rgba(255,255,255,.12);
+  text-shadow: 0 0 3px color-mix(in srgb, var(--cor) 70%, transparent); }
+.pc-hotcue:disabled { opacity: .4; cursor: not-allowed; }
+.pc-hotcue.pc-compacto { width: 40px; height: 32px; }
+.pc-hotcue.pc-compacto b { font-size: 11px; } .pc-hotcue.pc-compacto span { display: none; }
+
+/* ===================== DISPLAY — vidro escuro, dígitos com brilho ===================== */
+.pc-display { position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 2px 14px; align-items: end; padding: 7px 12px 6px; border-radius: 4px; min-width: 220px;
+  font-family: var(--fonte-dados); color: var(--acento); background: linear-gradient(180deg, #090b0e, #04050a);
+  border: 1px solid #07080a; box-shadow: inset 0 0 0 1px #171b22, inset 0 4px 14px rgba(0,0,0,.95), 0 1px 0 rgba(255,255,255,.04); overflow: hidden; }
+.pc-display::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.06), transparent 60%); }
+.pc-display .pc-dnome { font-size: 8px; letter-spacing: .12em; color: #6a5a34; text-transform: uppercase; }
+.pc-display .pc-bpm { font-size: 30px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 7px rgba(242,177,52,.6), 0 0 1px rgba(242,177,52,.9); }
+.pc-display .pc-bpm small { font-size: 14px; font-weight: 500; }
+.pc-display .pc-dado { display: grid; gap: 3px; }
+.pc-display .pc-pitch { font-size: 14px; color: #d6d9de; text-shadow: 0 0 5px rgba(255,255,255,.35); font-variant-numeric: tabular-nums; }
+.pc-display .pc-tempo { font-size: 14px; color: #d6d9de; text-shadow: 0 0 5px rgba(255,255,255,.35); font-variant-numeric: tabular-nums; }
+.pc-display .pc-tom { display: inline-grid; place-items: center; min-width: 34px; height: 18px; padding: 0 5px; border-radius: 3px; font-size: 11px; font-weight: 600; color: #0d0f12; background: var(--cor, var(--fg-3)); box-shadow: 0 0 8px color-mix(in srgb, var(--cor, var(--fg-3)) 55%, transparent); }
+.pc-display.pc-compacto { min-width: 160px; padding: 5px 9px 4px; gap: 1px 9px; }
+.pc-display.pc-compacto .pc-bpm { font-size: 20px; } .pc-display.pc-compacto .pc-pitch, .pc-display.pc-compacto .pc-tempo { font-size: 11px; }
+.pc-display.pc-apagado { color: #3a3326; } .pc-display.pc-apagado .pc-bpm, .pc-display.pc-apagado .pc-pitch, .pc-display.pc-apagado .pc-tempo { text-shadow: none; color: #2a2e36; }
+
+/* ===================== JOG — prato de alumínio com anel de LED ===================== */
+.pc-jog { --tam: 190px; --ang: 0deg; --cor: var(--fg-3); position: relative; width: var(--tam); height: var(--tam); border-radius: 50%; user-select: none; -webkit-user-select: none; touch-action: none; cursor: grab; outline: none;
+  background: radial-gradient(circle, #0b0d10 0%, #0b0d10 58%, #141820 59%, #0a0b0d 100%); box-shadow: 0 0 0 1px #07080a, 0 4px 14px rgba(0,0,0,.8); }
+.pc-jog.pc-compacto { --tam: 120px; }
+.pc-jog svg.pc-jog-leds { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pc-jog-led-fundo { fill: none; stroke: #1c2028; }
+.pc-jog-led-aceso { fill: none; stroke: var(--acento); filter: drop-shadow(0 0 2px rgba(242,177,52,.8)); }
+.pc-jog-prato { position: absolute; inset: 13%; border-radius: 50%; transform: rotate(var(--ang)); will-change: transform;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255,255,255,.16), rgba(255,255,255,0) 60%),
+    repeating-conic-gradient(from 0deg, var(--pc-aluminio-claro) 0deg .8deg, var(--pc-aluminio) .8deg 1.6deg, var(--pc-aluminio-escuro) 1.6deg 2.4deg);
+  box-shadow: 0 3px 8px rgba(0,0,0,.85), 0 0 0 1px #07080a, inset 0 0 0 2px rgba(255,255,255,.08), inset 0 0 18px rgba(0,0,0,.5); }
+.pc-jog-prato::before { content: ""; position: absolute; inset: 6%; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.05); }
+.pc-jog-marcador { position: absolute; left: 50%; top: 4%; width: 4%; height: 10%; transform: translateX(-50%); border-radius: 2px; background: var(--pc-branco); box-shadow: 0 0 3px rgba(0,0,0,.7); }
+.pc-jog.pc-tocando .pc-jog-marcador { background: var(--acento); box-shadow: 0 0 4px var(--acento); }
+.pc-jog-miolo { position: absolute; inset: 34%; border-radius: 50%; display: grid; place-items: center; text-align: center; font-family: var(--fonte-dados); font-size: 12px; font-weight: 600; color: #0d0f12;
+  background: radial-gradient(circle at 45% 35%, color-mix(in srgb, var(--cor) 100%, #fff 15%), var(--cor) 70%, color-mix(in srgb, var(--cor) 80%, #000) 100%);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.5), inset 0 0 0 4px rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.8); }
+.pc-jog-miolo.pc-vazio { color: var(--fg-3); background: radial-gradient(circle at 45% 35%, #22262d, #14171c 70%); }
+.pc-jog.pc-compacto .pc-jog-miolo { font-size: 10px; }
+.pc-jog:hover .pc-jog-prato, .pc-jog.pc-hover .pc-jog-prato { filter: brightness(1.08); }
+.pc-jog.pc-arrastando { cursor: grabbing; } .pc-jog.pc-arrastando .pc-jog-prato { filter: brightness(1.15); }
+.pc-jog[data-toque="centro"] { box-shadow: 0 0 0 2px var(--acento), 0 4px 14px rgba(0,0,0,.8); }
+
+
+/* ===================== vestir(): pele por cima, <input type=range> por baixo ===================== */
+/* o input some da vista mas NÃO sai da árvore nem do foco (não é display:none): teclado e leitor de tela continuam nele */
+input[type=range].pc-oculto.pc-oculto { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; overflow: hidden; pointer-events: none; }
+input.pc-oculto:focus-visible + .pc-knob .pc-knob-caixa, input.pc-oculto:focus-visible + .pc-fader .pc-fader-caixa { outline: 2px solid var(--acento); outline-offset: 3px; }
+input.pc-oculto:focus-visible + .pc-knob .pc-knob-caixa { border-radius: 50%; }
+.pc-vestida.pc-sem-texto > .pc-nome, .pc-vestida.pc-sem-texto > .pc-val { display: none; }
+input.pc-oculto:disabled + .pc-vestida { opacity: .4; cursor: not-allowed; filter: saturate(.3); }
+.pc-vestida.pc-knob { --tam: 34px; }
+/* botão aceso também pelas marcas antigas (.ligado / .tocando / .cue-ativo), para não mexer nos módulos que as põem */
+button.pc-botao.ligado:not(:disabled), button.pc-botao.tocando:not(:disabled), button.pc-botao.cue-ativo:not(:disabled) {
+  color: #0b0d10; border-color: color-mix(in srgb, var(--cor) 55%, #000);
+  background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--cor) 70%, #fff) 0%, var(--cor) 55%, color-mix(in srgb, var(--cor) 85%, #000) 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cor) 60%, transparent), 0 0 2px var(--cor), inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.25); }
+button.pc-botao.ligado:not(:disabled) .pc-nada { display: none; }
+.mixer.eq-isolador button.pc-botao--kill.ligado:not(:disabled) { --cor: var(--pc-led-master); }
+button.pc-botao--kill { --cor: #ff9d3a; }   /* kill do EQ atual: âmbar quente; no isolador (kill total) fica vermelho */
+.mixer.eq-isolador button.pc-botao--kill { --cor: var(--pc-led-master); }
+/* hot cue da oficial: a pele é o próprio .hotcues-slot (classe pc-hotcue + pc-cheio, cor por --cor) */
+button.pc-hotcue.hotcues-slot { width: auto; min-height: 34px; }
+/* crossfader: o fader horizontal ocupa a largura do mixer */
+.xfade .pc-fader.pc-horiz { width: 100%; }
+.xfade .pc-fader.pc-horiz .pc-fader-caixa { width: 100%; }
+/* o fader vertical dentro das colunas do mixer/pitch ocupa a célula da grade onde estava o input */
+.fader-v .pc-fader, .pitch-corpo .pc-fader { justify-self: center; }
+.pitch-corpo { display: flex; gap: 6px; align-items: stretch; justify-content: center; }
+.hotcues-celula.cheio .pc-hotcue { --cor: inherit; }   /* a célula carrega --cor; a peça não a zera */
+.hotcues-celula .pc-hotcue { --cor: #4a515c; }
+.hotcues-celula.cheio .pc-hotcue.pc-cheio { --cor: inherit; }
+.hotcues-celula .pc-hotcue { width: 100%; }
+/* dado (BPM, tom, tempo) do deck: vidro escuro com dígitos âmbar, a mesma pele do display da biblioteca de peças */
+.deck-info { padding: 6px 10px; border-radius: 4px; background: linear-gradient(180deg, #090b0e, #04050a); border: 1px solid #07080a;
+  box-shadow: inset 0 0 0 1px #171b22, inset 0 4px 14px rgba(0,0,0,.95), 0 1px 0 rgba(255,255,255,.04); }
+.deck-info .dado .rotulo { font-size: 8px; letter-spacing: .12em; color: #6a5a34; text-transform: uppercase; }
+.deck-info .dado .valor-bpm { color: var(--acento); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; text-shadow: 0 0 7px rgba(242,177,52,.6), 0 0 1px rgba(242,177,52,.9); }
+.deck-info .tempo { color: #d6d9de; font-variant-numeric: tabular-nums; text-shadow: 0 0 5px rgba(255,255,255,.3); }
+.pitch-v .pitch-valor { font-family: var(--fonte-dados); color: #d6d9de; text-shadow: 0 0 5px rgba(255,255,255,.3); font-variant-numeric: tabular-nums; }
+/* mixer estreito (330 px): faders de canal mais finos e a coluna do mixer nunca cresce pelo conteúdo */
+.mixer { display: flex; flex-direction: column; }   /* flex (não grade): a base do mixer fica livre para os medidores (margin-top:auto) */
+.mixer > * { min-width: 0; }
+.fader-v .pc-fader { --larg: 24px; }
+.fader-v.volume .pc-fader { --larg: 28px; }
+.xfade .pc-fader { --comp: 100%; }
+.linha-mx .pc-knob, .mixer-master .pc-knob { justify-self: center; }
+.atribuicao { gap: 3px; flex-wrap: nowrap; }
+.atribuicao button.pc-botao.pc-compacto { min-width: 24px; padding: 0 4px; font-size: 9px; }
+.xfade-botoes button.pc-botao.pc-compacto { min-width: 26px; padding: 0 5px; }
+button.pc-botao--kill.pc-compacto { min-width: 24px; width: 24px; padding: 0; }
+/* medidores LED (proposta C): canvas no vazio da base do mixer, depois de tudo (order) */
+.mixer > .medidores { order: 99; margin-top: auto; display: block; flex: 1 1 132px; min-height: 132px; position: relative; }   /* cresce com a sobra: a escala 0…−40 dB fica mais alta (2026-11-07) */
+.medidores-canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.medidores .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* UI D (2026-11-07): peças vestidas fora do mixer — KEY, FONE, FX e stems (pele por cima, input por baixo) */
+.key-ctl .pc-knob { justify-self: center; }
+.fone .linha-mx { grid-template-columns: 30px minmax(0, 1fr) 30px; }
+.fone .pc-fader.pc-horiz, .fone .pc-fader.pc-horiz .pc-fader-caixa { width: 100%; --comp: 100%; }
+.fx-knob { justify-items: center; }
+.fx-linha .fx-dw { flex: 0 0 auto; min-width: 60px; }   /* o D/W fica ao lado do seletor, não solto no meio da linha */
+.fx-knob .pc-knob { --tam: 34px; }
+.fx-slot .fx-knob { grid-template-columns: auto auto auto; align-items: center; gap: 4px; }   /* no modo grupo o knob fica em linha: nome · knob · valor */
+.stems-vol .pc-fader.pc-vert { --larg: 28px; --comp: 150px; }
+.stems-lin .pc-knob { justify-self: center; }
+.stems-eq { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }                     /* os 3 knobs de EQ lado a lado: nome, knob e kill empilhados */
+.stems-eq .stems-lin { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 2px; }
+.stems-eq .stems-lin .kill { width: 26px; }

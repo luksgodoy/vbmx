@@ -1,0 +1,70 @@
+/* ---------- decks e mixer (moldura) ---------- */
+.moldura { position: relative; }
+.moldura::after {
+  content: "moldura"; position: absolute; top: 4px; right: 6px;
+  font-family: var(--fonte-dados); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-3); pointer-events: none;
+}
+.deck { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.deck-cab { display: flex; align-items: baseline; gap: 10px; min-width: 0; padding-right: 56px; }
+.deck-cab .letra { font-family: var(--fonte-display); font-weight: 700; font-size: 26px; color: var(--fg-3); line-height: 1; }
+.deck.tocando .deck-cab .letra { color: var(--acento); }
+.deck-cab .titulo { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.deck-cab .artista { color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.deck-cab .vazio { color: var(--fg-3); font-style: italic; }
+.ondas { display: grid; gap: 4px; }
+.onda { display: block; width: 100%; height: 64px; background: var(--bg); border-radius: 3px; cursor: crosshair; touch-action: none; }
+.onda.geral { height: 28px; }
+.dica-onda { font-size: 11px; color: var(--fg-3); }
+.cue-info { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-2); }
+.deck-rodape { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.dado { display: grid; gap: 1px; }
+.dado .rotulo { font-size: 10px; }
+.dado .valor { font-family: var(--fonte-dados); font-size: 16px; font-weight: 500; }
+.chave { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 22px; padding: 0 6px; border-radius: 3px; font-family: var(--fonte-dados); font-size: 12px; font-weight: 600; color: #0d0f12; background: var(--cor, var(--fg-3)); }
+.transporte { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-left: auto; }   /* a pele dos botões é .pc-botao (css/pecas-controle.css) */
+.dado .orig { font-family: var(--fonte-dados); font-size: 10px; color: var(--fg-3); }
+/* deck clássico: prato circular + transporte à esquerda, fader de pitch VERTICAL à direita
+   (decisão de 2026-10-25). Convenção: topo = + (mais rápido), base = −. */
+.deck-corpo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: stretch; }
+.deck-prato { display: grid; gap: 8px; justify-items: center; align-content: start; min-width: 0; }
+.prato {
+  width: 132px; height: 132px; border-radius: 50%; position: relative; flex: none;
+  border: 3px solid var(--linha); box-shadow: 0 0 0 1px var(--bg);
+  display: grid; place-items: center;
+}
+.prato-giro { position: absolute; inset: 0; border-radius: 50%; background: repeating-radial-gradient(circle at center, #0a0b0d 0 2px, #14171c 2px 4px); will-change: transform; }
+/* VB-57: o prato gira com a mão (js/scratch.js). Centro = scratch, borda = bend; a marca é o ::after. */
+.prato { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.prato[data-toque] { cursor: grabbing; }
+.prato[data-toque="centro"] { border-color: var(--acento); }
+.prato[data-toque="borda"] { box-shadow: 0 0 0 2px var(--acento); }
+.prato-giro::after { content: ""; position: absolute; left: 50%; top: 3px; width: 3px; height: 14px; margin-left: -1.5px; background: var(--fg-2); border-radius: 1px; }
+.deck.tocando .prato-giro::after, .deck.rodando .prato-giro::after { background: var(--acento); }
+.prato-miolo { position: relative; width: 52px; height: 52px; border-radius: 50%; background: var(--cor, var(--bg-3)); color: #0d0f12; display: grid; place-items: center; text-align: center; font-family: var(--fonte-dados); font-size: 11px; font-weight: 600; line-height: 1.1; border: 2px solid var(--bg); }
+.prato-miolo.vazio { color: var(--fg-3); }
+.deck-info { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.transporte { margin-left: 0; }
+.tempo { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-2); }
+.carga-deck { font-family: var(--fonte-dados); font-size: 11px; min-height: 14px; color: var(--fg-3); }
+.carga-deck.ok { color: var(--ok); }
+.carga-deck.erro { color: var(--aviso); }
+.deck.alvo-soltar { outline: 2px dashed var(--acento); outline-offset: -3px; background: color-mix(in srgb, var(--acento) 8%, var(--bg-2)); }
+[draggable="true"] { cursor: grab; }
+.pitch-v { display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 4px; justify-items: center; align-items: center; min-width: 52px; }
+.pitch-v .rotulo { font-size: 10px; }
+.pitch-v .pitch-valor { font-size: 12px; color: var(--fg); }
+.pitch-v .marca-pm { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-3); line-height: 1; }
+.pitch-corpo { display: flex; align-items: center; gap: 4px; height: 150px; }
+.pitch-corpo .marcas { display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding-block: 2px; }
+.pitch-v input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 100%; margin: 0; accent-color: var(--acento); }
+.pitch-v input[type=range]:disabled { opacity: .35; }
+.pitch-v .pitch-bpm { font-size: 11px; color: var(--fg-2); white-space: nowrap; }
+.pitch-v .zerar { font-family: var(--fonte-dados); font-size: 10px; color: var(--fg-3); padding: 0 6px; border: 1px solid var(--linha); border-radius: 3px; }
+.pitch-v .zerar:hover { color: var(--fg); }
+.aviso-sync { font-family: var(--fonte-dados); font-size: 11px; min-height: 14px; line-height: 1.3; }
+.aviso-sync.ok { color: var(--ok); }
+.aviso-sync.erro { color: var(--aviso); }
+.para-grupo { display: flex; gap: 4px; }
+.para-deck { font-family: var(--fonte-display); font-weight: 700; font-size: 11px; width: 24px; height: 24px; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-3); display: grid; place-items: center; cursor: pointer; }
+.para-deck:hover { color: var(--fg); border-color: var(--fg-3); background: var(--bg-3); }

@@ -1,0 +1,58 @@
+/* preparacao.css — dono: VB-18 (onda 1). Lista de preparação e histórico do set.
+   Seletores com o prefixo do módulo; tokens de cor de base.css. Contrato: docs/contratos.md. */
+
+/* os dois slots moram embaixo da biblioteca, lado a lado; empilham no estreito */
+.tela > .prep, .tela > .hist { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; min-width: 0; max-height: 360px; overflow: auto; align-self: start; }
+.tela > .prep { grid-column: 1; }
+.tela > .hist { grid-column: 2; }
+@media (max-width: 900px) {
+  .tela > .prep, .tela > .hist { grid-column: 1; max-height: 420px; }
+  .tela > .prep { order: 4; }
+  .tela > .hist { order: 5; }
+}
+
+.prep-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--linha); position: sticky; top: 0; background: var(--bg-2); z-index: 1; }
+.prep-cab h3 { margin: 0; font-family: var(--fonte-display); font-size: 18px; font-weight: 700; letter-spacing: .03em; }
+.hist-taxa { color: var(--fg-2); font-size: 12px; }
+.hist-taxa b { color: var(--fg); font-weight: 600; }
+.prep-barra { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--linha); }
+.prep-barra button { font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; padding: 4px 10px; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-2); }
+.prep-barra button:hover { background: var(--bg-3); color: var(--fg); }
+.prep-aviso { padding: 6px 12px; font-size: 12px; color: var(--acento); border-bottom: 1px solid var(--linha); }
+.prep-vazio { padding: 14px 12px; color: var(--fg-3); font-size: 12px; }
+.prep-vazio b { color: var(--fg-2); }
+
+/* o botão "+ preparar" nos cards e na biblioteca: .para-deck é quadrado de 24 px, o rótulo é maior */
+.para-deck.card-acao[data-card-acao="preparar"] { width: auto; padding: 0 7px; white-space: nowrap; }
+
+/* lista de preparação */
+.prep-lista, .hist-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.prep-item { display: grid; grid-template-columns: 6px 22px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 10px 6px 0; cursor: grab; }
+.prep-item:hover { background: var(--bg-3); }
+.prep-item .faixa-cor { width: 6px; align-self: stretch; background: var(--cor); border-radius: 0 2px 2px 0; }
+.prep-ordem { color: var(--fg-3); font-size: 12px; text-align: right; }
+.prep-nome { display: grid; min-width: 0; }
+.prep-nome b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prep-nome span { color: var(--fg-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prep-estado { font-family: var(--fonte-dados); font-size: 10px; color: var(--ok); }
+.prep-item.ausente { cursor: default; opacity: .55; }
+.prep-item.ausente .prep-estado { color: var(--aviso); }
+.prep-item.tocada .prep-nome b { color: var(--fg-2); text-decoration: line-through; text-decoration-color: var(--fg-3); }
+.prep-botoes { display: inline-flex; gap: 4px; }
+.prep-botoes button { width: 24px; height: 24px; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-3); font-size: 12px; display: grid; place-items: center; padding: 0; }
+.prep-botoes button:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-3); background: var(--bg-3); }
+.prep-botoes button:disabled { opacity: .3; cursor: default; }
+.prep-botoes .para-deck { font-family: var(--fonte-display); font-weight: 700; }
+
+/* histórico */
+.hist-vivas { display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--linha); }
+.hist-conta { font-size: 11px; color: var(--acento); }
+.hist-item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 12px; }
+.hist-item:hover { background: var(--bg-3); }
+.hist-hora { color: var(--fg-2); font-size: 12px; }
+.hist-nome { display: grid; min-width: 0; }
+.hist-nome b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-nome span { color: var(--fg-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-meta { color: var(--fg-3); font-size: 11px; white-space: nowrap; }
+.hist-origem { font-family: var(--fonte-dados); font-size: 10px; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--linha); color: var(--fg-3); }
+.hist-origem.sugerida { border-color: var(--ok); color: var(--ok); }

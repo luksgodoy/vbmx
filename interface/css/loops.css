@@ -1,0 +1,11 @@
+/* loops.css — dono: VB-15 (onda 1). Slot deck-X-loops: A na coluna do deck A, B na do deck B. */
+.loops-caixa { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 8px 12px; display: grid; gap: 6px; min-width: 0; }
+.loops-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.loops-linha .rotulo { min-width: 54px; }
+.loops-bt { min-width: 30px; padding: 3px 8px; border: 1px solid var(--linha); border-radius: 4px; background: var(--bg-3); color: var(--fg-2); font-family: var(--fonte-dados); font-size: 12px; }
+.loops-bt:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-3); }
+.loops-bt:disabled { opacity: .4; cursor: default; }
+.loops-bt.ligado { color: #0d0f12; background: var(--ok); border-color: var(--ok); }
+.loops-tam { min-width: 34px; text-align: center; color: var(--fg); }
+.loops-passo { background: var(--bg-3); color: var(--fg); border: 1px solid var(--linha); border-radius: 4px; padding: 2px 4px; font-size: 12px; }
+.loops-info { color: var(--fg-3); font-size: 12px; }

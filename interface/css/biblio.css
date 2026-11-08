@@ -1,0 +1,134 @@
+/* ---------- biblioteca ---------- */
+.biblio { container-type: inline-size; background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; }
+.biblio-cab { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--linha); }
+.biblio-cab input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--linha); border-radius: 4px; color: var(--fg); padding: 6px 10px; font: inherit; }
+.biblio-cab .cont { color: var(--fg-3); font-size: 12px; white-space: nowrap; }
+.lista { overflow: auto; min-height: 0; }
+.linha, .lista-cab {
+  display: grid; gap: 8px; align-items: center;
+  width: 100%; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--linha); color: var(--fg); min-width: 0;
+}
+.lista-cab { padding-block: 4px; }
+.lista-cab .rotulo { font-size: 10px; }
+.linha, .card { cursor: pointer; }
+.linha:hover { background: var(--bg-3); }
+.linha:focus-visible, .card:focus-visible { outline: 2px solid var(--acento); outline-offset: -2px; }
+.linha .c-tit { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linha .c-art { color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-bpm { text-align: right; color: var(--fg-2); }
+.c-tocando, .lista-cab .c-tocando { display: none; }
+.linha .c-tocando { font-family: var(--fonte-display); font-size: 11px; letter-spacing: .08em; color: var(--acento); text-transform: uppercase; }
+
+
+/* ---------- filtros, ordenação e grupos (VB-17) ---------- */
+.biblio { grid-template-rows: auto auto 1fr; }
+.biblio-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 6px 12px; border-bottom: 1px solid var(--linha); font-size: 12px; color: var(--fg-2); }
+.biblio-filtros label { display: inline-flex; align-items: center; gap: 6px; }
+.biblio-filtros input[type=number] { width: 58px; background: var(--bg); border: 1px solid var(--linha); border-radius: 4px; color: var(--fg); padding: 3px 6px; font: inherit; font-family: var(--fonte-dados); }
+.biblio-filtros select { background: var(--bg); border: 1px solid var(--linha); border-radius: 4px; color: var(--fg); padding: 3px 6px; font: inherit; max-width: 130px; }
+.biblio-filtros select:focus-visible, .biblio-filtros input:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.filtro-compat { cursor: pointer; }
+.bib-limpar { background: transparent; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-2); padding: 3px 10px; font: inherit; cursor: pointer; }
+.bib-limpar:hover { color: var(--fg); border-color: var(--fg-3); }
+.lista-cab .ord { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lista-cab .ord.c-bpm { text-align: right; }
+.lista-cab .ord:hover, .lista-cab .ord.ativa { color: var(--acento); }
+.lista-cab .ord:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.linha .c-gen { color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.linha .c-ano { color: var(--fg-3); font-size: 12px; }
+.grupo-cab { display: flex; align-items: center; gap: 8px; padding: 4px 12px; background: var(--bg-3); border-bottom: 1px solid var(--linha); position: sticky; top: 0; z-index: 1; }
+.grupo-n { color: var(--fg-3); font-size: 11px; font-family: var(--fonte-dados); }
+.vazio-biblio { padding: 18px 12px; color: var(--fg-2); }
+
+/* ---------- marcadores e listas (VB-17b) ---------- */
+.cor-ponto { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--fg-3); background: transparent; padding: 0; cursor: pointer; justify-self: center; }
+.cor-ponto:focus-visible, .estrela:focus-visible, .coment-txt:focus-visible, .bib-mini:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.cor-vermelho { background: #e5484d; border-color: #e5484d; } .cor-laranja { background: #f08a24; border-color: #f08a24; }
+.cor-amarelo { background: #e5c92b; border-color: #e5c92b; } .cor-verde { background: #3fb950; border-color: #3fb950; }
+.cor-ciano { background: #22b8cf; border-color: #22b8cf; } .cor-azul { background: #3b82f6; border-color: #3b82f6; }
+.cor-roxo { background: #8b5cf6; border-color: #8b5cf6; } .cor-rosa { background: #ec4899; border-color: #ec4899; }
+.estrelas { display: inline-flex; gap: 0; }
+.estrela { background: none; border: 0; padding: 0 1px; font-size: 14px; line-height: 1; color: var(--fg-3); opacity: .45; cursor: pointer; }
+.estrela.on { color: #e5c92b; opacity: 1; }
+.estrela:hover { opacity: 1; }
+.c-com { min-width: 0; }
+.coment-txt { background: none; border: 0; padding: 0; width: 100%; text-align: left; font: inherit; font-size: 12px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text; }
+.coment-txt:hover { color: var(--fg); }
+.bib-coment-edit { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--acento); border-radius: 4px; color: var(--fg); padding: 2px 6px; font: inherit; font-size: 12px; }
+.linha .c-imp { color: var(--fg-3); font-size: 12px; }
+.lista-cab .c-cor { text-align: center; }
+.c-acoes { display: inline-flex; gap: 2px; justify-content: flex-end; }
+.bib-mini { background: transparent; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-2); padding: 1px 6px; font: inherit; font-size: 11px; cursor: pointer; }
+.bib-mini:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-3); }
+.bib-mini:disabled { opacity: .35; cursor: default; }
+.biblio { grid-template-rows: auto auto auto 1fr; }
+.biblio-listas, .biblio-regras { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 12px; border-bottom: 1px solid var(--linha); font-size: 12px; color: var(--fg-2); }
+.biblio-listas label, .biblio-regras label { display: inline-flex; align-items: center; gap: 6px; }
+.biblio-listas select, .biblio-regras select, .biblio-regras input, .bib-nome input { background: var(--bg); border: 1px solid var(--linha); border-radius: 4px; color: var(--fg); padding: 3px 6px; font: inherit; max-width: 170px; }
+.biblio-listas select:focus-visible, .biblio-regras select:focus-visible, .biblio-regras input:focus-visible, .bib-nome input:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.bib-nome { display: inline-flex; gap: 6px; align-items: center; }
+.bib-perigo { color: #e5484d; border-color: #e5484d; }
+.regra { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 2px 6px; border: 1px solid var(--linha); border-radius: 4px; }
+.regra-vazia { color: var(--fg-3); }
+
+.selo-loop { margin-left: 6px; padding: 0 5px; border-radius: 3px; font-size: 10px; letter-spacing: .04em; vertical-align: middle; color: var(--fg-2); border: 1px solid var(--fg-3); }
+
+/* ---------- colunas da lista (proposta C §2; uma definição por patamar, @container da PRÓPRIA biblioteca) ----------
+   Ordem dos filhos da linha: capa (1ª trilha), título(+artista em .sub) (2ª), artista, BPM, tom, duração, nota,
+   Deck (A/B + extras + ações), tocada, compat. Gênero, ano, comentário e importada saíram da linha: seguem nos
+   filtros/regras e o comentário abre numa linha inteira pelo ✎ ao lado da nota. O título tem mínimo próprio
+   (nunca colapsa a 0); testar-classico.js (bloco 6) lê col[1] como o título. */
+.linha, .lista-cab { grid-template-columns: 28px minmax(150px, 2.5fr) minmax(0, 1fr) 56px 44px 46px 92px 150px 34px 26px; }
+.c-gen, .c-ano, .c-com, .c-imp { display: none; }
+.linha > .c-tit, .linha > .c-art { min-width: 0; }
+.linha .c-tit, .linha .c-art { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linha > .c-deck { display: inline-flex; gap: 4px; align-items: center; justify-self: start; flex-wrap: nowrap; }
+.linha > .c-deck .para-grupo { flex-wrap: nowrap; }
+@container (max-width: 859px) {
+  .linha, .lista-cab { grid-template-columns: 28px minmax(150px, 2fr) minmax(0, 1fr) 56px 44px 92px 150px 26px; }
+  .c-dur, .c-toc, .lista-cab .c-dur, .lista-cab .c-toc { display: none; }
+}
+@container (max-width: 639px) {
+  .linha, .lista-cab { grid-template-columns: 28px minmax(150px, 1fr) 56px 44px 150px 26px; }
+  .c-art, .c-nota, .lista-cab .c-art, .lista-cab .c-nota { display: none; }
+  .c-tit .sub { display: block; }
+}
+@container (max-width: 519px) {
+  .linha, .lista-cab { grid-template-columns: 28px minmax(120px, 1fr) 48px 44px 150px 26px; }
+}
+
+/* capa: iniciais do artista tingidas pela cor do tom; o ponto no canto é a cor de marcação (clique = ciclo) */
+.capa { position: relative; width: 26px; height: 26px; border-radius: 4px; display: grid; place-items: center; font-family: var(--fonte-display); font-weight: 700; font-size: 11px; letter-spacing: .02em; color: var(--fg);
+  background: color-mix(in srgb, var(--cor, var(--fg-3)) 38%, var(--bg-3)); border: 1px solid color-mix(in srgb, var(--cor, var(--fg-3)) 55%, var(--linha)); }
+.capa .cor-ponto { position: absolute; top: -4px; right: -4px; width: 11px; height: 11px; }
+.c-tit .sub { display: none; font-weight: 400; font-size: 11px; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; }
+.c-dur { text-align: right; color: var(--fg-2); font-size: 12px; }
+.c-toc { color: var(--fg-3); font-size: 12px; text-align: center; white-space: nowrap; }
+.c-toc.sim { color: var(--ok); }
+.c-comp { text-align: center; font-size: 14px; line-height: 1; cursor: help; color: var(--fg-3); }
+.c-comp.alta { color: #3fb950; } .c-comp.media { color: var(--aviso); } .c-comp.tocando { color: #f08a24; }
+.c-ed { background: none; border: 0; padding: 0 2px; color: var(--fg-3); cursor: pointer; font-size: 12px; }
+.c-ed.tem { color: var(--acento); } .c-ed:hover { color: var(--fg); }
+.c-nota { display: inline-flex; align-items: center; gap: 2px; }
+.linha .estrela { font-size: 12px; padding: 0; }
+.linha > .c-com-edit { grid-column: 1 / -1; }
+
+/* estados da linha: selecionada (filete âmbar), carregada em deck (filete + fundo na cor do deck), já tocada (esmaece) */
+.linha { box-shadow: inset 3px 0 0 transparent; }
+.linha.ja-tocada:not(.sel):not(.deck-A):not(.deck-B) { opacity: .62; }
+.linha.deck-A { background: color-mix(in srgb, #3b82f6 13%, var(--bg-2)); box-shadow: inset 3px 0 0 #3b82f6; }
+.linha.deck-B { background: color-mix(in srgb, #f08a24 13%, var(--bg-2)); box-shadow: inset 3px 0 0 #f08a24; }
+.linha.sel { background: color-mix(in srgb, var(--acento) 12%, var(--bg-2)); box-shadow: inset 3px 0 0 var(--acento); }
+.linha.sel.deck-A { box-shadow: inset 3px 0 0 #3b82f6, inset 6px 0 0 var(--acento); }
+.linha.sel.deck-B { box-shadow: inset 3px 0 0 #f08a24, inset 6px 0 0 var(--acento); }
+.linha .para-deck.carregado-A { background: #3b82f6; border-color: #3b82f6; color: #0d0f12; }
+.linha .para-deck.carregado-B { background: #f08a24; border-color: #f08a24; color: #0d0f12; }
+
+/* densidade: uma classe no container, sem regenerar HTML */
+.biblio.compacto .linha { padding-block: 2px; font-size: 12px; }
+.biblio.compacto .capa { width: 20px; height: 20px; font-size: 9px; }
+.biblio.compacto .linha .para-deck { width: 22px; height: 20px; }
+
+/* cabeçalho fixo: a lista rola por baixo */
+.lista-cab { position: sticky; top: 0; z-index: 2; background: var(--bg-2); }
+.grupo-cab { top: 26px; }

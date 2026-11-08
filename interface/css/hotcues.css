@@ -1,0 +1,31 @@
+/* hotcues.css — dono: VB-14 (onda 1). O slot mora fora do deck (renderDeck reescreve o innerHTML dele),
+   na grade .decks: deck A na coluna 1, deck B na 3 (2 colunas ≤900px, 1 coluna ≤560px).
+   Seletores com o prefixo hotcues-; tokens de base.css. */
+.hotcues { background: var(--bg-2); border: 1px solid var(--linha); border-radius: 6px; padding: 8px 12px; display: grid; gap: 6px; min-width: 0; }
+.hotcues[hidden] { display: none; }
+.hotcues-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hotcues-titulo { font-family: var(--fonte-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); }
+.hotcues-tipo { font-size: 11px; color: var(--fg-3); display: inline-flex; align-items: center; gap: 4px; }
+.hotcues-tipo select { background: var(--bg-3); color: var(--fg); border: 1px solid var(--linha); border-radius: 4px; font: inherit; font-size: 11px; padding: 1px 4px; }
+.hotcues-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.hotcues-celula { position: relative; min-width: 0; }
+.hotcues-slot { width: 100%; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--bg-3); color: var(--fg-3); border: 1px solid var(--linha); border-radius: 4px; cursor: pointer; font-family: var(--fonte-dados); touch-action: none; user-select: none; }
+.hotcues-slot b { font-size: 13px; line-height: 1; }
+.hotcues-slot span { font-size: 10px; line-height: 1; }
+.hotcues-slot:disabled { opacity: .45; cursor: not-allowed; }
+.hotcues-slot:focus-visible, .hotcues-apagar:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+/* cheio: a pele é a peça .pc-cheio (css/pecas-controle.css), que lê --cor da célula */
+.hotcues-celula.previa .hotcues-slot { box-shadow: 0 0 0 2px var(--fg); }
+.hotcues-apagar { position: absolute; top: 1px; right: 1px; width: 16px; height: 16px; padding: 0; line-height: 1; font-size: 9px;
+  background: rgba(13,15,18,.55); color: var(--fg); border: 0; border-radius: 3px; cursor: pointer; }
+.hotcues-apagar:hover { background: rgba(13,15,18,.85); }
+/* VB-14b: lista de cues, MAP, seleção */
+.hotcues-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.hotcues-lista button { background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--linha); border-radius: 4px; font: inherit; font-size: 11px; padding: 3px 7px; cursor: pointer; }
+.hotcues-lista button:disabled { opacity: .45; cursor: not-allowed; }
+.hotcues-lista button.ligado { background: var(--acento); color: #0d0f12; border-color: var(--acento); }
+.hotcues-lista button:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.hotcues-info { flex: 1 1 8em; min-width: 0; font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hotcues-celula.sel .hotcues-slot { outline: 1px solid var(--fg-2); outline-offset: 1px; }
+.hotcues-celula.origem .hotcues-slot { box-shadow: 0 0 0 2px var(--acento); }

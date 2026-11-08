@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>VbMx · Avaliar Essentia.js (BPM e Camelot)</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 1.5rem; background: #14161a; color: #e6e6e6; }
+  h1 { font-size: 1.2rem; margin: 0 0 .25rem; }
+  .sub { color: #9aa; margin-bottom: 1rem; }
+  button, label.arq { background: #2a3140; color: #e6e6e6; border: 1px solid #44506a; padding: .4rem .8rem; border-radius: 4px; cursor: pointer; margin-right: .4rem; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=file] { display: none; }
+  input.rot { width: 5.5em; background: #1d2129; color: #e6e6e6; border: 1px solid #44506a; padding: .15rem .3rem; }
+  table { border-collapse: collapse; margin-top: 1rem; width: 100%; }
+  th, td { border-bottom: 1px solid #2a3140; padding: .3rem .5rem; text-align: left; }
+  th { color: #9aa; font-weight: 600; }
+  .certo, .exato { color: #6fd08c; } .relativo, .vizinho, .dobro_metade { color: #e8c15a; } .errado { color: #ef7b7b; }
+  #estado { margin: .8rem 0; color: #9aa; } #resumo { margin-top: 1rem; white-space: pre-wrap; font-family: ui-monospace, monospace; }
+  .aviso { color: #9aa; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Avaliar Essentia.js — BPM e tom (Camelot)</h1>
+<div class="sub">Tudo roda neste navegador. O áudio nunca sai do computador e nunca é gravado; o arquivo exportado leva só o nome, os rótulos e os valores detectados.</div>
+
+<label class="arq">Escolher pasta<input id="pasta" type="file" webkitdirectory multiple></label>
+<label class="arq">Escolher arquivos<input id="arquivos" type="file" accept="audio/*,.mp3,.wav" multiple></label>
+<label class="arq">Carregar rótulos (.json)<input id="importar" type="file" accept=".json"></label>
+<button id="sintetico">Testar com tom sintético</button>
+<button id="exportar" disabled>Exportar amostra-rotulada.json</button>
+<div id="estado">Carregando Essentia.js…</div>
+
+<table id="tabela" hidden>
+  <thead><tr><th>Arquivo</th><th>BPM detectado</th><th>Camelot detectado</th><th>Tom (Essentia)</th><th>BPM do Lucas</th><th>Camelot do Lucas</th><th>BPM</th><th>Tom</th></tr></thead>
+  <tbody></tbody>
+</table>
+<div id="resumo"></div>
+<p class="aviso">Rótulo de tom aceita "8A", "Am", "C#m", "Bb maior". Linha sem rótulo fica fora da conta. Essentia.js 0.1.3 via jsDelivr (versão fixa).</p>
+
+<script src="camelot.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia-wasm.web.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/essentia.js-core.js"></script>
+<script>
+const TAXA = 44100, JANELA_S = 90;   // analisa até 90 s do meio da faixa (rápido e representativo)
+const linhas = [];                    // {arquivo, bpm, camelot, tomEssentia, forca, rotBpm, rotCamelot}
+let essentia = null;
+const $ = (id) => document.getElementById(id);
+
+async function iniciarEssentia() {
+  try {
+    const wasm = typeof EssentiaWASM === 'function' ? await EssentiaWASM() : await EssentiaWASM;
+    essentia = new Essentia(wasm);
+    $('estado').textContent = 'Essentia.js ' + (essentia.version || '') + ' pronto. Escolha as faixas.';
+  } catch (e) {
+    $('estado').textContent = 'Falha ao carregar Essentia.js (sem internet?): ' + e.message;
+  }
+}
+
+// Recebe PCM mono em 44,1 kHz; devolve {bpm, camelot, tomEssentia, forca}
+function analisarPcm(pcm) {
+  const vetor = essentia.arrayToVector(pcm);
+  const r = essentia.RhythmExtractor2013(vetor, 208, 'multifeature', 40);
+  const k = essentia.KeyExtractor(vetor);
+  const out = {
+    bpm: Math.round(r.bpm * 10) / 10,
+    tomEssentia: k.key + ' ' + k.scale,
+    camelot: Camelot.paraCamelot(k.key, k.scale),
+    forca: Math.round(k.strength * 100) / 100,
+  };
+  for (const o of [vetor, r.ticks, r.estimates, r.bpmIntervals, r.confidence]) try { o && o.delete && o.delete(); } catch (_) {}
+  return out;
+}
+
+async function analisarArquivo(arquivo, ctx) {
+  const buf = await ctx.decodeAudioData(await arquivo.arrayBuffer());
+  const n = Math.min(buf.length, JANELA_S * TAXA), ini = Math.max(0, Math.floor((buf.length - n) / 2));
+  const mono = new Float32Array(n);
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < n; i++) mono[i] += d[ini + i] / buf.numberOfChannels;
+  }
+  return analisarPcm(mono);
+}
+
+function sinteticoAmenor(bpm = 120, seg = 30) {  // acorde de Lá menor (A C E) + bumbo a cada tempo
+  const x = new Float32Array(seg * TAXA), passo = 60 / bpm * TAXA;
+  const notas = [110, 130.81, 164.81, 220, 261.63, 329.63];
+  for (let i = 0; i < x.length; i++) {
+    let v = 0; for (const f of notas) v += Math.sin(2 * Math.PI * f * i / TAXA) / notas.length * 0.5;
+    const t = (i % passo) / TAXA;
+    v += Math.sin(2 * Math.PI * (60 + 90 * Math.exp(-t * 30)) * t) * Math.exp(-t * 12) * 0.6;
+    x[i] = v;
+  }
+  return x;
+}
+
+function classe(c) { return c ? `<span class="${c}">${{certo:'certo',dobro_metade:'dobro/metade',errado:'errado'}[c] || c}</span>` : '—'; }
+
+function desenhar() {
+  $('tabela').hidden = !linhas.length;
+  $('exportar').disabled = !linhas.length;
+  $('tabela').tBodies[0].innerHTML = '';
+  linhas.forEach((l, i) => {
+    const tr = $('tabela').tBodies[0].insertRow();
+    tr.innerHTML = `<td></td><td>${l.bpm ?? '…'}</td><td>${l.camelot ?? '…'}</td><td>${l.tomEssentia ?? ''}${l.forca != null ? ' (' + l.forca + ')' : ''}</td>
+      <td><input class="rot" data-i="${i}" data-k="rotBpm" value="${l.rotBpm ?? ''}"></td>
+      <td><input class="rot" data-i="${i}" data-k="rotCamelot" value="${l.rotCamelot ?? ''}"></td><td></td><td></td>`;
+    tr.cells[0].textContent = l.arquivo;
+  });
+  atualizar();
+}
+
+function avaliar(l) {
+  return { bpm: Camelot.compararBpm(l.bpm, l.rotBpm), tom: Camelot.compararTom(l.camelot, l.rotCamelot) };
+}
+
+function atualizar() {
+  const cont = { bpmN: 0, certo: 0, dm: 0, tomN: 0, exato: 0, relativo: 0, vizinho: 0 };
+  linhas.forEach((l, i) => {
+    const a = avaliar(l), tr = $('tabela').tBodies[0].rows[i];
+    if (tr) { tr.cells[6].innerHTML = classe(a.bpm); tr.cells[7].innerHTML = classe(a.tom); }
+    if (a.bpm) { cont.bpmN++; if (a.bpm === 'certo') cont.certo++; if (a.bpm === 'dobro_metade') cont.dm++; }
+    if (a.tom) { cont.tomN++; if (a.tom in cont) cont[a.tom]++; }
+  });
+  $('resumo').textContent = resumoTexto(cont);
+}
+
+const pct = (a, b) => b ? (100 * a / b).toFixed(0) + '% (' + a + '/' + b + ')' : '—';
+function resumoTexto(c) {
+  return !linhas.length ? '' :
+`Faixas rotuladas: BPM ${c.bpmN} · tom ${c.tomN}   (meta: 95%)
+BPM ±2 ................ ${pct(c.certo, c.bpmN)}
+BPM ±2 ou dobro/metade  ${pct(c.certo + c.dm, c.bpmN)}   (dobro/metade sozinho: ${c.dm})
+Tom exato ............. ${pct(c.exato, c.tomN)}
+Tom exato ou relativo . ${pct(c.exato + c.relativo, c.tomN)}
+Tom exato/relativo/vizinho ${pct(c.exato + c.relativo + c.vizinho, c.tomN)}   (vizinho sozinho: ${c.vizinho})`;
+}
+
+$('tabela').addEventListener('input', (e) => {
+  const t = e.target; if (!t.dataset.k) return;
+  linhas[+t.dataset.i][t.dataset.k] = t.value; atualizar();
+});
+
+async function processar(lista) {
+  if (!essentia) { $('estado').textContent = 'Essentia.js não está pronto.'; return; }
+  const arquivos = [...lista].filter((f) => /\.(mp3|wav)$/i.test(f.name) || f.type.startsWith('audio/'));
+  const ctx = new AudioContext({ sampleRate: TAXA });
+  let feito = 0;
+  for (const f of arquivos) {
+    $('estado').textContent = `Analisando ${++feito}/${arquivos.length}: ${f.name}`;
+    const l = linhas.find((x) => x.arquivo === f.name) || (linhas.push({ arquivo: f.name }), linhas[linhas.length - 1]);
+    try { Object.assign(l, await analisarArquivo(f, ctx)); } catch (e) { l.tomEssentia = 'erro: ' + e.message; }
+    desenhar(); await new Promise((r) => setTimeout(r)); // deixa a tela respirar
+  }
+  $('estado').textContent = `Pronto: ${arquivos.length} faixa(s). Preencha seus rótulos nas colunas "do Lucas".`;
+  ctx.close();
+}
+
+$('pasta').onchange = (e) => processar(e.target.files);
+$('arquivos').onchange = (e) => processar(e.target.files);
+$('sintetico').onclick = () => {
+  if (!essentia) { $('estado').textContent = 'Essentia.js não está pronto.'; return; }
+  const r = analisarPcm(sinteticoAmenor(120));
+  linhas.push({ arquivo: 'sintetico-Am-120bpm', ...r, rotBpm: '120', rotCamelot: '8A' });
+  desenhar(); $('estado').textContent = 'Tom sintético analisado (esperado: 120 BPM, 8A).';
+};
+$('importar').onchange = async (e) => {
+  const dados = JSON.parse(await e.target.files[0].text());
+  for (const f of dados.faixas || []) {
+    const l = linhas.find((x) => x.arquivo === f.arquivo) || (linhas.push({ arquivo: f.arquivo }), linhas[linhas.length - 1]);
+    l.rotBpm = f.rotulo?.bpm ?? ''; l.rotCamelot = f.rotulo?.camelot ?? '';
+    if (l.bpm == null) { l.bpm = f.detectado?.bpm; l.camelot = f.detectado?.camelot; l.tomEssentia = f.detectado?.tom; }
+  }
+  desenhar();
+};
+$('exportar').onclick = () => {
+  const c = { bpmN: 0, certo: 0, dm: 0, tomN: 0, exato: 0, relativo: 0, vizinho: 0 };
+  linhas.forEach((l) => { const a = avaliar(l);
+    if (a.bpm) { c.bpmN++; if (a.bpm === 'certo') c.certo++; if (a.bpm === 'dobro_metade') c.dm++; }
+    if (a.tom) { c.tomN++; if (a.tom in c) c[a.tom]++; } });
+  const dados = {
+    gerado_em: new Date().toISOString(), biblioteca: 'essentia.js@0.1.3', janela_s: JANELA_S, meta: 0.95,
+    acerto: { ...c,
+      bpm_mais_menos_2: c.bpmN ? c.certo / c.bpmN : null, bpm_com_dobro_metade: c.bpmN ? (c.certo + c.dm) / c.bpmN : null,
+      tom_exato: c.tomN ? c.exato / c.tomN : null, tom_exato_ou_relativo: c.tomN ? (c.exato + c.relativo) / c.tomN : null,
+      tom_exato_relativo_vizinho: c.tomN ? (c.exato + c.relativo + c.vizinho) / c.tomN : null },
+    faixas: linhas.map((l) => ({ arquivo: l.arquivo,
+      rotulo: { bpm: l.rotBpm === '' || l.rotBpm == null ? null : Number(l.rotBpm), camelot: Camelot.normalizarCamelot(l.rotCamelot) },
+      detectado: { bpm: l.bpm ?? null, camelot: l.camelot ?? null, tom: l.tomEssentia ?? null, forca: l.forca ?? null } })),
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' }));
+  a.download = 'amostra-rotulada.json'; a.click();
+};
+
+window.__avaliador = { analisarPcm, sinteticoAmenor, linhas };
+window.addEventListener('load', iniciarEssentia);
+</script>
+</body>
+</html>
