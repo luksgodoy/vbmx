@@ -41,6 +41,14 @@
       return b;
     }
 
+    // Alinha os stems à faixa (atraso do codificador que o decodeAudioData descarta); sem `deps.alinhar`, passa direto.
+    function alinhados(buf, stems) {
+      if (!deps.alinhar) return stems;
+      const r = deps.alinhar(buf, stems);
+      if (!r || !r.ok) throw new Error(`não consegui alinhar os stems: ${(r && r.motivo) || 'recusado'}`);
+      return r.stems;
+    }
+
     // Processo inteiro de um deck. Devolve 'pronto' | 'erro' | 'descartado' (o DJ trocou de faixa no meio).
     async function separar(letra) {
       const meu = (tok[letra] = (tok[letra] || 0) + 1);
@@ -59,14 +67,14 @@
         if (deps.navegador && await deps.navegador.disponivel()) {
           if (!vale()) return 'descartado';
           mostrar(letra, { fase: 'separando', progresso: 0 });
-          const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', progresso: p.etapa === 'separar' ? p.fracao : p.etapa === 'modelo' ? p.fracao * 0.05 : 0 }); });
+          const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', carregando: p.etapa === 'modelo', progresso: p.etapa === 'separar' ? p.fracao : p.etapa === 'modelo' ? p.fracao * 0.05 : 0 }); });
           if (!vale()) return 'descartado';
           for (const n of NOMES) {
             if (stems[n].sampleRate === buf.sampleRate) continue;
             if (!deps.reamostrar) throw new Error(`o stem ${n} veio a ${stems[n].sampleRate} Hz e a faixa está a ${buf.sampleRate} Hz`);
             stems[n] = await deps.reamostrar(stems[n], buf.sampleRate);
           }
-          const res = deps.stems.carregar(letra, stems);
+          const res = deps.stems.carregar(letra, alinhados(buf, stems));
           if (!res || !res.ok) throw new Error(`não consegui ligar os stems: ${(res && res.motivo) || 'recusado'}`);
           mostrar(letra, { fase: 'pronto', progresso: 1 });
           return 'pronto';
@@ -75,6 +83,8 @@
         try { r = await deps.fetch(`/stems/enviar?nome=${encodeURIComponent(arq.name || 'faixa')}`, { method: 'POST', body: arq }); }
         catch (_) { throw new Error('o servidor de stems está fora do ar (rode servir.py); o deck segue só com a faixa'); }
         if (!vale()) return 'descartado';
+        // hospedagem estática (GitHub Pages) não tem /stems: 404/405 = sem servidor, não falha de separação
+        if (r.status === 404 || r.status === 405 || r.status === 501) throw new Error('separador indisponível nesta versão (sem servidor de stems nem plugin do navegador); o deck segue só com a faixa');
         const env = await lerJson(r);
         if (!r.ok || !env.id) throw new Error(env.erro || `o servidor recusou o envio (${r.status})`);
         const id = env.id;
@@ -86,7 +96,7 @@
           if (e.estado === 'pronto') break;
           if (e.estado === 'erro') throw new Error(e.erro || 'a separação falhou no servidor');
           if (i >= MAX_TENTATIVAS_ESTADO) throw new Error('a separação demorou demais; tente de novo');
-          mostrar(letra, { fase: 'separando', progresso: typeof e.progresso === 'number' ? e.progresso : 0 });
+          mostrar(letra, { fase: 'separando', carregando: e.fase === 'carregando', progresso: typeof e.progresso === 'number' ? e.progresso : 0 });
           await espera(intervalo);
           if (!vale()) return 'descartado';
         }
@@ -94,7 +104,7 @@
         const lista = await Promise.all(NOMES.map((n) => baixar(`/stems/${id}`, n, buf.sampleRate, ctx)));
         if (!vale()) return 'descartado';
         const stems = {}; NOMES.forEach((n, k) => { stems[n] = lista[k]; });
-        const res = deps.stems.carregar(letra, stems);
+        const res = deps.stems.carregar(letra, alinhados(buf, stems));
         if (!res || !res.ok) throw new Error(`não consegui ligar os stems: ${(res && res.motivo) || 'recusado'}`);
         mostrar(letra, { fase: 'pronto', progresso: 1 });
         return 'pronto';
@@ -140,6 +150,7 @@
       arquivoDe: (letra) => { const f = decks[letra].faixa; return f && typeof f.obter === 'function' ? f.obter() : Promise.resolve(null); },
       bufferDe: (letra) => decks[letra].buffer || null,
       // decodeAudioData já entrega na taxa do contexto; isto é a rede de segurança (interpolação linear)
+      alinhar: (principal, stems) => (r.VbMxStemsMotor && ctxAudio ? r.VbMxStemsMotor.alinhar(principal, stems, (c, n, t) => ctxAudio.createBuffer(c, n, t)) : { ok: true, stems }),
       reamostrar: async (b, taxa) => {
         const ctx = ctxAudio, len = Math.max(1, Math.round(b.length * taxa / b.sampleRate)), sai = ctx.createBuffer(b.numberOfChannels, len, taxa);
         for (let c = 0; c < b.numberOfChannels; c++) {

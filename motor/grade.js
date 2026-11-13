@@ -25,6 +25,11 @@
 //   autoGrid(analise, grade, t)       AUTO grid: BPM da análise, marcador (batida 1) na batida mais próxima de t; null sem análise
 //   recalcular(analise)               RESET: volta à grade da análise; null sem análise
 //   travado(faixa)                    true se a análise está travada (bloqueia toda edição)
+// Tempo 1 escolhido (manual > automático > .nml; persistido por faixa fora do cache de análise):
+//   comTempo1(grade, t)               { grade, tempo1, batida }: t cai (snap) na batida mais próxima, que vira o tempo 1; null se inválido
+//   comEscolhaManual(grade, escolha)  aplica { tempo1 } guardado sobre a grade (sem escolha = a mesma grade)
+//   resolverGrade({manual, automatica, nml})   { grade, origem }: manual vence automática, que vence .nml
+//   tempo1Ler/Guardar/Limpar(armazem, caminho)  registro { tempo1, antes } em 'vbmx-tempo1:<caminho>'
 // Tick e marcador inicial (VB-13b, spec §3):
 //   ticksAgendaveis(grade, est, de, ate)  batidas que soam em [de, ate] (s do relógio) dado est {tocando, posicao, taxa} em `de`: [{n, em, forte}]
 //   primeiraBatidaNaFaixa(grade)      a 1ª batida em t >= 0 (a grade pode ter âncora recuada de várias batidas)
@@ -110,6 +115,45 @@
   }
   const travado = (faixa) => !!(faixa && faixa.gradeTravada);
 
+  // ---- Tempo 1 escolhido pelo usuário (manual > automático > .nml) ----
+  // O usuário aponta um ponto (cue, cabeça, transiente da grade); ele cai na batida marcada mais próxima
+  // (nunca fora da grade, para não desalinhar do BPM) e vira o tempo 1 do compasso: a grade se realinha por
+  // passos de porCompasso batidas, para trás e para a frente. O BPM e as batidas não saem do lugar.
+  // Devolve { grade, tempo1, batida } ou null (grade/ponto inválido). Antes de 0 s, vale a 1ª batida da faixa.
+  function comTempo1(grade, t) {
+    if (!grade || !num(grade.bpm) || !(grade.bpm > 0) || !num(grade.primeira) || !num(t)) return null;
+    const base = gradeDeBpm(grade.bpm, grade.primeira, grade.porCompasso);
+    let n = Math.round(batidaEm(base, t)), tempo1 = tempoDaBatida(base, n);
+    if (tempo1 < 0) { n = Math.ceil(batidaEm(base, 0) - 1e-9); tempo1 = tempoDaBatida(base, n); }
+    const comp = base.porCompasso * base.periodo, primeira = tempo1 - Math.floor(tempo1 / comp + 1e-9) * comp;
+    return { grade: gradeDeBpm(base.bpm, primeira, base.porCompasso), tempo1, batida: n };
+  }
+  // Aplica a escolha guardada ({ tempo1 }) sobre uma grade; sem escolha, a grade volta como está.
+  function comEscolhaManual(grade, escolha) {
+    if (!escolha || !num(escolha.tempo1)) return grade || null;
+    const r = comTempo1(grade, escolha.tempo1);
+    return r ? r.grade : (grade || null);
+  }
+  // manual > automático > .nml. Cada fonte é uma grade {bpm, primeira} ou null; `manual` é { tempo1 } ou null.
+  // Devolve { grade, origem } com origem 'manual' | 'automatica' | 'nml' | null.
+  function resolverGrade(fontes) {
+    const f = fontes || {}, ok = (g) => !!g && num(g.bpm) && g.bpm > 0 && num(g.primeira);
+    const base = ok(f.automatica) ? f.automatica : ok(f.nml) ? f.nml : null, origemBase = ok(f.automatica) ? 'automatica' : ok(f.nml) ? 'nml' : null;
+    if (!base) return { grade: null, origem: null };
+    if (f.manual && num(f.manual.tempo1)) { const r = comTempo1(base, f.manual.tempo1); if (r) return { grade: r.grade, origem: 'manual' }; }
+    return { grade: gradeDeBpm(base.bpm, base.primeira, base.porCompasso), origem: origemBase };
+  }
+  // Persistência da escolha por faixa, num armazém {getItem,setItem,removeItem} (localStorage no navegador). Fica FORA do
+  // cache de análise: mudar VERSAO_ANALISE ou adicionar a pasta de novo não a apaga. Registro: { tempo1, antes: {bpm, primeira} | null }.
+  const CHAVE_TEMPO1 = 'vbmx-tempo1:';
+  function tempo1Ler(armazem, caminho) {
+    try { const v = JSON.parse(armazem.getItem(CHAVE_TEMPO1 + caminho) || 'null'); return v && num(v.tempo1) ? v : null; } catch (_) { return null; }
+  }
+  function tempo1Guardar(armazem, caminho, reg) {
+    try { armazem.setItem(CHAVE_TEMPO1 + caminho, JSON.stringify(reg)); return true; } catch (_) { return false; }
+  }
+  function tempo1Limpar(armazem, caminho) { try { armazem.removeItem(CHAVE_TEMPO1 + caminho); return true; } catch (_) { return false; } }
+
 
   // ---- Tick audível e marcador inicial (VB-13b) ----
   const ABERTURA = 0.005;          // âncora nos primeiros 0,5% da duração (spec §3)
@@ -136,5 +180,5 @@
     return p;
   }
 
-  return { ABERTURA, ticksAgendaveis, primeiraBatidaNaFaixa, ancoraNaAbertura, cueInicial, PASSO_BPM, TAP_MINIMO, tap, comBpm, passoBpm, marcadorEm, autoGrid, recalcular, travado, gradeDeBpm, daFaixa, batidaEm, tempoDaBatida, quantizar, compasso, batidasEntre };
+  return { ABERTURA, ticksAgendaveis, primeiraBatidaNaFaixa, ancoraNaAbertura, cueInicial, PASSO_BPM, TAP_MINIMO, tap, comBpm, passoBpm, marcadorEm, autoGrid, recalcular, travado, comTempo1, comEscolhaManual, resolverGrade, tempo1Ler, tempo1Guardar, tempo1Limpar, gradeDeBpm, daFaixa, batidaEm, tempoDaBatida, quantizar, compasso, batidasEntre };
 });

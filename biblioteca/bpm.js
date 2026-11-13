@@ -207,6 +207,35 @@
     return { valores: out, sinal: sinal, passo: hop / taxa, atraso: 2 * a / b / taxa, janela: M * hop / taxa };
   }
 
+  // Fluxo espectral de BANDA LARGA (médios e agudos, 1,5–12 kHz): o ataque percussivo de quem NÃO é grave (caixa, hat,
+  // palma, loop de intro). Soma, por quadro de 1024 amostras (hop de 5 ms), as subidas do log-espectro; roda no
+  // WORKER junto do envelopeGrave (painel.js injeta o texto desta função): autocontida, sem nada de fora dela.
+  // `atraso` é o instante do centro do quadro (s) — o viés fixo do quadro sai na mediana por faixa (refinarBatidas).
+  function fluxoAmplo(pcm, taxa) {
+    var N = 1024, hop = Math.max(1, Math.round(taxa * 0.005)), n = pcm.length >= N ? Math.floor((pcm.length - N) / hop) + 1 : 0;
+    var cos = new Float64Array(N / 2), sen = new Float64Array(N / 2), jan = new Float64Array(N), rev = new Uint16Array(N), i, j, k;
+    for (i = 0; i < N / 2; i++) { cos[i] = Math.cos(2 * Math.PI * i / N); sen[i] = -Math.sin(2 * Math.PI * i / N); }
+    for (i = 0; i < N; i++) { jan[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N); var r = 0; for (j = 0; j < 10; j++) if (i & (1 << j)) r |= 1 << (9 - j); rev[i] = r; }
+    var b0 = Math.ceil(1500 / (taxa / N)), b1 = Math.min(N / 2 - 1, Math.floor(12000 / (taxa / N)));
+    var re = new Float64Array(N), im = new Float64Array(N), ant = new Float64Array(b1 - b0 + 1), out = new Float32Array(n);
+    for (var q = 0; q < n; q++) {
+      var o = q * hop;
+      for (i = 0; i < N; i++) { re[rev[i]] = pcm[o + i] * jan[i]; im[rev[i]] = 0; }
+      for (var len = 2; len <= N; len <<= 1) {
+        var meio = len >> 1, passo = N / len;
+        for (i = 0; i < N; i += len) for (k = 0; k < meio; k++) {
+          var wr = cos[k * passo], wi = sen[k * passo], a = i + k, bb = a + meio;
+          var tr = re[bb] * wr - im[bb] * wi, ti = re[bb] * wi + im[bb] * wr;
+          re[bb] = re[a] - tr; im[bb] = im[a] - ti; re[a] += tr; im[a] += ti;
+        }
+      }
+      var fl = 0;
+      for (k = b0; k <= b1; k++) { var L = Math.log(1 + 50 * Math.sqrt(re[k] * re[k] + im[k] * im[k]) / N * 100), d = L - ant[k - b0]; if (d > 0 && q > 0) fl += d; ant[k - b0] = L; }
+      out[q] = fl;
+    }
+    return { valores: out, passo: hop / taxa, atraso: -(N / 2) / taxa, meio: 0 };
+  }
+
   // Envelope válido? { valores (array-like), passo > 0, atraso? }
   const LIMIAR = 0.3; // fração da subida (base → pico) que marca o ataque
   const envelopeOk = e => !!e && e.valores && e.valores.length > 16 && e.passo > 0;
@@ -306,7 +335,12 @@
   // contratempo de uma faixa SEM bumbo (banco sintético "sem bumbo": 87 → 80 Hz, 1,09), que tem o mesmo desenho de
   // grave: sem ela a grade pulava meia batida para o baixo. Com bumbo forte/fraco alternado (o fraco atrasado
   // ~25 ms, como nesta faixa), a reta com os dois fica frouxa (15,8 ms): tenta de novo só com os fortes (corte 0,7).
-  const CONTRATEMPO = { razao: 2, cobertura: 1 / 3, cortes: [0.4, 0.7], varre: 1.25 };
+  // 2026-11-09, "The Pimp (Original Mix)" (Makito, 122 BPM, Essentia real): razão 1,48 (o grave do contratempo dos ticks
+  // sobe só 1,5× o de perto deles — nota de baixo e cauda soltas por toda a batida) e o corte em 2 desistia: grade nos
+  // ticks (degara, 0,249 s), sem bumbo e SEM 1 do compasso; o CUE caía fora do tempo 1. Com 1,3 passa, e o resto do
+  // crivo (cobertura 0,65, varredura 1,64, 6 entradas na mesma fase) é quem separa bumbo de baixo. Não baixe mais:
+  // 1,1 já é empate entre os dois lados (banco sintético, baixoContraAmp 0,8: bumbo e baixo de mesma força).
+  const CONTRATEMPO = { razao: 1.3, cobertura: 1 / 3, cortes: [0.4, 0.7], varre: 1.25 };
   // Frequência média do grave (cruzamentos de zero de `env.sinal`) em [0, 15) ms e [60, 120) ms depois do ataque de
   // até 200 bumbos da grade `m`; devolve a razão da primeira pela segunda (NaN sem `sinal` ou sem bumbos).
   function varredura(env, m) {
@@ -493,6 +527,166 @@
     return { d: ordem[0], fonte: 'graves', margem, harmonia, votos: totalVotos, porFase: votos };
   }
 
+  // ---- refino por batida e fase por trechos (VB-refino, 2026-11-09) -------------------------------------------------
+  // A grade (bpm, primeira) é uma reta; cada batida dela pode estar a alguns ms do ataque de fato (faixa tocada, swing,
+  // deriva). Aqui, PARA CADA BATIDA, procura-se numa janela curta o ponto de maior subida de energia, com parábola no
+  // pico (sub-amostra), e se devolve a batida refinada e uma CONFIANÇA 0–1. A grade que o motor usa NÃO muda: o
+  // resultado (`ritmo`) é um dado ao lado dela — tempos refinados, confiança, fase por trechos e a marca de andamento
+  // variável. Cascata, por batida (nunca se desloca sem evidência):
+  //   (a) GRAVE: o envelope de graves tem ataque claro na janela → é o bumbo/baixo;
+  //   (b) ESPECTRAL: sem grave ali (intro, break, faixa sem bumbo), o fluxo espectral de banda larga na mesma janela;
+  //   (c) MANTIDA: nenhum dos dois → fica onde a grade manda, confiança baixa.
+  // Deslocamento limitado a LIMITE_S e descartado se destoa das vizinhas (COERENCIA_S): vira (c). O ponto de cada banda
+  // é medido contra a MEDIANA da própria banda na faixa — o viés fixo "ponto de maior subida × 30% da subida onde a
+  // âncora foi posta" não desloca a grade inteira; só o que foge do comum de cada batida entra como deslocamento.
+  const REFINO = { janelaS: 0.035, limiteS: 0.040, coerenciaS: 0.015, vizinhas: 4, secaoBatidas: 32, secaoMin: 8, epsS: 0.004,
+    confereS: 0.006, zonaMortaS: 0.004, zonaMortaEspectralS: 0.008, variavelAjusteS: 0.030, variavelSaltoS: 0.025, variavelLimiteFracao: 0.2, fracaoFracaS: 0.6, forcaMin: 0.35, razaoMin: 2.5, fluxoRazaoMin: 3 };
+
+  // Candidato de ataque numa série `serie` (valores, passo, atraso, meio) em torno de `t` (s, relógio da série):
+  // { tp, forca, razao } ou null. `modo`: 'subida' (envelope: pico da derivada suavizada) ou 'fluxo' (o próprio fluxo).
+  function candidatoNaJanela(serie, modo, t, meia, P) {
+    const v = serie.valores, dt = serie.passo, atr = ehNum(serie.atraso) ? serie.atraso : 0, meio = ehNum(serie.meio) ? serie.meio : 0.5;
+    const idx = (s) => Math.round((s + atr) / dt - meio);
+    const tempo = (j) => (j + meio) * dt - atr;
+    const j0 = idx(t - meia), j1 = idx(t + meia), pa = Math.max(3, idx(t - P / 2)), pb = Math.min(v.length - 4, idx(t + P / 2));
+    if (j0 < 4 || j1 > v.length - 5 || j1 - j0 < 4) return null;
+    let y;
+    if (modo === 'subida') { // derivada de 3 pontos, média móvel de 5 (≈5 ms): a subida mais íngreme do envelope
+      y = (j) => { let s = 0; for (let q = -2; q <= 2; q++) s += (v[j + q + 1] - v[j + q - 1]) / 2; return s / 5; };
+    } else y = (j) => v[j];
+    let jp = j0, yp = -Infinity;
+    for (let j = j0; j <= j1; j++) { const x = y(j); if (x > yp) { yp = x; jp = j; } }
+    // o ATAQUE é a PRIMEIRA subida forte: um 2º lóbulo (nota do baixo, cauda do bumbo) pode subir mais, mas vem depois
+    for (let j = j0 + 2; j < jp; j++) { const x = y(j); if (x >= 0.6 * yp && x >= y(j - 1) && x >= y(j + 1)) { jp = j; yp = x; break; } }
+    if (!(yp > 0) || jp - j0 < 2 || j1 - jp < 2) return null; // no canto da janela: a subida vem de fora (batida vizinha)
+    // razão pico / média do |y| em ±P/2: "ataque claro" e não ruído de fundo
+    let ms = 0, cn = 0;
+    for (let j = pa; j <= pb; j += modo === 'subida' ? 2 : 1) { ms += Math.abs(y(j)); cn++; }
+    const razao = cn ? yp / (ms / cn || 1e-12) : 0;
+    const ya = y(jp - 1), yb = yp, yc = y(jp + 1), den = ya - 2 * yb + yc;
+    const dj = den < 0 ? Math.max(-0.5, Math.min(0.5, 0.5 * (ya - yc) / den)) : 0;
+    let forca;
+    if (modo === 'subida') { // quanto o envelope sobe: máximo nos 40 ms depois menos o mínimo nos 60 ms antes
+      let mx = -Infinity, mn = Infinity;
+      for (let j = jp; j <= Math.min(v.length - 1, jp + Math.round(0.04 / dt)); j++) if (v[j] > mx) mx = v[j];
+      for (let j = Math.max(0, jp - Math.round(0.06 / dt)); j <= jp; j++) if (v[j] < mn) mn = v[j];
+      forca = mx - mn;
+    } else forca = yp;
+    const a30 = modo === 'subida' ? ataqueEm(serie, t, meia) : null; // 2º estimador (30% da subida): só confere o primeiro
+    return { tp: tempo(jp + dj), forca, razao, t30: a30 ? a30.t : null };
+  }
+
+  const percentil = (v, q) => quantil(v, q);
+  // refinarBatidas(env, fluxo, grade, ini, opcoes): grade { bpm, primeira } no relógio da FAIXA; `ini` = s da faixa em que
+  // a análise (e as séries) começa. Devolve `ritmo` (ver tempoSeguindo/confiancaEm) ou null sem envelope/grade.
+  //   { versao, ini, t[] (s da faixa, batida refinada), c[] (confiança 0–1), m (string: g grave, e espectral, m mantida),
+  //     trechos: [{ de, ate, ajusteMs, confianca, evidencia }], variavel, motivo?, resumo: {...}, ajusteMaxMs }
+  function refinarBatidas(env, fluxo, grade, ini, opcoes) {
+    if (!envelopeOk(env) || !grade || !(grade.bpm > 0) || !ehNum(grade.primeira)) return null;
+    const R = Object.assign({}, REFINO, opcoes || {}), P = 60 / grade.bpm, off = ehNum(ini) ? ini : 0;
+    const dur = env.valores.length * env.passo;
+    const k0 = Math.ceil((off - grade.primeira) / P - 1e-9), nb = Math.floor((off + dur - grade.primeira) / P - 1e-9) - k0 + 1;
+    if (nb < 8) return null;
+    const temFluxo = !!(fluxo && fluxo.valores && fluxo.valores.length > 16 && fluxo.passo > 0);
+    // 1ª passada: candidatos de cada batida nas duas bandas
+    const cand = [];
+    for (let i = 0; i < nb; i++) {
+      const t = grade.primeira + (k0 + i) * P - off; // relógio da série
+      cand.push({ t, g: candidatoNaJanela(env, 'subida', t, R.janelaS, P), e: temFluxo ? candidatoNaJanela(fluxo, 'fluxo', t, R.janelaS, P) : null });
+    }
+    // 2ª: o que conta como "claro" é relativo à faixa (p75 das forças); a mediana de cada banda tira o viés fixo
+    const refDe = (k) => { const f = cand.map(c => c[k] && c[k].forca).filter(x => ehNum(x) && x > 0); return f.length >= 4 ? percentil(f, 0.75) : 0; };
+    const ref = { g: refDe('g'), e: refDe('e') }, minRazao = { g: R.razaoMin, e: R.fluxoRazaoMin };
+    const claro = (c, k) => !!(c[k] && ref[k] > 0 && c[k].forca >= R.forcaMin * ref[k] && c[k].razao >= minRazao[k]);
+    const vies = {};
+    for (const k of ['g', 'e']) { const d = cand.filter(c => claro(c, k)).map(c => c[k].tp - c.t); vies[k] = d.length >= 4 ? mediana(d) : null; }
+    // conferência por um 2º estimador (cruzamento de 30% da subida, ataqueEm): o ponto de maior subida só desloca a batida
+    // se os dois, cada um contra o viés da própria faixa, concordam em CONFERE_S; discordância = sem evidência
+    const d30 = cand.filter(c => claro(c, 'g') && ehNum(c.g.t30)).map(c => c.g.t30 - c.t), vies30 = d30.length >= 4 ? mediana(d30) : null;
+    const confere = (c) => !ehNum(R.confereS) || R.confereS <= 0 || (ehNum(c.g.t30) && vies30 !== null && Math.abs((c.g.tp - c.t - vies.g) - (c.g.t30 - c.t - vies30)) <= R.confereS);
+    const ult = cand.map(c => {
+      if (claro(c, 'g') && vies.g !== null && confere(c)) return { modo: 'g', d: c.g.tp - c.t - vies.g, c: c.g, k: 'g' };
+      if (claro(c, 'e') && vies.e !== null) return { modo: 'e', d: c.e.tp - c.t - vies.e, c: c.e, k: 'e' };
+      return { modo: 'm', d: 0 };
+    });
+    const zm = ehNum(R.zonaMortaS) ? R.zonaMortaS : 0;
+    const zmE = ehNum(R.zonaMortaEspectralS) ? R.zonaMortaEspectralS : zm;
+    for (const u of ult) if (u.modo !== 'm' && Math.abs(u.d) < (u.modo === 'e' ? zmE : zm)) u.d = 0; // abaixo do ruído do estimador: fica onde a grade manda
+    // 3ª: limite de deslocamento e coerência com as vizinhas (mediana dos deslocamentos com evidência ao redor)
+    let foraDeLimite = 0, rejeitadasLimite = 0, comEvidencia = 0;
+    for (const u of ult) if (u.modo !== 'm') { comEvidencia++; if (Math.abs(u.d) > R.limiteS) { u.modo = 'm'; u.d = 0; u.rejeitada = 'limite'; foraDeLimite++; rejeitadasLimite++; } }
+    const ok0 = ult.map(u => u.modo !== 'm');
+    for (let i = 0; i < nb; i++) {
+      const u = ult[i];
+      if (u.modo === 'm') continue;
+      const viz = [];
+      for (let q = Math.max(0, i - R.vizinhas); q <= Math.min(nb - 1, i + R.vizinhas); q++) if (q !== i && ok0[q]) viz.push(ult[q].d);
+      if (viz.length >= 2) {
+        const md = mediana(viz), dif = Math.abs(u.d - md);
+        if (dif > R.coerenciaS) { u.modo = 'm'; u.d = 0; u.rejeitada = 'incoerente'; foraDeLimite++; continue; }
+        u.coer = 1 - dif / R.coerenciaS;
+      } else u.coer = 0.4; // sem vizinhas que confirmem: aceita, mas com pouca confiança
+    }
+    // confiança por batida
+    const conf = ult.map(u => {
+      if (u.modo === 'm') return 0.1;
+      const q = Math.min(1.5, u.c.forca / ref[u.k]) / 1.5, nit = Math.max(0, Math.min(1, (u.c.razao - minRazao[u.k]) / 5));
+      const c = 0.15 + 0.85 * (0.4 * q + 0.2 * nit + 0.4 * u.coer);
+      return Math.round(Math.min(u.modo === 'g' ? 1 : 0.75, c) * 100) / 100;
+    });
+    // fase por trechos: mediana dos deslocamentos aceitos de cada trecho de `secaoBatidas`, suavizada 1-2-1 entre vizinhos
+    const trechos = [];
+    for (let a = 0; a < nb; a += R.secaoBatidas) {
+      const b = Math.min(nb, a + R.secaoBatidas), ds = [], cs = [];
+      for (let i = a; i < b; i++) if (ult[i].modo !== 'm') { ds.push(ult[i].d); cs.push(conf[i]); }
+      const de = grade.primeira + (k0 + a) * P - P / 2, ate = grade.primeira + (k0 + b) * P - P / 2;
+      const ev = ds.length >= R.secaoMin && (b - a) >= R.secaoMin;
+      trechos.push({ de: arred(de, 3), ate: arred(ate, 3), bruto: ev ? mediana(ds) : 0, evidencia: ev, confianca: ev ? Math.round(cs.reduce((x, y) => x + y, 0) / cs.length * 100) / 100 : 0 });
+    }
+    const suave = trechos.map((t, i) => {
+      if (!t.evidencia) return 0;
+      let s = 2 * t.bruto, w = 2;
+      for (const j of [i - 1, i + 1]) if (trechos[j] && trechos[j].evidencia) { s += trechos[j].bruto; w += 1; }
+      return s / w;
+    });
+    let ajusteMax = 0, salto = 0;
+    trechos.forEach((t, i) => {
+      const aj = Math.abs(suave[i]) >= R.epsS ? suave[i] : 0; // só ajusta quando a evidência pede
+      t.ajusteMs = arred(aj * 1000, 1); delete t.bruto;
+      ajusteMax = Math.max(ajusteMax, Math.abs(aj));
+      if (i && t.evidencia && trechos[i - 1].evidencia) salto = Math.max(salto, Math.abs(aj - trechos[i - 1].ajusteMs / 1000));
+    });
+    // "andamento variável": a fase anda mais que o limite entre trechos, salta, ou muitas batidas com ataque claro caem FORA do
+    // limite de deslocamento (a grade reta não as alcança). Batida incoerente com as vizinhas (swing, bumbo forte/fraco) NÃO conta
+    // aqui: é padrão da música, não andamento.
+    const limiteFracao = comEvidencia ? rejeitadasLimite / comEvidencia : 0;
+    let motivo = null;
+    if (ajusteMax >= R.variavelAjusteS) motivo = 'deriva';
+    else if (salto >= R.variavelSaltoS) motivo = 'salto';
+    else if (limiteFracao >= R.variavelLimiteFracao) motivo = 'alem-do-limite';
+    const resumo = { batidas: nb, grave: ult.filter(u => u.modo === 'g').length, espectral: ult.filter(u => u.modo === 'e').length, mantida: ult.filter(u => u.modo === 'm').length, rejeitadas: foraDeLimite, alemDoLimite: rejeitadasLimite, evidenciaFraca: ult.filter(u => u.modo === 'm').length / nb >= R.fracaoFracaS };
+    const t = ult.map((u, i) => arred(grade.primeira + (k0 + i) * P + u.d, 4));
+    return { versao: 1, ini: off, t, c: conf, m: ult.map(u => u.modo).join(''), trechos, variavel: motivo !== null, motivo, resumo, ajusteMaxMs: arred(ajusteMax * 1000, 1) };
+  }
+  // O andamento real em tLinear (s da faixa, na grade reta): soma a fase do trecho, interpolada entre os centros dos trechos
+  // com evidência (sem `ritmo`, ou fora do trecho coberto, devolve tLinear).
+  function tempoSeguindo(ritmo, tLinear) {
+    if (!ritmo || !Array.isArray(ritmo.trechos) || !ritmo.trechos.length || !ehNum(tLinear)) return tLinear;
+    const cs = ritmo.trechos.map(x => ({ c: (x.de + x.ate) / 2, a: x.ajusteMs / 1000 }));
+    if (tLinear <= cs[0].c) return tLinear + cs[0].a;
+    for (let i = 1; i < cs.length; i++) if (tLinear <= cs[i].c) { const f = (tLinear - cs[i - 1].c) / (cs[i].c - cs[i - 1].c); return tLinear + cs[i - 1].a + f * (cs[i].a - cs[i - 1].a); }
+    return tLinear + cs[cs.length - 1].a;
+  }
+  // Confiança (0–1) da batida mais próxima de t (s da faixa); null sem `ritmo` ou a mais de meio período.
+  function confiancaEm(ritmo, t) {
+    if (!ritmo || !Array.isArray(ritmo.t) || !ritmo.t.length || !ehNum(t)) return null;
+    let lo = 0, hi = ritmo.t.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (ritmo.t[m] < t) lo = m + 1; else hi = m; }
+    const j = lo > 0 && Math.abs(ritmo.t[lo - 1] - t) <= Math.abs(ritmo.t[lo] - t) ? lo - 1 : lo;
+    const meio = ritmo.t.length > 1 ? (ritmo.t[ritmo.t.length - 1] - ritmo.t[0]) / (ritmo.t.length - 1) / 2 : Infinity;
+    return Math.abs(ritmo.t[j] - t) <= meio ? ritmo.c[j] : null;
+  }
+
   // O caso completo. `candidatos`: [{ nome, bpm, ticks? }]; `inicio`: s da faixa em que os ticks
   // (e o envelope) começam (0 quando a análise cobre a faixa inteira); `envelope`: saída de
   // envelopeGrave sobre o mesmo trecho (opcional). Devolve
@@ -501,7 +695,7 @@
   // o BPM é o consenso dos estimadores (1 casa) e não há grade (o motor estima pelo BPM).
   // `bpm` (6 casas) É o da grade quando há grade. Com envelope, `primeira` é o 1º tempo forte (1 do
   // compasso) em [0, 4 períodos); sem envelope não há como saber o compasso e fica em [0, período).
-  function resolver(candidatos, inicio, faixa, envelope) {
+  function resolver(candidatos, inicio, faixa, envelope, fluxo) {
     const c = consenso(candidatos, faixa);
     if (!c) return null;
     const ini = ehNum(inicio) ? inicio : 0, p0 = 60 / c.alvo;
@@ -536,9 +730,10 @@
       saida.ancora = { bumbos: fino.bumbos, desvioMs: arred(fino.desvioMs, 2), ajusteMs: arred(fino.ajusteMs, 1) };
       saida.compasso = { fonte: fino.compasso.fonte, margem: arred(fino.compasso.margem, 3) };
     }
+    if (envelope) { try { const rt = refinarBatidas(envelope, fluxo, saida.grade, ini); if (rt) saida.ritmo = rt; } catch (_) { /* sem refino a grade segue igual */ } }
     return saida;
   }
 
   return { FAIXA_DJ, LIMITE_DESVIO, CASAS_BPM, dobrarParaFaixa, multiploDosTicks, retaPorIndices, segmentar, ajustarReta, consenso,
-    envelopeGrave, ataqueEm, faseDoBumbo, refinarNoBumbo, escolherCompasso, resolver };
+    envelopeGrave, fluxoAmplo, REFINO, candidatoNaJanela, refinarBatidas, tempoSeguindo, confiancaEm, ataqueEm, faseDoBumbo, refinarNoBumbo, escolherCompasso, resolver };
 });

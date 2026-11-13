@@ -5,7 +5,7 @@
 //   NOMES · ativo(letra) · definir(letra, nome, parcial) · estado(letra, nome) (+ pico) · aoMudar(fn) → cancelar
 //   opcional: ligar(letra, bool) — liga/desliga o modo; sem ela a faixa só recolhe/expande na tela.
 // Ganchos de integração do fluxo de carga (a integração real vem depois):
-//   VbMxStemsTela.mostrarEstado(letra, {fase, progresso, erro})  fase: ausente|enviando|separando|baixando|pronto|erro
+//   VbMxStemsTela.mostrarEstado(letra, {fase, progresso, erro, carregando})  fase: ausente|enviando|separando|baixando|pronto|erro
 //   VbMxStemsTela.aoPedir(fn)  fn(letra) dispara no clique em "STEMS" quando a fase não é "pronto"
 // O slot mora fora do deck (renderDeck reescreve o innerHTML dele), na grade .decks. Contrato: docs/contratos.md.
 (function (raiz) {
@@ -36,6 +36,7 @@
       filtro: num(e.filtro, 0), fx: e.fx || null, pico: limitar(num(e.pico, 0), 0, 1) };
   }
   function textoFase(x) {
+    if (x.fase === 'separando' && x.carregando) return 'carregando modelo…';
     if (x.fase === 'separando') { const p = num(x.progresso, 0); return `separando ${Math.round(limitar(p <= 1 ? p * 100 : p, 0, 100))}%`; }
     if (x.fase === 'erro') return `erro: ${x.erro || 'falhou'}`;
     return FASES.includes(x.fase) ? x.fase : 'ausente';
@@ -192,7 +193,7 @@
     mostrarEstado(letra, d) {
       const x = t(letra), e = d || {};
       x.fase = FASES.includes(e.fase) ? e.fase : 'ausente';
-      x.progresso = num(e.progresso, 0); x.erro = e.erro ? String(e.erro) : '';
+      x.progresso = num(e.progresso, 0); x.carregando = !!e.carregando; x.erro = e.erro ? String(e.erro) : '';
       desenhar(letra);
     },
     aoPedir(fn) { pedir = typeof fn === 'function' ? fn : null; return () => { if (pedir === fn) pedir = null; }; },

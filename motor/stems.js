@@ -9,6 +9,9 @@
 //   filtro(v) → {ativo, lp, hp, q}      o mesmo botão do canal (VbMxMixer.filtroDoBotao(v × 100))
 //   fx(fx, bpm) → {id, params, mix}      os parâmetros do efeito de canal (VbMxMixer.fxParametros(id, param × 100, bpm))
 //   validar(principal, stems) → {ok, motivo}   os 4 presentes, mesmo sampleRate, duração ≤ TOLERANCIA_QUADROS
+//   alinhar(principal, stems, criar) → {ok, motivo, stems, deslocamento, correlacao}   estima o atraso inicial (correlação
+//                                    cruzada: trecho forte da faixa × soma dos 4 stems) e devolve stems cortados no começo e no fim
+//                                    para ter EXATAMENTE o comprimento da faixa; recusa deslocamento > ALINHAR_MAX_S ou correlação fraca
 //   pico(Float32Array) → 0…1
 // EQ: os 3 biquads do EQ "atual" do canal (VbMxReproducao.BANDAS: highshelf 3200, peaking 1000, lowshelf 250) com o
 // ganho em dB direto. Em 0 dB o biquad é identidade (nem fase muda) — a soma dos stems segue igual à faixa. O
@@ -25,6 +28,7 @@
   const NOMES = Object.freeze(['vocals', 'drums', 'bass', 'instrumental']);
   const LIMITES = Object.freeze({ volume: [0, 1.5], eq: [-26, 6], filtro: [-1, 1] });
   const KILL_DB = -26, TOLERANCIA_QUADROS = 2048;   // ~46 ms a 44,1 kHz: o htdemucs devolve o comprimento da entrada (± bloco)
+  const ALINHAR_MAX_S = 0.25, ALINHAR_JANELA = 16384, ALINHAR_CORR_MIN = 0.6, ALINHAR_PASSO = 4;
   const BANDAS = R && R.BANDAS ? R.BANDAS : null;
   const num = (x) => typeof x === 'number' && Number.isFinite(x);
   const trava = (x, a, b) => (x < a ? a : x > b ? b : x);
@@ -61,22 +65,86 @@
     if (!f) return { id: 'filtro', params: { id: 'filtro', ativo: false }, mix: 0 };
     return { id: f.id, params: M.fxParametros(f.id, f.param * 100, bpm), mix: f.mix };
   }
-  function validar(principal, stems) {
+  function validar(principal, stems, tolerancia) {
+    const tol = tolerancia == null ? TOLERANCIA_QUADROS : tolerancia;
     if (!principal) return { ok: false, motivo: 'sem faixa principal no deck' };
     if (!stems || typeof stems !== 'object') return { ok: false, motivo: 'sem stems' };
     for (const k of NOMES) {
       const b = stems[k];
       if (!b || typeof b.getChannelData !== 'function') return { ok: false, motivo: `falta o stem ${k}` };
       if (b.sampleRate !== principal.sampleRate) return { ok: false, motivo: `${k}: taxa de amostragem ${b.sampleRate} ≠ ${principal.sampleRate} da faixa` };
-      if (Math.abs(b.length - principal.length) > TOLERANCIA_QUADROS) return { ok: false, motivo: `${k}: ${b.length} quadros contra ${principal.length} da faixa` };
+      if (Math.abs(b.length - principal.length) > tol) return { ok: false, motivo: `${k}: ${b.length} quadros contra ${principal.length} da faixa` };
       if (!(b.numberOfChannels >= 1 && b.numberOfChannels <= 2)) return { ok: false, motivo: `${k}: ${b.numberOfChannels} canais (1 ou 2)` };
     }
     return { ok: true, motivo: '' };
+  }
+  // ---- alinhamento ----
+  // O ffmpeg (stems) conta o atraso do codificador/preenchimento do MP3; o decodeAudioData do navegador o descarta (gapless).
+  // Então os stems chegam com alguns milhares de quadros a mais e a cabeça deslocada. Sentido de `d`: principal[i] ≈ stems[i + d].
+  function mono(b) {
+    const n = b.numberOfChannels, a = b.getChannelData(0), m = b.length, r = new Float32Array(m);
+    if (n >= 2) { const c = b.getChannelData(1); for (let i = 0; i < m; i++) r[i] = (a[i] + c[i]) * 0.5; } else r.set(a.subarray(0, m));
+    return r;
+  }
+  function criarPadrao(canais, len, taxa) {   // buffer mínimo (fora do navegador); na página entra ctx.createBuffer
+    const dados = []; for (let c = 0; c < canais; c++) dados.push(new Float32Array(len));
+    return { numberOfChannels: canais, length: len, sampleRate: taxa, duration: len / taxa, getChannelData: (c) => dados[c] };
+  }
+  function corte(b, d, len, criar) {   // saída[i] = b[i + d], zero fora; d pode ser negativo
+    const out = criar(b.numberOfChannels, len, b.sampleRate);
+    for (let c = 0; c < b.numberOfChannels; c++) {
+      const e = b.getChannelData(c), s = out.getChannelData(c);
+      const ini = Math.max(0, -d), fim = Math.min(len, e.length - d);
+      for (let i = ini; i < fim; i++) s[i] = e[i + d];
+    }
+    return out;
+  }
+  function estimar(principal, stems) {
+    const tx = principal.sampleRate, maxL = Math.round(ALINHAR_MAX_S * tx), W = ALINHAR_JANELA, L = principal.length;
+    if (L < W * 2 + maxL * 2) return { ok: false, motivo: 'faixa curta demais para alinhar os stems' };
+    const p = mono(principal), soma = new Float32Array(L + maxL * 2);   // soma[k] = Σ stems[k - maxL] (zero fora)
+    const ms = NOMES.map((k) => mono(stems[k]));
+    for (const m of ms) for (let i = 0; i < m.length && i + maxL < soma.length; i++) soma[i + maxL] += m[i];
+    // janela forte: a de maior energia entre candidatas espalhadas (intro silenciosa não serve)
+    let melhor = -1, ini = maxL;
+    const lim = L - W - maxL;
+    for (let k = 0; k < 10; k++) {
+      const a = Math.round(maxL + (lim - maxL) * (0.05 + 0.09 * k));
+      let e = 0; for (let i = a; i < a + W; i++) e += p[i] * p[i];
+      if (e > melhor) { melhor = e; ini = a; }
+    }
+    if (!(melhor > 1e-6)) return { ok: false, motivo: 'faixa sem sinal para alinhar os stems' };
+    // correlação normalizada no lag d: p[ini+i] × soma[ini + i + d + maxL]; grossa (÷PASSO) e depois fina (±PASSO)
+    const corr = (d, passo) => {
+      let sxy = 0, sxx = 0, syy = 0;
+      for (let i = 0; i < W; i += passo) { const x = p[ini + i], y = soma[ini + i + d + maxL]; sxy += x * y; sxx += x * x; syy += y * y; }
+      return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : 0;
+    };
+    let mD = 0, mC = -2;
+    for (let d = -maxL; d <= maxL; d += ALINHAR_PASSO) { const c = corr(d, ALINHAR_PASSO); if (c > mC) { mC = c; mD = d; } }
+    let fD = mD, fC = -2;
+    for (let d = mD - ALINHAR_PASSO; d <= mD + ALINHAR_PASSO; d++) {
+      if (d < -maxL || d > maxL) continue;
+      const c = corr(d, 1); if (c > fC) { fC = c; fD = d; }
+    }
+    return { ok: true, deslocamento: fD, correlacao: fC };
+  }
+  function alinhar(principal, stems, criar) {
+    const v0 = validar(principal, stems, Infinity);   // presença, taxa, canais: o comprimento é o que se conserta aqui
+    if (!v0.ok) return v0;
+    const est = estimar(principal, stems);
+    if (!est.ok) return est;
+    const maxL = Math.round(ALINHAR_MAX_S * principal.sampleRate);
+    if (Math.abs(est.deslocamento) > maxL) return { ok: false, motivo: `deslocamento dos stems absurdo (${est.deslocamento} quadros, máx ${maxL})` };
+    if (est.correlacao < ALINHAR_CORR_MIN) return { ok: false, motivo: `os stems não casam com a faixa (correlação ${est.correlacao.toFixed(2)} < ${ALINHAR_CORR_MIN})` };
+    const fab = criar || criarPadrao, saida = {};
+    for (const k of NOMES) saida[k] = corte(stems[k], est.deslocamento, principal.length, fab);
+    return { ok: true, motivo: '', stems: saida, deslocamento: est.deslocamento, correlacao: est.correlacao };
   }
   function pico(a) {
     let m = 0;
     if (a) for (let i = 0; i < a.length; i++) { const x = a[i] < 0 ? -a[i] : a[i]; if (x > m) m = x; }
     return m > 1 ? 1 : m;
   }
-  return { NOMES, LIMITES, KILL_DB, TOLERANCIA_QUADROS, BANDAS, padrao, copia, normalizar, ganhos, filtro, fx, validar, pico };
+  return { NOMES, LIMITES, KILL_DB, TOLERANCIA_QUADROS, BANDAS, padrao, copia, normalizar, ganhos, filtro, fx, validar, alinhar, pico };
 });

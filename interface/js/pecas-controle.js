@@ -60,14 +60,15 @@ const VbMxPecas = (() => {
       alvo.addEventListener("pointermove", mover); alvo.addEventListener("pointerup", soltar); alvo.addEventListener("pointercancel", soltar);
     });
     // roda do mouse: um passo por "clique" (Shift = 5 passos)
-    el.addEventListener("wheel", e => { if (desab) return; e.preventDefault(); const s = Math.sign(e.deltaY || e.deltaX) * -1; definir(valor + s * passo * (e.shiftKey ? 5 : 1)); }, { passive: false });
+    el.addEventListener("wheel", e => { if (desab) return; e.preventDefault(); const s = Math.sign(e.deltaY || e.deltaX) * -1 * (o.invertido ? -1 : 1); definir(valor + s * passo * (e.shiftKey ? 5 : 1)); }, { passive: false });
     // duplo clique: volta ao padrão (zero do EQ, centro do crossfader/pitch)
     el.addEventListener("dblclick", e => { if (desab || o.padrao === undefined) return; e.preventDefault(); definir(o.padrao); });
     // teclado (WAI-ARIA slider)
     if (tec) el.addEventListener("keydown", e => {
       if (desab) return;
       const grande = passo * Math.max(1, Math.round(faixa / passo / 10));
-      const mapa = { ArrowUp: passo, ArrowRight: passo, ArrowDown: -passo, ArrowLeft: -passo, PageUp: grande, PageDown: -grande };
+      const iv = o.invertido ? -1 : 1;   // fader invertido: para cima diminui
+      const mapa = { ArrowUp: passo * iv, ArrowRight: passo, ArrowDown: -passo * iv, ArrowLeft: -passo, PageUp: grande, PageDown: -grande };
       if (e.key in mapa) { e.preventDefault(); definir(valor + mapa[e.key]); }
       else if (e.key === "Home") { e.preventDefault(); definir(o.min); }
       else if (e.key === "End") { e.preventDefault(); definir(o.max); }
@@ -134,15 +135,16 @@ const VbMxPecas = (() => {
       <span class="pc-val"></span>`;
     const caixa = el.querySelector(".pc-fader-caixa"), cabeca = el.querySelector(".pc-fader-cabeca"), val = el.querySelector(".pc-val");
     const formato = op.formato || (v => fmtPadrao(v) + (op.sufixo || ""));
-    const pintar = v => { el.style.setProperty("--pos", ((v - min) / (max - min)).toFixed(4)); val.textContent = formato(v); };
+    const inv = !horiz && !!op.invertido;   // padrão de DJ no pitch: para BAIXO aumenta (a posição na tela espelha; o valor segue o mesmo)
+    const pintar = v => { const q = (v - min) / (max - min); el.style.setProperty("--pos", (inv ? 1 - q : q).toFixed(4)); val.textContent = formato(v); };
     const posicaoDe = e => {
       const r = caixa.getBoundingClientRect(), m = 6;
-      const p = horiz ? (e.clientX - r.left - m) / (r.width - 2 * m) : 1 - (e.clientY - r.top - m) / (r.height - 2 * m);
+      const p = horiz ? (e.clientX - r.left - m) / (r.width - 2 * m) : inv ? (e.clientY - r.top - m) / (r.height - 2 * m) : 1 - (e.clientY - r.top - m) / (r.height - 2 * m);
       return Math.min(1, Math.max(0, p));
     };
     return ligarDeslizante({ el, alvoPonteiro: caixa, min, max, passo: op.passo ?? 1, valor: op.valor ?? (tipo === "canal" ? max : (min + max) / 2),
       padrao: op.padrao ?? (tipo === "canal" ? undefined : (min + max) / 2), formato, aoMudar: op.aoMudar, pintar,
-      modo: "absoluto", eixo: horiz ? "x" : "y", posicaoDe, naCabeca: e => e.target === cabeca, rotuloAria: op.rotuloAria || op.rotulo, teclado: op.teclado });
+      modo: "absoluto", eixo: horiz ? "x" : "y", invertido: inv, posicaoDe, naCabeca: e => e.target === cabeca, rotuloAria: op.rotuloAria || op.rotulo, teclado: op.teclado });
   }
 
   // ---------- BOTÃO ----------
@@ -305,7 +307,7 @@ const VbMxPecas = (() => {
       aoMudar: v => { input.value = String(v); input.dispatchEvent(new Event("input", { bubbles: true })); } };
     const peca = o.fabrica === "knob"
       ? criarKnob({ ...comum, bipolar: o.padrao !== undefined && o.padrao === (min + max) / 2 })
-      : criarFader({ ...comum, orientacao: o.orientacao, tipo: o.tipo, comprimento: o.comprimento, marcas: o.marcas });
+      : criarFader({ ...comum, orientacao: o.orientacao, invertido: o.invertido, tipo: o.tipo, comprimento: o.comprimento, marcas: o.marcas });
     peca.el.classList.add("pc-vestida", "pc-sem-texto");
     if (o.tamPx) peca.el.style.setProperty("--tam", o.tamPx + "px");
     peca.el.setAttribute("aria-hidden", "true");

@@ -57,7 +57,7 @@
 .pitch-v .marca-pm { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-3); line-height: 1; }
 .pitch-corpo { display: flex; align-items: center; gap: 4px; height: 150px; }
 .pitch-corpo .marcas { display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding-block: 2px; }
-.pitch-v input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 100%; margin: 0; accent-color: var(--acento); }
+.pitch-v input[type=range] { writing-mode: vertical-lr; direction: ltr; width: 28px; height: 100%; margin: 0; accent-color: var(--acento); }
 .pitch-v input[type=range]:disabled { opacity: .35; }
 .pitch-v .pitch-bpm { font-size: 11px; color: var(--fg-2); white-space: nowrap; }
 .pitch-v .zerar { font-family: var(--fonte-dados); font-size: 10px; color: var(--fg-3); padding: 0 6px; border: 1px solid var(--linha); border-radius: 3px; }

@@ -148,10 +148,12 @@ function biblioLinha(x, i, total){
 function biblioBarraListas(){
   const e = biblioEstado, lista = biblioListaAtual();
   const pls = biblioListas.filter(l=>l.tipo==="playlist"), ints = biblioListas.filter(l=>l.tipo==="inteligente");
+  const pastaFiltro = window.VbMxPainel ? VbMxPainel.pastasParaFiltro() : { nomes: [], escolha: "", ocupado: false };
   const opt = l => `<option value="${esc(l.id)}"${l.id===e.lista?" selected":""}>${esc(l.nome)}</option>`;
   const nomeando = e.modoNome ? `<span class="bib-nome"><input type="text" id="bib-nome" maxlength="120" placeholder="${e.modoNome==="renomear"?"novo nome":"nome da lista"}" value="${e.modoNome==="renomear"&&lista?esc(lista.nome):""}" aria-label="Nome da lista"><button type="button" class="bib-limpar" id="bib-nome-ok">OK</button><button type="button" class="bib-limpar" id="bib-nome-cancela">Cancelar</button></span>` : "";
   return `<div class="biblio-listas" role="group" aria-label="Listas">
       <label>Lista <select id="bib-lista" aria-label="Qual lista mostrar"><option value="">Coleção (tudo)</option>${pls.length?`<optgroup label="Listas">${pls.map(opt).join("")}</optgroup>`:""}${ints.length?`<optgroup label="Inteligentes">${ints.map(opt).join("")}</optgroup>`:""}</select></label>
+      ${pastaFiltro.nomes.length?`<label>Pasta <select id="bib-pasta" aria-label="Pasta da biblioteca"${pastaFiltro.ocupado?" disabled":""}><option value="">Todas as pastas</option>${pastaFiltro.nomes.map(n=>`<option value="${esc(n)}"${n===pastaFiltro.escolha?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`:""}
       <button type="button" class="bib-limpar" id="bib-nova-lista">Nova lista</button>
       <button type="button" class="bib-limpar" id="bib-nova-int">Nova inteligente</button>
       ${lista?`<button type="button" class="bib-limpar" id="bib-renomear">Renomear</button>${e.apagando?`<button type="button" class="bib-limpar bib-perigo" id="bib-apagar-sim">Apagar mesmo</button><button type="button" class="bib-limpar" id="bib-apagar-nao">Não</button>`:`<button type="button" class="bib-limpar" id="bib-apagar">Apagar</button>`}`:""}
@@ -307,6 +309,8 @@ function biblioLigar(div){
     const l = biblioListaAtual(); if (l && l.tipo==="inteligente") e.rascunho = biblioRascunhoDe(l);
     renderBiblio();
   });
+  const sp = div.querySelector("#bib-pasta");
+  if (sp) sp.addEventListener("change", ev=>VbMxPainel.escolherPasta(ev.target.value));
   clique("bib-nova-lista", ()=>{ e.modoNome = "lista"; renderBiblio(); });
   clique("bib-nova-int", ()=>{ e.modoNome = "inteligente"; renderBiblio(); });
   clique("bib-renomear", ()=>{ e.modoNome = "renomear"; renderBiblio(); });

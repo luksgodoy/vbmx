@@ -30,7 +30,9 @@
   // grave mais forte nela.
   // 9 em 2026-11-08 (Dancin): ticks do Essentia no contratempo do bumbo a faixa inteira; a grade passa a ir para o
   // bumbo (subida no meio do tick + varredura de pitch de bumbo). A v8 deixava o 1 na caixa e o SYNC fora de fase.
-  const VERSAO_ANALISE = 10;
+  // 12 em 2026-11-09 (refino por batida): o resultado ganha `ritmo` (tempo refinado e confiança de cada batida, fase por
+  // trechos, andamento variável); a grade { bpm, primeira } é a mesma. A v11 não tem `ritmo`.
+  const VERSAO_ANALISE = 12;
 
   function extensao(nome) {
     const m = /\.([A-Za-z0-9]+)$/.exec(String(nome || ''));
@@ -233,6 +235,7 @@
           r = { bpm: a && a.bpm, camelot: a && a.camelot, forca: a && a.forca, analisavel: true };
           if (a && typeof a.duracao === 'number' && a.duracao > 0) r.duracao = a.duracao;
           if (a && gradeValida(a.grade)) r.grade = { bpm: a.grade.bpm, primeira: a.grade.primeira };
+          if (a && a.ritmo && Array.isArray(a.ritmo.t)) r.ritmo = a.ritmo; // dado ao lado da grade (VbMxBpm.confiancaEm/tempoSeguindo)
           if (!(typeof r.bpm === 'number' && r.bpm > 0) || !/^(?:[1-9]|1[0-2])[AB]$/.test(String(r.camelot))) {
             r = { analisavel: false, erro: 'BPM ou tom não detectado' };
           }
@@ -351,14 +354,31 @@
         const f = Object.assign(base, { bpm: r.bpm, camelot: r.camelot, analisavel: true });
         if (typeof r.duracao === 'number' && r.duracao > 0) f.duracao = r.duracao; // segundos; liga o selo de auto-loop (VB-53)
         if (gradeValida(r.grade)) f.grade = { bpm: r.grade.bpm, primeira: r.grade.primeira }; // lida por VbMxGrade.daFaixa
+        if (r.ritmo && Array.isArray(r.ritmo.t)) f.ritmo = r.ritmo; // confiança por batida e fase por trechos; a grade reta segue valendo
         return f;
       }
       return Object.assign(base, { bpm: null, camelot: null, analisavel: false, erro: (r && r.erro) || 'não analisada' });
     });
   }
 
+  // ---- filtro por pasta (dropdown da biblioteca) -------------------------------------------
+  // `pastas`: [{ nome, resultados }]; `escolha`: nome da pasta ou '' (todas). Os ids são dados sobre TODAS as
+  // pastas, então filtrar não renumera (deck carregado e marcadores seguem apontando para a mesma faixa).
+  // Escolha que não existe mais (pasta removida, disco desmontado) vale como "todas": nunca esvazia a lista.
+  function pastaEfetiva(pastas, escolha) { return escolha && pastas.some((p) => p.nome === escolha) ? escolha : ''; }
+  function faixasDasPastas(pastas, escolha) {
+    const ef = pastaEfetiva(pastas, escolha);
+    let proximo = 1;
+    const saida = [];
+    for (const p of pastas) {
+      const f = paraMotor(p.resultados, proximo); proximo += f.length;
+      if (!ef || p.nome === ef) saida.push(...f);
+    }
+    return saida;
+  }
+
   return { EXTENSOES, VERSAO_ANALISE, gradeValida, gradeDosTicks, moverGrade, escalarGrade, ehAudio, tituloArtista, chaveCache, varrerDiretorio, varrerLista,
     ehIOS, escolherCaminho, nomeLoteFaixas, stemsDisponiveis,
     armazemMemoria, armazemIndexedDB, BANCO_PASTAS, armazemPastasMemoria, criarMemoriaPastas, acharIgual,
-    juntarLembradas, planejarReabertura, motivoFalha, fraseLembradas, fraseReabertura, criarCache, criarControle, analisarFila, resumoFila, colocarPasta, paraMotor };
+    juntarLembradas, planejarReabertura, motivoFalha, fraseLembradas, fraseReabertura, criarCache, criarControle, analisarFila, resumoFila, colocarPasta, paraMotor, pastaEfetiva, faixasDasPastas };
 });

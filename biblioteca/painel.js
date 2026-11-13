@@ -15,7 +15,7 @@
   // ataque do bumbo) e o tom; a escolha da oitava, o ajuste dos ticks e do bumbo, o 1 do compasso e
   // a conversão para Camelot e para grade ficam na página (bpm.js, biblioteca.js).
   // `envelopeGrave` chega como argumento: é o texto de VbMxBpm.envelopeGrave (uma fonte só).
-  function corpoDoWorker(envelopeGrave) {
+  function corpoDoWorker(envelopeGrave, fluxoAmplo) {
     let pronto = null, essentia = null;
     function iniciar(base) {
       if (!pronto) pronto = (async () => {
@@ -50,9 +50,11 @@
         const k = essentia.KeyExtractor(vmeio);
         let graves = null;
         try { graves = envelopeGrave(pcm, 44100); } catch (_) { graves = null; } // sem envelope: grade só dos ticks
-        const saida = { id, candidatos, graves, nota: k.key, escala: k.scale, forca: Math.round(k.strength * 100) / 100 };
+        let fluxo = null;
+        try { fluxo = fluxoAmplo(pcm, 44100); } catch (_) { fluxo = null; } // sem fluxo: o refino por batida só usa os graves
+        const saida = { id, candidatos, graves, fluxo, nota: k.key, escala: k.scale, forca: Math.round(k.strength * 100) / 100 };
         apagar(vetor, vmeio);
-        postMessage(saida, graves ? [graves.valores.buffer].concat(graves.sinal ? [graves.sinal.buffer] : []) : []);
+        postMessage(saida, (graves ? [graves.valores.buffer].concat(graves.sinal ? [graves.sinal.buffer] : []) : []).concat(fluxo ? [fluxo.valores.buffer] : []));
       } catch (err) { postMessage({ id, erro: String((err && err.message) || err) }); }
     };
   }
@@ -62,7 +64,7 @@
     const pendentes = new Map();
     function garante() {
       if (worker) return worker;
-      const url = URL.createObjectURL(new Blob(['(' + corpoDoWorker.toString() + ')(' + window.VbMxBpm.envelopeGrave.toString() + ')'], { type: 'text/javascript' }));
+      const url = URL.createObjectURL(new Blob(['(' + corpoDoWorker.toString() + ')(' + window.VbMxBpm.envelopeGrave.toString() + ',' + window.VbMxBpm.fluxoAmplo.toString() + ')'], { type: 'text/javascript' }));
       worker = new Worker(url);
       worker.onmessage = (e) => { const p = pendentes.get(e.data.id); if (p) { pendentes.delete(e.data.id); p(e.data); } };
       const falhaGeral = (msg) => { for (const p of pendentes.values()) p({ erro: msg }); pendentes.clear(); };
@@ -88,9 +90,9 @@
       const r = await new Promise((ok) => { pendentes.set(id, ok); w.postMessage({ id, pcm, base: CDN, janela: JANELA_S }, [pcm.buffer]); });
       if (r.erro) throw new Error(r.erro);
       // oitava por consenso, ticks da faixa inteira, ataque do bumbo no envelope, 1 do compasso, um BPM só
-      const a = window.VbMxBpm.resolver(r.candidatos, inicio, null, r.graves);
+      const a = window.VbMxBpm.resolver(r.candidatos, inicio, null, r.graves, r.fluxo);
       if (!a) throw new Error('BPM não detectado');
-      return { bpm: a.bpm, camelot: window.Camelot.paraCamelot(r.nota, r.escala), forca: r.forca, grade: a.grade, duracao };
+      return { bpm: a.bpm, camelot: window.Camelot.paraCamelot(r.nota, r.escala), forca: r.forca, grade: a.grade, ritmo: a.ritmo || null, duracao };
     }
     return { analisar, fechar() { try { worker && worker.terminate(); } catch (_) {} try { ctx && ctx.close(); } catch (_) {} worker = ctx = null; } };
   }
@@ -114,21 +116,28 @@
   const ambiente = () => ({ temPicker: typeof window.showDirectoryPicker === 'function', userAgent: navigator.userAgent, plataforma: navigator.platform, toques: navigator.maxTouchPoints });
   const LEMBRA_SO_COM_PICKER = ' Esta pasta não será lembrada na próxima recarga: este caminho de seleção não dá ao navegador um acesso que possa ser guardado.';
 
-  function iniciar({ montarEm, aoMudar }) {
+  function iniciar({ montarEm, aoMudar, preferencia, aoDesenhar }) {
     const pastas = []; // { chave, nome, handle?, itens, resultados:[{item,resultado}], lembrada?, erro? }
     const cache = criarCacheDoNavegador();
     const memoria = criarMemoriaDoNavegador();
     const caminho = B.escolherCaminho(ambiente()); // 'diretorio' | 'pasta' | 'faixas'
     let analisador = null, controle = null, ocupado = false, progresso = null, aviso = '';
 
-    function faixas() {
-      let proximo = 1;
-      const todas = [];
-      for (const p of pastas) { const f = B.paraMotor(p.resultados, proximo); proximo += f.length; todas.push(...f); }
-      return todas;
-    }
+    // Pasta escolhida no dropdown (preferência `biblio.pasta-filtro`, nome da pasta; '' = todas). Sem `preferencia`, só em memória.
+    let escolhaMem = '';
+    const lerEscolha = () => { try { return preferencia ? String(preferencia.ler() || '') : escolhaMem; } catch (_) { return ''; } };
+    const gravarEscolha = (v) => { escolhaMem = v; try { if (preferencia) preferencia.gravar(v); } catch (_) { /* preferência indisponível: vale só nesta sessão */ } };
+    function faixas() { return B.faixasDasPastas(pastas, lerEscolha()); }
     const aReabrir = () => pastas.filter((p) => p.lembrada && !p.erro).length;
+    // API para a barra da biblioteca (interface/js/biblio.js): nomes + escolha atual, e a troca de pasta.
+    const pastasParaFiltro = () => ({ nomes: pastas.map((p) => p.nome), escolha: B.pastaEfetiva(pastas, lerEscolha()), ocupado });
+    function escolherPasta(nome) { gravarEscolha(String(nome || '')); desenhar(); aoMudar(faixas()); }
+    ativo = { pastasParaFiltro, escolherPasta };
+    let assinatura = '';
     function desenhar() {
+      // a barra da biblioteca só se redesenha quando muda o que ela mostra (pastas, escolha, ocupado)
+      const sig = JSON.stringify(pastasParaFiltro());
+      if (sig !== assinatura) { assinatura = sig; if (aoDesenhar) { try { aoDesenhar(); } catch (_) { /* barra ainda não existe */ } } }
       const total = pastas.reduce((n, p) => n + p.itens.length, 0);
       const nota = (p) => (p.erro ? `<span class="n" title="${esc(p.erro)}">${esc(p.erro)}</span>` : p.lembrada ? '<span class="n">lembrada — clique para reabrir</span>' : `<span class="n">${p.itens.length}</span>`);
       montarEm.innerHTML = `
@@ -273,5 +282,9 @@
     return { faixas, adicionar };
   }
 
-  window.VbMxPainel = { iniciar };
+  let ativo = null; // a instância criada por iniciar()
+  const SEM_PASTAS = { nomes: [], escolha: '', ocupado: false };
+  window.VbMxPainel = { iniciar,
+    pastasParaFiltro: () => (ativo ? ativo.pastasParaFiltro() : SEM_PASTAS),
+    escolherPasta: (nome) => { if (ativo) ativo.escolherPasta(nome); } };
 })();

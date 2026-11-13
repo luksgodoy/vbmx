@@ -101,6 +101,7 @@ function importarAlvo(){
       const o = f.original;
       if (!o.gradeTravada || !o.grade) o.grade = { bpm: g.bpm, primeira: g.primeira };
       if (!(o.bpm > 0)) o.bpm = g.bpm;
+      if (typeof gradeTempo1Reaplicar === "function") gradeTempo1Reaplicar(o, { bpm: g.bpm, primeira: g.primeira });   // o tempo 1 escolhido vale mais que o .nml
     },
     async gravarDuracao(f, s){
       const o = f.original;

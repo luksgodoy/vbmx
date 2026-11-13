@@ -55,7 +55,9 @@ function mudouBiblioteca(faixas){
   renderTudo();
   VbMxUI.emitir("biblioteca:mudou", { faixas: BIBLIOTECA, ehExemplo });
 }
-VbMxPainel.iniciar({ montarEm: document.getElementById("pastas"), aoMudar: mudouBiblioteca });
+VbMxPrefs.declarar("biblio.pasta-filtro", "", { tipo: "texto", modulo: "biblio", rotulo: "Pasta mostrada na biblioteca (nome; vazio = todas as pastas)" });
+VbMxPainel.iniciar({ montarEm: document.getElementById("pastas"), aoMudar: mudouBiblioteca, aoDesenhar: () => renderBiblio(),
+  preferencia: { ler: () => VbMxPrefs.ler("biblio.pasta-filtro"), gravar: v => VbMxPrefs.gravar("biblio.pasta-filtro", v) } });
 
 if (MODULO_VELHO) document.getElementById("marca-origem").innerHTML += ` · <span class="tag-exemplo">${AVISO_MODULO}</span>`;
 try { rodaAberta = localStorage.getItem("vbmx-roda")==="1"; } catch(_){ rodaAberta = false; }

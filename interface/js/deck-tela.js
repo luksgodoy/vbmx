@@ -32,8 +32,8 @@ function renderDeck(div, faixa, letra){
         <label class="rotulo" for="pitch-${letra}">Pitch</label>
         <span class="pitch-valor mono">${VbMxPitch.formatarPitch(d.pitch)}</span>
         <div class="pitch-corpo">
-          <div class="marcas" aria-hidden="true"><span class="marca-pm">+${L}</span><span class="marca-pm">0</span><span class="marca-pm">−${L}</span></div>
-          <input type="range" id="pitch-${letra}" min="-${L}" max="${L}" step="0.1" value="${d.pitch}" data-pitch="${letra}" aria-orientation="vertical" ${faixa?"":"disabled"} aria-label="Pitch do deck ${letra}, de −${L}% a +${L}%; para cima aumenta o andamento">
+          <div class="marcas" aria-hidden="true"><span class="marca-pm">−${L}</span><span class="marca-pm">0</span><span class="marca-pm">+${L}</span></div>
+          <input type="range" id="pitch-${letra}" min="-${L}" max="${L}" step="0.1" value="${d.pitch}" data-pitch="${letra}" aria-orientation="vertical" ${faixa?"":"disabled"} aria-label="Pitch do deck ${letra}, de −${L}% a +${L}%; para baixo aumenta o andamento, para cima diminui">
         </div>
         <span class="pitch-bpm mono">${faixa?`→ ${fmtBpm(efetivo)} BPM`:""}</span>
         <button class="zerar" data-zerar="${letra}" ${faixa?"":"disabled"} title="Pitch de volta a 0%">0</button>
@@ -47,7 +47,7 @@ function renderDeck(div, faixa, letra){
     <div class="carga-deck ${d.cargaCls}" role="status">${esc(d.carga)}</div>
     <div class="aviso-sync ${d.avisoCls}" role="status">${esc(d.aviso)}</div>`;
     div.querySelector("input[data-pitch]").addEventListener("input", e=>mudarPitch(letra, e.target.value));
-  if (typeof VbMxPecas !== "undefined") VbMxPecas.vestir(div.querySelector("input[data-pitch]"), { fabrica: "fader", tipo: "pitch", orientacao: "vertical", padrao: 0, comprimento: 150, marcas: 9 });   // proposta B: pele por cima, o input fica por baixo
+  if (typeof VbMxPecas !== "undefined") VbMxPecas.vestir(div.querySelector("input[data-pitch]"), { fabrica: "fader", tipo: "pitch", orientacao: "vertical", invertido: true, padrao: 0, comprimento: 150, marcas: 9 });   // proposta B: pele por cima, o input fica por baixo
   div.querySelector("[data-zerar]").addEventListener("click", ()=>{ zerarDeck(letra); atualizarNumerosDoDeck(letra); });
   div.querySelector("[data-sync]").addEventListener("click", ()=>sincronizar(letra));
   div.querySelector("[data-master]").addEventListener("click", ()=>mestreAlternar(letra));
