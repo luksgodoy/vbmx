@@ -307,4 +307,27 @@ for (const l of ["A", "B"]) {
   VbMxUI.registrar("acao", `deck${l}.cue`, (v) => (v === false ? soltarCueDeck(l) : apertarCueDeck(l)));
   VbMxUI.registrar("acao", `deck${l}.cup`, (v) => (v === false ? soltarCupDeck(l) : apertarCupDeck(l)));
   VbMxUI.registrar("acao", `deck${l}.reverso`, (v) => (v === false ? soltarReversoDeck(l) : apertarReversoDeck(l)));
+  VbMxUI.registrar("acao", `deck${l}.inicio`, () => voltarAoInicio(l));                 // X1: SHIFT+CUE (decisão de 13/11/2026)
+  VbMxUI.registrar("acao", `deck${l}.pitchMais`, (p) => passoDePitch(l, 1, p));         // X1: SHIFT+Nudge, 0,1 % por clique
+  VbMxUI.registrar("acao", `deck${l}.pitchMenos`, (p) => passoDePitch(l, -1, p));
+  VbMxUI.registrar("acao", `deck${l}.carregar`, () => { if (atual) carregarNoDeck(l, atual.id); });   // X1: push do Browse
+}
+// Volta a cabeça ao começo da faixa; tocando, continua tocando de lá (como o SHIFT+CUE do Traktor).
+function voltarAoInicio(letra){
+  const d = decks[letra];
+  if (!d.buffer) return;
+  d.previa = false;
+  VbMxTocador.buscar(letra, 0);
+  atualizarTransporte(letra); emitirPosicao(letra);
+}
+// Pitch em passos (% do motor; o sentido é o do motor, a inversão do fader é só na tela). A regra é
+// VbMxMapaControle.passoDePitch: com SYNC ligado o passo vale mesmo assim e solta o SYNC do deck, a partir do
+// pitch em que o SYNC o deixou (como no Traktor; decisão do Lucas, 2026-11-13). O fader continua reaplicando.
+function passoDePitch(letra, sinal, passo){
+  const d = decks[letra];
+  const r = VbMxMapaControle.passoDePitch(d.pitch, sinal, passo, d.sync);
+  if (r.soltarSync) syncSoltar(letra, "pitch mexido em passos (SHIFT+Nudge)");
+  const aviso = d.aviso, cls = d.avisoCls;
+  mudarPitch(letra, r.pitch);
+  if (r.soltarSync) { d.aviso = aviso; d.avisoCls = cls; atualizarNumerosDoDeck(letra); }   // mudarPitch limpa o aviso
 }

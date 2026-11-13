@@ -1,0 +1,1233 @@
+{
+ "formato": "vbmx-mapa-controle",
+ "versao": 1,
+ "perfil": "x1-mk3",
+ "revisao": 4,
+ "nome": "Traktor Kontrol X1 MK3 (modo MIDI)",
+ "porta": "X1.?MK3",
+ "parametros": {
+  "pitchPasso": 0.1,
+  "camadas": {
+   "2": 0,
+   "3": 1
+  }
+ },
+ "saidas": {
+  "endereco": "mesmo-controle",
+  "nota": "O LED de um botão é a mesma nota/CC e o mesmo canal que ele manda (a confirmar no aparelho, X1-PROVA); sai das atribuições do mapa, então segue o remapeamento. Só a camada sem SHIFT. velocidade = brilho; cor por velocidade a confirmar.",
+  "amostraMs": 100,
+  "brilho": {
+   "forte": 126,
+   "fraco": 70,
+   "apagado": 0
+  },
+  "regras": [
+   {
+    "controle": "play",
+    "comando": "play",
+    "acende": "tocando",
+    "brilho": "forte"
+   },
+   {
+    "controle": "sync",
+    "comando": "sync",
+    "acende": "sync",
+    "brilho": "forte"
+   },
+   {
+    "controle": "hotcue",
+    "comando": "hotcue*",
+    "acende": "ocupado",
+    "brilho": "forte",
+    "vazio": "apagado"
+   },
+   {
+    "controle": "stem-botao",
+    "comando": "stem.*.mudo",
+    "acende": "soando",
+    "brilho": "forte",
+    "mudo": "fraco"
+   },
+   {
+    "controle": "loop-push",
+    "comando": "loopAuto",
+    "acende": "loop-ativo",
+    "brilho": "forte"
+   },
+   {
+    "controle": "atribuicao-esq",
+    "comando": "stems.ligar",
+    "acende": "stems-ligados",
+    "brilho": "forte"
+   }
+  ]
+ },
+ "mapeamentos": [
+  {
+   "nome": "Traktor X1 MK3",
+   "ativo": true,
+   "atribuicoes": [
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 16
+     },
+     "comando": "stem.vocals.volume",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 16
+     },
+     "comando": "stem.vocals.filtro",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 16
+     },
+     "comando": "stem.vocals.mudo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 16
+     },
+     "comando": "stem.vocals.solo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 17
+     },
+     "comando": "stem.drums.volume",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 17
+     },
+     "comando": "stem.drums.filtro",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 17
+     },
+     "comando": "stem.drums.mudo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 17
+     },
+     "comando": "stem.drums.solo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 18
+     },
+     "comando": "stem.bass.volume",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 18
+     },
+     "comando": "stem.bass.filtro",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 18
+     },
+     "comando": "stem.bass.mudo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 18
+     },
+     "comando": "stem.bass.solo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.volume",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.filtro",
+     "alvo": "A",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.mudo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.solo",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 0
+     },
+     "comando": "stems.ligar",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 1
+     },
+     "comando": "stems.restaurar",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 0
+     },
+     "comando": "fx1.liga",
+     "alvo": null,
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 1
+     },
+     "comando": "fx2.liga",
+     "alvo": null,
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 2
+     },
+     "comando": "hotcue1",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 2
+     },
+     "comando": "hotcue5",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 3
+     },
+     "comando": "hotcue2",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 3
+     },
+     "comando": "hotcue6",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 4
+     },
+     "comando": "hotcue3",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 4
+     },
+     "comando": "hotcue7",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 5
+     },
+     "comando": "hotcue4",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 5
+     },
+     "comando": "hotcue8",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 10
+     },
+     "comando": "play",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 8
+     },
+     "comando": "cue",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 11
+     },
+     "comando": "sync",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 9
+     },
+     "comando": "reverso",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 9
+     },
+     "comando": "flux",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 6
+     },
+     "comando": "bendMenos",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 7
+     },
+     "comando": "bendMais",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 6
+     },
+     "comando": "pitchMenos",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {
+      "repetir": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 7
+     },
+     "comando": "pitchMais",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {
+      "repetir": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 8
+     },
+     "comando": "inicio",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 11
+     },
+     "comando": "mestre",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 20
+     },
+     "comando": "biblio.mover",
+     "alvo": null,
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 20
+     },
+     "comando": "biblio.lista",
+     "alvo": null,
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 20
+     },
+     "comando": "carregar",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 0,
+      "numero": 21
+     },
+     "comando": "loopTamanho",
+     "alvo": "A",
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 0,
+      "numero": 21
+     },
+     "comando": "loopAuto",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 2,
+      "numero": 21
+     },
+     "comando": "beatjump",
+     "alvo": "A",
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 2,
+      "numero": 21
+     },
+     "comando": "loopIn",
+     "alvo": "A",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 16
+     },
+     "comando": "stem.vocals.volume",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 16
+     },
+     "comando": "stem.vocals.filtro",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 16
+     },
+     "comando": "stem.vocals.mudo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 16
+     },
+     "comando": "stem.vocals.solo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 17
+     },
+     "comando": "stem.drums.volume",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 17
+     },
+     "comando": "stem.drums.filtro",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 17
+     },
+     "comando": "stem.drums.mudo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 17
+     },
+     "comando": "stem.drums.solo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 18
+     },
+     "comando": "stem.bass.volume",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 18
+     },
+     "comando": "stem.bass.filtro",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 18
+     },
+     "comando": "stem.bass.mudo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 18
+     },
+     "comando": "stem.bass.solo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.volume",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.filtro",
+     "alvo": "B",
+     "tipo": "fader",
+     "modo": "direct",
+     "opcoes": {
+      "softTakeover": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.mudo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 19
+     },
+     "comando": "stem.instrumental.solo",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "toggle",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 0
+     },
+     "comando": "stems.ligar",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 1
+     },
+     "comando": "stems.restaurar",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 0
+     },
+     "comando": "fx1.liga",
+     "alvo": null,
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 1
+     },
+     "comando": "fx2.liga",
+     "alvo": null,
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 2
+     },
+     "comando": "hotcue1",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 2
+     },
+     "comando": "hotcue5",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 3
+     },
+     "comando": "hotcue2",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 3
+     },
+     "comando": "hotcue6",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 4
+     },
+     "comando": "hotcue3",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 4
+     },
+     "comando": "hotcue7",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 5
+     },
+     "comando": "hotcue4",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 5
+     },
+     "comando": "hotcue8",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 10
+     },
+     "comando": "play",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 8
+     },
+     "comando": "cue",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 11
+     },
+     "comando": "sync",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 9
+     },
+     "comando": "reverso",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 9
+     },
+     "comando": "flux",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 6
+     },
+     "comando": "bendMenos",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 7
+     },
+     "comando": "bendMais",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 6
+     },
+     "comando": "pitchMenos",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {
+      "repetir": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 7
+     },
+     "comando": "pitchMais",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {
+      "repetir": true
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 8
+     },
+     "comando": "inicio",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 11
+     },
+     "comando": "mestre",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 20
+     },
+     "comando": "biblio.mover",
+     "alvo": null,
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 20
+     },
+     "comando": "biblio.lista",
+     "alvo": null,
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 20
+     },
+     "comando": "carregar",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 1,
+      "numero": 21
+     },
+     "comando": "loopTamanho",
+     "alvo": "B",
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 1,
+      "numero": 21
+     },
+     "comando": "loopAuto",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    },
+    {
+     "fisico": {
+      "tipo": "cc",
+      "canal": 3,
+      "numero": 21
+     },
+     "comando": "beatjump",
+     "alvo": "B",
+     "tipo": "encoder",
+     "modo": "relative",
+     "opcoes": {
+      "codificacao": "3f41"
+     }
+    },
+    {
+     "fisico": {
+      "tipo": "nota",
+      "canal": 3,
+      "numero": 21
+     },
+     "comando": "loopIn",
+     "alvo": "B",
+     "tipo": "botao",
+     "modo": "hold",
+     "opcoes": {}
+    }
+   ]
+  }
+ ]
+}

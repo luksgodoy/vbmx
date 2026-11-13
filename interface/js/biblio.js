@@ -395,6 +395,34 @@ async function biblioMarcarImportadas(faixas){
   const chaves = faixas.filter(f=>f.caminho).map(biblioChave);
   if (chaves.length && await biblioMeta().garantirImportada(chaves)) await biblioRecarregar();
 }
+// ---- MIDI (X1: encoder Browse): mover a seleção pela lista que a tela mostra, e trocar de lista ----
+// A ordem é a da tela (grupos, ordenação, filtro); sem tabela na tela (árvore), a de biblioLista(). O id da faixa
+// pode ser número e o data-faixa é texto: compara como texto e seleciona pelo id original da BIBLIOTECA.
+function biblioOrdemVisivel(){
+  const nos = typeof document !== "undefined" ? [...document.querySelectorAll("#biblio [data-faixa]")] : [];
+  if (nos.length) return nos.map(n=>n.getAttribute("data-faixa"));
+  return biblioLista().filter(x=>x.analisavel!==false).map(x=>String(x.id));
+}
+function biblioMover(passo){
+  const n = Math.round(Number(passo)) || 0, ids = biblioOrdemVisivel();
+  if (!n || !ids.length) return;
+  const i = atual ? ids.indexOf(String(atual.id)) : -1;
+  const j = i < 0 ? (n > 0 ? 0 : ids.length-1) : Math.min(ids.length-1, Math.max(0, i+n));
+  const f = BIBLIOTECA.find(x=>String(x.id)===ids[j]); if (!f) return;
+  selecionar(f.id);
+  const no = [...document.querySelectorAll("#biblio [data-faixa]")].find(x=>x.getAttribute("data-faixa")===ids[j]);
+  if (no && no.scrollIntoView) no.scrollIntoView({ block:"nearest" });
+}
+function biblioTrocarLista(passo){
+  const n = Math.round(Number(passo)) || 0, ids = ["", ...biblioListas.map(l=>l.id)];
+  if (!n || ids.length < 2) return;
+  const e = biblioEstado, i = Math.max(0, ids.indexOf(e.lista || ""));
+  e.lista = ids[((i + n) % ids.length + ids.length) % ids.length]; e.modoNome = ""; e.apagando = false; e.rascunho = [];
+  const l = biblioListaAtual(); if (l && l.tipo==="inteligente") e.rascunho = biblioRascunhoDe(l);
+  renderBiblio();
+}
+VbMxUI.registrar("acao", "biblio.mover", biblioMover);
+VbMxUI.registrar("acao", "biblio.lista", biblioTrocarLista);
 VbMxUI.aoIniciar(()=>{
   VbMxUI.ouvir("biblioteca:mudou", ({faixas})=>{ biblioLerTags(faixas); biblioMarcarImportadas(faixas); });
   for (const ev of ["deck:carregado", "deck:descarregado", "historico:mudou"]) VbMxUI.ouvir(ev, ()=>renderBiblio());   // deck-A/B, ✓ de já tocada

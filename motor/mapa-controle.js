@@ -38,6 +38,16 @@
   C({ id: 'cup', rotulo: 'CUP', alvo: 'deck', nome: 'cup', tipoAcao: 'pressionar' });
   C({ id: 'reverso', rotulo: 'Reverso', alvo: 'deck', nome: 'reverso', tipoAcao: 'pressionar' });
   C({ id: 'sync', rotulo: 'SYNC', alvo: 'deck', nome: 'sync' });
+  C({ id: 'mestre', rotulo: 'Mestre do SYNC', alvo: 'deck', nome: 'mestre' });
+  C({ id: 'inicio', rotulo: 'Voltar ao início', alvo: 'deck', nome: 'inicio' });
+  C({ id: 'carregar', rotulo: 'Carregar a faixa selecionada', alvo: 'deck', nome: 'carregar' });
+  // pitch em passos: o tamanho vem do parâmetro do mapa (parametros.pitchPasso, % por clique); sem ele, 0,1 %.
+  // soltaSync: com o SYNC ligado o passo vale mesmo assim e desliga o SYNC do deck (como no Traktor; decisão
+  // do Lucas, 2026-11-13) — a regra é passoDePitch, abaixo.
+  C({ id: 'pitchMais', rotulo: 'Pitch + (passo)', alvo: 'deck', nome: 'pitchMais', parametro: 'pitchPasso', soltaSync: true });
+  C({ id: 'pitchMenos', rotulo: 'Pitch − (passo)', alvo: 'deck', nome: 'pitchMenos', parametro: 'pitchPasso', soltaSync: true });
+  C({ id: 'bendMais', rotulo: 'Bend + (segurar)', alvo: 'deck', nome: 'bendMais', tipoAcao: 'pressionar' });
+  C({ id: 'bendMenos', rotulo: 'Bend − (segurar)', alvo: 'deck', nome: 'bendMenos', tipoAcao: 'pressionar' });
   for (let n = 1; n <= 8; n++) C({ id: 'hotcue' + n, rotulo: 'Hotcue ' + n, alvo: 'deck', nome: 'hotcue' + n, tipoAcao: 'pressionar' });
   C({ id: 'loopIn', rotulo: 'Loop IN', alvo: 'deck', nome: 'loopIn' });
   C({ id: 'loopOut', rotulo: 'Loop OUT', alvo: 'deck', nome: 'loopOut' });
@@ -63,6 +73,10 @@
   for (const b of ['hi', 'mid', 'low']) C({ id: 'mixer.kill-' + b, rotulo: 'Kill ' + b, alvo: 'canal', nome: 'kill-' + b, tipoAcao: 'booleano' });
   C({ id: 'mixer.xfade', rotulo: 'Crossfader', alvo: 'global', nome: 'mixer.xfade', tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [-100, 100] });
   C({ id: 'mixer.master-vol', rotulo: 'Volume master', alvo: 'global', nome: 'mixer.master-vol', tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
+  // FX globais (js/fx.js registra fx1/fx2.liga; VbMxFx.UNIDADES = 2): o SHIFT+atribuição ◀/▶ da X1 MK3.
+  C({ id: 'biblio.mover', rotulo: 'Biblioteca: mover a seleção (encoder)', alvo: 'global', nome: 'biblio.mover', tipos: ['encoder'], tipoAcao: 'delta' });
+  C({ id: 'biblio.lista', rotulo: 'Biblioteca: trocar de lista (encoder)', alvo: 'global', nome: 'biblio.lista', tipos: ['encoder'], tipoAcao: 'delta' });
+  for (let n = 1; n <= 2; n++) C({ id: 'fx' + n + '.liga', rotulo: 'FX ' + n + ' liga/desliga', alvo: 'global', nome: 'fx' + n + '.liga' });
 
   // Stems dos decks (VB-stems-atalhos): 4 vozes × (mudo, solo, volume, EQ, filtro, fx). Alvo 'deck', então a ação em
   // VbMxUI é `deckA.stem.<voz>.<controle>` (registrada em js/stems-tela.js). `stem` e `campo` dizem de onde ler o
@@ -79,6 +93,10 @@
     S('fxParam', 'efeito: parâmetro', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
     S('fxMix', 'efeito: mix', { tipos: ['fader', 'encoder'], tipoAcao: 'valor', faixa: [0, 100] });
   }
+  // Modo stems do deck (X1-STEMS, docs/midi-x1-mk3.md § 3.1): ligar = o botão STEMS da faixa (separa se ainda não há stems);
+  // restaurar = o reset da faixa (mudo/solo desligados, volume 1, EQ 0, filtro 0, sem fx). Ações em js/stems-tela.js.
+  C({ id: 'stems.ligar', rotulo: 'Stems: liga/desliga o modo', alvo: 'deck', nome: 'stems.ligar' });
+  C({ id: 'stems.restaurar', rotulo: 'Stems: restaurar (faixa inteira)', alvo: 'deck', nome: 'stems.restaurar' });
   // Valor atual do campo do comando de stem, na escala do comando (para fader direct/soft takeover e encoder).
   function valorDoStem(cmd, est) {
     est = est || {};
@@ -178,6 +196,8 @@
   // parâmetro, ou null quando não deve mexer nele (soft takeover ainda não pegou; primeira mensagem relative).
   //  direct: a posição física vira o parâmetro. Com softTakeover, só começa a valer depois que o controle
   //          chega ao valor atual (dentro da tolerância) ou o atravessa; antes disso nada muda.
+  //          Se o parâmetro mudou por fora depois da tomada (mouse, reset, outro controle), a tomada recomeça:
+  //          `est.alvo` guarda o último valor que este controle escreveu.
   //  relative: aplica só o deslocamento físico desde a última mensagem (sem saltos).
   function processarFader(est, modo, valor, atual01, { inverter = false, resolucao = 'fina', softTakeover = true, sensibilidade = 1 } = {}) {
     est = est || estFaderInicial();
@@ -191,6 +211,10 @@
     }
     // direct
     const proximo = Object.assign({}, est, { ultimo: fis });
+    if (softTakeover && est.pegou && typeof est.alvo === 'number' && Math.abs(atual01 - est.alvo) > TOLERANCIA_TOMADA) {
+      est = Object.assign({}, est, { pegou: false, lado: 0 });    // mexeram no parâmetro por fora: pegar de novo
+      Object.assign(proximo, { pegou: false, lado: 0 });
+    }
     if (softTakeover && !est.pegou) {
       const lado = Math.sign(fis - atual01);
       const atravessou = est.lado !== 0 && lado !== 0 && lado !== est.lado;
@@ -198,10 +222,22 @@
       if (!(Math.abs(fis - atual01) <= TOLERANCIA_TOMADA || atravessou)) return { est: proximo, alvo01: null };
     }
     proximo.pegou = true;
-    return { est: proximo, alvo01: aplicarResolucao(fis, resolucao) };
+    proximo.alvo = aplicarResolucao(fis, resolucao);
+    return { est: proximo, alvo01: proximo.alvo };
   }
   // Troca de alvo/parâmetro compartilhado: o soft takeover recomeça.
-  function soltarTomada(est) { return Object.assign({}, est || estFaderInicial(), { pegou: false, lado: 0, ultimo: null }); }
+  function soltarTomada(est) { return Object.assign({}, est || estFaderInicial(), { pegou: false, lado: 0, ultimo: null, alvo: null }); }
+
+  // Camadas por canal (perfil de controlador): `camadas` = {canal da camada: canal-base}, ex. a X1 MK3 manda o mesmo knob
+  // no canal 0 e, com SHIFT, no 2 → {"2": 0, "3": 1}. Duas entradas com a mesma chaveBase são o MESMO controle físico:
+  // quando uma camada move o knob, a tomada da outra tem de recomeçar (senão, ao soltar o SHIFT, o parâmetro pula).
+  function canalBase(canal, camadas) {
+    const c = canal | 0, b = camadas && camadas[String(c)];
+    return Number.isInteger(b) ? b : c;
+  }
+  function chaveBase(f, camadas) {
+    return f.tipo === 'tecla' ? chaveFisico(f) : f.tipo + ':' + canalBase(f.canal, camadas) + ':' + (f.numero | 0);
+  }
 
   // ---------------------------------------------------------------- encoder (VB-40)
   // '7f01': 1..63 = +n, 127..65 = −(128−v) (7Fh = −1, 01h = +1). '3f41': centro 40h; 41h = +1, 3Fh = −1.
@@ -238,6 +274,17 @@
       return r;
     }
     return null;
+  }
+
+  // Um passo de pitch (pitchMais/pitchMenos): soma sinal × passo (% do motor; passo inválido ou ≤ 0 = 0,1) ao
+  // pitch atual, arredondado ao milésimo para não acumular erro de ponto flutuante. Com SYNC ligado o passo
+  // vale do pitch em que o SYNC deixou o deck e pede para soltar o SYNC: → {pitch, soltarSync}.
+  const PASSO_PITCH_PADRAO = 0.1;
+  function passoDePitch(pitch, sinal, passo, sync) {
+    const p = Number(passo) > 0 ? Number(passo) : PASSO_PITCH_PADRAO;
+    const atual = Number(pitch) || 0;
+    const s = Number(sinal) < 0 ? -1 : 1;
+    return { pitch: Math.round((atual + s * p) * 1000) / 1000, soltarSync: !!sync };
   }
 
   // ---------------------------------------------------------------- atribuições e mapeamentos
@@ -313,8 +360,8 @@
     COMANDOS, STEMS_VOZES, valorDoStem, parcialDoStem, TIPOS, MODOS_BOTAO, MODOS_FADER, CODIFICACOES, TAMANHOS_LOOP, TOLERANCIA_TOMADA, FORMATO, VERSAO,
     comandoPorId, nomeDaAcao, nomeTamanho, rotuloTamanho, chaveFisico, interpretarMidi,
     estBotaoInicial, processarBotao, deveAplicarDireto,
-    estFaderInicial, processarFader, soltarTomada, aplicarResolucao,
-    estEncoderInicial, decodificarEncoder, processarEncoder, despachoDoEncoder,
+    estFaderInicial, processarFader, soltarTomada, aplicarResolucao, canalBase, chaveBase,
+    estEncoderInicial, decodificarEncoder, processarEncoder, despachoDoEncoder, passoDePitch, PASSO_PITCH_PADRAO,
     opcoesPadrao, modoPadrao, novaAtribuicao, novoMapeamento, validarAtribuicao, achar, exportar, importar,
   };
 });

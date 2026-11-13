@@ -11,21 +11,31 @@ const controles = {
   repeticoes: new Map(),// id da atribuição → timer de "repetir ao segurar"
   aprendendo: null,     // {mapaId, atribuicao?, aoCapturar(fisico)} enquanto espera um controle
   entradas: [],         // nomes das portas MIDI conectadas
+  portasVivas: new Map(),// id da porta → {nome, entrada}, só as conectadas (para saber qual sumiu)
+  perfis: [],           // perfis de controlador carregados de perfis/*.json (X1 MK3 é o primeiro)
+  perfisRecusados: [],  // ids de perfil cujo mapa o Lucas apagou: não voltam sozinhos quando a porta reaparece
+  saidas: new Map(),    // id da porta de saída → {nome, saida, enviado:{chave: vel}}, só as que casam um perfil com `saidas`
+  ledsTimer: null,      // amostra dos LEDs (saidas.amostraMs), viva só enquanto há porta de saída
   statusMidi: "MIDI: não iniciado",
   el: null,
 };
 const CONTROLES_CHAVE = "vbmx-mapas";
+const CONTROLES_PERFIS = ["perfis/x1-mk3.json"];   // relativo ao classico.html; entra na publicação junto de interface/
 
 // ---------------------------------------------------------------- persistência
 function controlesSalvar() {
-  try { localStorage.setItem(CONTROLES_CHAVE, JSON.stringify({ versao: 1, mapas: controles.mapas })); } catch (_) {}
+  try { localStorage.setItem(CONTROLES_CHAVE, JSON.stringify({ versao: 1, mapas: controles.mapas, perfisRecusados: controles.perfisRecusados })); } catch (_) {}
 }
 function controlesCarregar() {
   try {
     const bruto = localStorage.getItem(CONTROLES_CHAVE);
     if (bruto) {
       const o = JSON.parse(bruto);
-      if (o && Array.isArray(o.mapas)) { controles.mapas = o.mapas.filter((m) => m && Array.isArray(m.atribuicoes)); return; }
+      if (o && Array.isArray(o.mapas)) {
+        controles.mapas = o.mapas.filter((m) => m && Array.isArray(m.atribuicoes));
+        controles.perfisRecusados = Array.isArray(o.perfisRecusados) ? o.perfisRecusados.filter((x) => typeof x === "string") : [];
+        return;
+      }
     }
   } catch (_) {}
   controles.mapas = [];
@@ -58,15 +68,18 @@ function controlesAgir(nome, ...args) {
 }
 
 // ---------------------------------------------------------------- despacho
-function controlesBotao(a, cmd, valor) {
+function controlesBotao(a, cmd, valor, m) {
   const M = VbMxMapaControle, o = a.opcoes || {};
   const r = M.processarBotao(controles.estados.get(a.id), a.modo, valor,
     { tipoAcao: cmd.tipoAcao === "valor" ? "gatilho" : cmd.tipoAcao, valorFixo: o.valorFixo, repetir: o.repetir, inverter: o.inverter });
   controles.estados.set(a.id, r.est);
   const nome = M.nomeDaAcao(cmd, a.alvo);
   if (!nome) return;
+  // comando com parâmetro do mapa (ex.: pitchPasso da X1): o gatilho leva o valor como argumento
+  const pm = cmd.parametro && m && m.parametros ? m.parametros[cmd.parametro] : undefined;
+  const args = typeof pm === "number" && Number.isFinite(pm) ? [pm] : [];
   for (const ev of r.eventos) {
-    if (ev.op === "disparar") controlesAgir(nome);
+    if (ev.op === "disparar") controlesAgir(nome, ...args);
     else if (ev.op === "descer") controlesAgir(nome, true);
     else if (ev.op === "subir") controlesAgir(nome, false);
     else if (ev.op === "definir") {
@@ -79,11 +92,25 @@ function controlesBotao(a, cmd, valor) {
   // repetir ao segurar: só para gatilhos (avançar beatjump, passos de BPM…); para ao soltar
   const antes = controles.repeticoes.get(a.id);
   if (r.repetir && !antes && cmd.tipoAcao === "gatilho" && !cmd.temEstado) {
-    controles.repeticoes.set(a.id, setInterval(() => controlesAgir(nome), Math.max(40, Number(o.repetirMs) || 150)));
+    controles.repeticoes.set(a.id, setInterval(() => controlesAgir(nome, ...args), Math.max(40, Number(o.repetirMs) || 150)));
   } else if (!r.repetir && antes) { clearInterval(antes); controles.repeticoes.delete(a.id); }
 }
-function controlesFader(a, cmd, valor) {
+// Camadas do perfil (parametros.camadas, ex. SHIFT da X1 = canal 2/3): o knob que se mexeu numa camada é o mesmo
+// controle físico da outra, então a tomada da outra camada recomeça — senão, ao soltar o SHIFT, o volume pularia
+// para onde o filtro deixou o knob.
+function controlesSoltarCamadas(m, a) {
+  const cam = m && m.parametros && m.parametros.camadas;
+  if (!cam) return;
+  const M = VbMxMapaControle, base = M.chaveBase(a.fisico, cam), k = M.chaveFisico(a.fisico);
+  for (const b of m.atribuicoes) {
+    if (b === a || b.tipo !== "fader" || M.chaveFisico(b.fisico) === k || M.chaveBase(b.fisico, cam) !== base) continue;
+    const est = controles.estados.get(b.id);
+    if (est && est.pegou) controles.estados.set(b.id, M.soltarTomada(est));
+  }
+}
+function controlesFader(a, cmd, valor, m) {
   const M = VbMxMapaControle, o = a.opcoes || {};
+  controlesSoltarCamadas(m, a);
   const atual01 = controlesPara01(cmd, controlesValorAtual(cmd, a.alvo));
   const r = M.processarFader(controles.estados.get(a.id), a.modo, valor, atual01,
     { inverter: o.inverter, resolucao: o.resolucao, softTakeover: o.softTakeover, sensibilidade: o.sensibilidade });
@@ -107,7 +134,8 @@ function controlesEncoder(a, cmd, valor, tMs) {
 }
 
 // Ponto de entrada único de teclado e MIDI. Devolve true se a entrada foi usada (aprendida ou mapeada).
-function controlesEntrada(fisico, valor, tMs) {
+// `porta` (nome da porta MIDI de origem) só vem das mensagens MIDI: mapa de perfil (m.perfil) só vale se a porta casar.
+function controlesEntrada(fisico, valor, tMs, porta) {
   if (controles.aprendendo) {
     if (valor > 0 || fisico.tipo === "cc") {           // nota/tecla: o aperto; CC: o primeiro movimento
       const cap = controles.aprendendo; controles.aprendendo = null;
@@ -115,32 +143,181 @@ function controlesEntrada(fisico, valor, tMs) {
     }
     return true;
   }
-  const achadas = VbMxMapaControle.achar(controles.mapas, fisico);
-  for (const { atribuicao: a } of achadas) {
+  const achadas = VbMxMapaControle.achar(controles.mapas.filter((m) => controlesMapaVale(m, porta)), fisico);
+  for (const { mapeamento: m, atribuicao: a } of achadas) {
     const cmd = VbMxMapaControle.comandoPorId(a.comando);
     if (!cmd) continue;
-    if (a.tipo === "botao") controlesBotao(a, cmd, valor);
-    else if (a.tipo === "fader" && cmd.tipoAcao === "valor") controlesFader(a, cmd, valor);
+    if (a.tipo === "botao") controlesBotao(a, cmd, valor, m);
+    else if (a.tipo === "fader" && cmd.tipoAcao === "valor") controlesFader(a, cmd, valor, m);
     else if (a.tipo === "encoder") controlesEncoder(a, cmd, valor, tMs || performance.now());
   }
   return achadas.length > 0;
 }
 
-// ---------------------------------------------------------------- Web MIDI
-function midiAoMensagem(ev) {
-  const m = VbMxMapaControle.interpretarMidi(ev.data);
-  if (m) controlesEntrada(m.fisico, m.valor, ev.timeStamp);
+// ---------------------------------------------------------------- perfis de controlador (dado, não código)
+// perfis/<id>.json = arquivo `vbmx-mapa-controle` v1 + chaves `perfil` (id), `revisao`, `nome`, `porta` (regex do nome da
+// porta MIDI), `parametros` (ex.: pitchPasso) e `saidas` (regra dos LEDs, motor/leds.js). Entra em controles.mapas
+// na primeira vez que a porta aparece, com `perfil`/`porta`/`revisao` no mapa: dali em diante é um mapeamento como outro
+// qualquer (remapeável, exportável). Só recebe mensagens da porta que casa. Revisão nova do arquivo substitui a cópia local.
+function controlesPortaCasa(porta, nome) {
+  try { return !!nome && new RegExp(porta, "i").test(nome); } catch (_) { return false; }
 }
+function controlesMapaVale(m, porta) { return !m.perfil || controlesPortaCasa(m.porta, porta); }
+function controlesCarregarPerfis() {
+  if (typeof fetch !== "function") return Promise.resolve();
+  return Promise.all(CONTROLES_PERFIS.map((arq) => fetch(arq).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); }).then((texto) => {
+    const o = JSON.parse(texto);
+    if (!o || typeof o.perfil !== "string" || typeof o.porta !== "string" || !VbMxMapaControle.importar(texto).ok) throw new Error("perfil inválido");
+    controles.perfis.push({ id: o.perfil, nome: o.nome || o.perfil, porta: o.porta, revisao: Number(o.revisao) || 1,
+      parametros: o.parametros || {}, saidas: o.saidas || null, texto });
+  }).catch((e) => console.warn("controles: perfil não carregado", arq, e)))).then(() => undefined);
+}
+const controlesChaveAtrib = (a) => VbMxMapaControle.chaveFisico(a.fisico) + "|" + a.comando + "|" + (a.alvo || "");
+// Revisão nova do arquivo sobre a cópia local: o que o Lucas fez na cópia vale por cima do arquivo.
+//  · atribuição local (aprendida no painel, não veio do perfil) fica, e tira do arquivo a linha do mesmo controle físico;
+//  · linha do perfil que ele apagou continua apagada; ligado/desligado (ativo) se mantém.
+// `origem` = as linhas que vieram do arquivo na última importação. Cópia antiga sem `origem`: conta como do perfil o que
+// também está no arquivo novo (não dá para saber o que foi apagado; volta tudo do arquivo).
+function controlesMesclarRevisao(atual, doArquivo) {
+  const M = VbMxMapaControle, chave = controlesChaveAtrib;
+  const tem = new Set(atual.atribuicoes.map(chave)), novas = new Set(doArquivo.map(chave));
+  const origem = new Set(Array.isArray(atual.origem) ? atual.origem : [...tem].filter((k) => novas.has(k)));
+  const locais = atual.atribuicoes.filter((a) => !origem.has(chave(a)));
+  const apagadas = new Set([...origem].filter((k) => !tem.has(k)));
+  const ocupados = new Set(locais.map((a) => M.chaveFisico(a.fisico)));
+  return doArquivo.filter((a) => !apagadas.has(chave(a)) && !ocupados.has(M.chaveFisico(a.fisico))).concat(locais);
+}
+function controlesGarantirPerfil(p) {
+  if (controles.perfisRecusados.includes(p.id)) return;
+  const atual = controles.mapas.find((m) => m.perfil === p.id);
+  if (atual && (atual.revisao || 0) >= p.revisao) return;
+  const r = VbMxMapaControle.importar(p.texto);
+  if (!r.ok || !r.mapeamentos.length) return;
+  const mapa = r.mapeamentos[0], origem = mapa.atribuicoes.map(controlesChaveAtrib);
+  if (atual) { mapa.atribuicoes = controlesMesclarRevisao(atual, mapa.atribuicoes); mapa.ativo = atual.ativo !== false; }
+  Object.assign(mapa, { nome: p.nome, perfil: p.id, porta: p.porta, revisao: p.revisao, parametros: p.parametros || {}, saidas: p.saidas || null, origem });
+  controles.mapas = controles.mapas.filter((m) => m !== atual).concat(mapa);
+  controlesSalvar(); controlesDesenhar();
+}
+// Apagar o mapa de um perfil o recusa (não volta quando a porta reaparece); "religar" no painel desfaz.
+function controlesApagarMapa(id) {
+  const m = controles.mapas.find((x) => x.id === id);
+  if (m && m.perfil && !controles.perfisRecusados.includes(m.perfil)) controles.perfisRecusados.push(m.perfil);
+  controles.mapas = controles.mapas.filter((x) => x.id !== id);
+  controlesSalvar(); controlesDesenhar();
+}
+function controlesReligarPerfil(id) {
+  controles.perfisRecusados = controles.perfisRecusados.filter((x) => x !== id);
+  const p = controles.perfis.find((x) => x.id === id);
+  if (p) controlesGarantirPerfil(p); else controlesSalvar();
+  controlesDesenhar();
+}
+// Porta sumiu: solta o que ela deixou preso (botão apertado, repetição, tomada do soft takeover, encoder).
+// Botão apertado recebe o "soltar" (cue em prévia, bend…); só mexe em mapa de perfil dessa porta ou em mapa geral.
+function controlesSoltarPorta(nome) {
+  const M = VbMxMapaControle;
+  for (const m of controles.mapas) {
+    if (m.perfil && !controlesPortaCasa(m.porta, nome)) continue;
+    for (const a of m.atribuicoes) {
+      if (a.fisico.tipo === "tecla") continue;
+      const est = controles.estados.get(a.id), cmd = M.comandoPorId(a.comando);
+      if (a.tipo === "botao" && est && est.premido && cmd) controlesBotao(a, cmd, 0);
+      const t = controles.repeticoes.get(a.id);
+      if (t) { clearInterval(t); controles.repeticoes.delete(a.id); }
+      if (a.tipo === "fader" && est) controles.estados.set(a.id, M.soltarTomada(est));
+      else if (a.tipo === "encoder") controles.estados.delete(a.id);
+    }
+  }
+}
+
+// ---------------------------------------------------------------- Web MIDI
+function midiAoMensagem(ev, porta) {
+  const m = VbMxMapaControle.interpretarMidi(ev.data);
+  if (m) controlesEntrada(m.fisico, m.valor, ev.timeStamp, porta);
+}
+// ---------------------------------------------------------------- LEDs (X1-LEDS): estado da página → só a diferença
+// A regra é dado (`saidas` do mapa do perfil, motor/leds.js); aqui só se lê o estado e se mandam os bytes. Amostra a
+// saidas.amostraMs (10 Hz) e nos eventos de deck, para o que não tem evento (sync, loop). Porta nova ou religada
+// começa com `enviado` vazio = tudo de novo, apagados inclusive.
+function controlesLeitura() {
+  const r = {}, st = typeof VbMxStems !== "undefined" ? VbMxStems : null;
+  for (const l of ["A", "B"]) {
+    const d = (typeof decks !== "undefined" && decks[l]) || {};
+    const reg = typeof hotcues !== "undefined" && hotcues.reg[l] && hotcues.faixa[l] === d.faixa ? hotcues.reg[l] : null;   // como loops.js/ondas.js
+    const lp = typeof loopsDeck === "function" ? loopsDeck(l) : null;
+    const leitura = { tocando: typeof tocandoDeck === "function" ? !!tocandoDeck(l) : false, sync: !!d.sync, loopAtivo: !!(lp && lp.ativo),
+      hotcues: reg && Array.isArray(reg.hotcues) ? reg.hotcues.map((h) => !!h) : [], stemsLigados: !!(st && st.ativo(l)), stems: {} };
+    if (st && leitura.stemsLigados) for (const nm of st.NOMES || []) { const e = st.estado(l, nm); if (e) leitura.stems[nm] = { mudo: !!e.mudo, solo: !!e.solo }; }
+    r[l] = leitura;
+  }
+  return r;
+}
+// {chave: vel} de todos os mapas de perfil ATIVOS com `saidas` cuja porta casa este nome (o primeiro a endereçar ganha).
+function controlesLedsDaPorta(nome, leitura) {
+  const L = VbMxLeds, atual = {};
+  for (const m of controles.mapas) {
+    if (!m.perfil || !m.ativo || !controlesPortaCasa(m.porta, nome)) continue;
+    const p = controles.perfis.find((x) => x.id === m.perfil);
+    const saidas = m.saidas || (p && p.saidas);
+    if (!saidas) continue;
+    const est = L.estadoDosLeds(leitura, L.enderecosDosLeds(saidas, m.atribuicoes, (m.parametros || {}).camadas).lista, saidas.brilho);
+    for (const k of Object.keys(est)) if (!(k in atual)) atual[k] = est[k];
+  }
+  return atual;
+}
+function controlesLedsAtualizar() {
+  if (!controles.saidas.size || typeof VbMxLeds === "undefined") return;
+  const leitura = controlesLeitura();
+  for (const s of controles.saidas.values()) {
+    const atual = controlesLedsDaPorta(s.nome, leitura);
+    for (const [k, v] of VbMxLeds.diferencaDosLeds(s.enviado, atual)) {
+      const bytes = VbMxLeds.mensagemDoLed(k, v);
+      if (bytes) try { s.saida.send(bytes); } catch (e) { console.warn("controles: LED não enviado", s.nome, e); }
+    }
+    s.enviado = Object.assign({}, atual);
+  }
+}
+function controlesLedsAmostraMs() {
+  for (const p of controles.perfis) if (p.saidas && Number(p.saidas.amostraMs) > 0) return Number(p.saidas.amostraMs);
+  return 100;
+}
+// Portas de saída que casam um perfil com `saidas`: as que já estavam guardam o `enviado`; nova ou religada recomeça.
+function midiLigarSaidas(acesso) {
+  const vivas = new Map();
+  if (acesso.outputs) for (const saida of acesso.outputs.values()) {
+    if (saida.state === "disconnected") continue;
+    const nome = saida.name || saida.id, id = saida.id || nome;
+    if (!controles.perfis.some((p) => p.saidas && controlesPortaCasa(p.porta, nome))) continue;
+    const antes = controles.saidas.get(id);
+    vivas.set(id, { nome, saida, enviado: antes && antes.saida === saida ? antes.enviado : {} });
+  }
+  controles.saidas = vivas;
+  if (vivas.size && !controles.ledsTimer) controles.ledsTimer = setInterval(controlesLedsAtualizar, controlesLedsAmostraMs());
+  else if (!vivas.size && controles.ledsTimer) { clearInterval(controles.ledsTimer); controles.ledsTimer = null; }
+  controlesLedsAtualizar();
+}
+for (const ev of ["deck:tocou", "deck:pausou", "deck:carregado", "deck:descarregado", "deck:fim", "deck:cue"]) VbMxUI.ouvir(ev, () => controlesLedsAtualizar());
+
 function midiLigarPortas(acesso) {
-  const nomes = [];
-  for (const entrada of acesso.inputs.values()) { entrada.onmidimessage = midiAoMensagem; nomes.push(entrada.name || entrada.id); }
+  const vivas = new Map();
+  for (const entrada of acesso.inputs.values()) {
+    if (entrada.state === "disconnected") { entrada.onmidimessage = null; continue; }   // o Chrome pode manter a porta na lista
+    const nome = entrada.name || entrada.id;
+    entrada.onmidimessage = (ev) => midiAoMensagem(ev, nome);
+    vivas.set(entrada.id || nome, { nome, entrada });
+  }
+  for (const [id, p] of controles.portasVivas) if (!vivas.has(id)) { p.entrada.onmidimessage = null; controlesSoltarPorta(p.nome); }
+  controles.portasVivas = vivas;
+  const nomes = [...vivas.values()].map((p) => p.nome), ligados = [];
+  for (const p of controles.perfis) if (nomes.some((n) => controlesPortaCasa(p.porta, n))) { controlesGarantirPerfil(p); ligados.push(p.nome); }
   controles.entradas = nomes;
-  controles.statusMidi = nomes.length ? `MIDI: ${nomes.join(", ")}` : "MIDI: nenhum controlador conectado";
+  midiLigarSaidas(acesso);   // depois do perfil garantido: o mapa (e as `saidas` dele) já existe
+  controles.statusMidi = nomes.length ? `MIDI: ${nomes.join(", ")}${ligados.length ? " — perfil: " + ligados.join(", ") : ""}` : "MIDI: nenhum controlador conectado";
   controlesPintarStatus();
 }
 function midiIniciar() {
-  if (!navigator.requestMIDIAccess) { controles.statusMidi = "MIDI: este navegador não tem Web MIDI (use o Chrome)"; return; }
-  navigator.requestMIDIAccess({ sysex: false }).then((acesso) => {
+  if (!navigator.requestMIDIAccess) { controles.statusMidi = "MIDI: este navegador não tem Web MIDI (use o Chrome)"; return Promise.resolve(); }
+  return controlesCarregarPerfis().then(() => navigator.requestMIDIAccess({ sysex: false })).then((acesso) => {
     midiLigarPortas(acesso);
     acesso.onstatechange = () => midiLigarPortas(acesso);
   }).catch((e) => { controles.statusMidi = "MIDI: acesso negado (" + (e && e.name || "erro") + ")"; controlesPintarStatus(); });
@@ -181,7 +358,9 @@ function controlesDesenhar() {
       <label class="ctl-check"><input type="checkbox" data-ctl-ativo="${m.id}"${m.ativo ? " checked" : ""}> ativo</label>
       <button type="button" class="ctl-link" data-ctl-escolher="${m.id}">${controlesEsc(m.nome)}</button>
       <span class="ctl-mudo">${m.atribuicoes.length} atrib.</span>
-      <button type="button" class="ctl-x" data-ctl-apagar-mapa="${m.id}" title="Apagar mapeamento" aria-label="Apagar mapeamento ${controlesEsc(m.nome)}">×</button></div>`).join("");
+      <button type="button" class="ctl-x" data-ctl-apagar-mapa="${m.id}" title="${m.perfil ? "Apagar (o perfil não volta sozinho; religue aqui)" : "Apagar mapeamento"}" aria-label="Apagar mapeamento ${controlesEsc(m.nome)}">×</button></div>`).join("")
+    + controles.perfis.filter((p) => controles.perfisRecusados.includes(p.id)).map((p) => `<div class="ctl-mapa"><span class="ctl-mudo">perfil ${controlesEsc(p.nome)} apagado</span>
+      <button type="button" class="ctl-link" data-ctl-religar-perfil="${controlesEsc(p.id)}">religar</button></div>`).join("");
   const linhas = mapa ? mapa.atribuicoes.map((a) => {
     const c = M.comandoPorId(a.comando);
     return `<tr><td>${controlesEsc(controlesNomeFisico(a.fisico))}</td><td>${controlesEsc(c ? c.rotulo : a.comando)}</td><td>${a.alvo || "global"}</td>
@@ -271,7 +450,8 @@ function controlesMontar() {
     else if (a.hasAttribute("data-ctl-novo-mapa")) { const m = VbMxMapaControle.novoMapeamento("Mapeamento " + (controles.mapas.length + 1)); controles.mapas.push(m); r.mapaId = m.id; controlesSalvar(); controlesDesenhar(); }
     else if (a.hasAttribute("data-ctl-exportar")) controlesExportar();
     else if (a.dataset.ctlEscolher) { r.mapaId = a.dataset.ctlEscolher; controlesDesenhar(); }
-    else if (a.dataset.ctlApagarMapa) { controles.mapas = controles.mapas.filter((m) => m.id !== a.dataset.ctlApagarMapa); controlesSalvar(); controlesDesenhar(); }
+    else if (a.dataset.ctlApagarMapa) controlesApagarMapa(a.dataset.ctlApagarMapa);
+    else if (a.dataset.ctlReligarPerfil) controlesReligarPerfil(a.dataset.ctlReligarPerfil);
     else if (a.dataset.ctlApagar) { const m = controlesMapaAtual(); if (m) { m.atribuicoes = m.atribuicoes.filter((x) => x.id !== a.dataset.ctlApagar); controlesSalvar(); controlesDesenhar(); } }
   });
   raiz.addEventListener("change", (e) => {

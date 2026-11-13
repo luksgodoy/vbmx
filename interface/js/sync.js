@@ -218,7 +218,8 @@ for (const l of ["A", "B"]) {
   VbMxUI.registrar("acao", `deck${l}.sync`, () => sincronizar(l));   // VB-48: o botão SYNC é de deck.js
 }
 for (const l of ["A", "B"]) {
-  VbMxUI.registrar("acao", `deck${l}.bendMais`, () => syncBendApertar(l, 1));
-  VbMxUI.registrar("acao", `deck${l}.bendMenos`, () => syncBendApertar(l, -1));
+  // "pressionar" (MIDI: Nudge da X1): sem argumento ou true aperta; false solta — bendSoltar segue para quem já usa
+  VbMxUI.registrar("acao", `deck${l}.bendMais`, (v) => (v === false ? syncBendSoltar(l) : syncBendApertar(l, 1)));
+  VbMxUI.registrar("acao", `deck${l}.bendMenos`, (v) => (v === false ? syncBendSoltar(l) : syncBendApertar(l, -1)));
   VbMxUI.registrar("acao", `deck${l}.bendSoltar`, () => syncBendSoltar(l));
 }

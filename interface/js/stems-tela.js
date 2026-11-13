@@ -204,6 +204,11 @@
   if (raiz.VbMxUI && typeof raiz.VbMxUI.registrar === 'function') {
     const reg = (nome, fn) => raiz.VbMxUI.registrar('acao', nome, fn);
     const MC = () => raiz.VbMxMapaControle;
+    // X1-STEMS: as atribuições ◀/▶ do controlador. Mesmo caminho dos botões STEMS e reset da faixa.
+    for (const letra of LETRAS) {
+      reg(`deck${letra}.stems.ligar`, () => alternarModo(letra));
+      reg(`deck${letra}.stems.restaurar`, () => { if (ativo(letra)) zerarTudo(letra); });
+    }
     for (const letra of LETRAS) for (const voz of NOMES_PADRAO) {
       const base = `deck${letra}.stem.${voz}.`;
       const alterna = campo => v => { const atual = !!estadoDe(letra, voz)[campo]; definir(letra, voz, { [campo]: typeof v === 'boolean' ? v : !atual }); };
