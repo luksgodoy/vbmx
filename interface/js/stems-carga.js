@@ -32,10 +32,10 @@
     async function lerJson(r) { try { return await r.json(); } catch (_) { return {}; } }
     async function baixar(base, nome, taxa, ctx) {
       const r = await deps.fetch(`${base}/${nome}.wav`);
-      if (!r.ok) throw new Error(`não consegui baixar o stem ${nome} (${r.status})`);
+      if (!r.ok) throw new Error(tr('pro.stems.baixar',{nome,status:r.status}));
       let b = await ctx.decodeAudioData(await r.arrayBuffer());
       if (b.sampleRate !== taxa) {
-        if (!deps.reamostrar) throw new Error(`o stem ${nome} veio a ${b.sampleRate} Hz e a faixa está a ${taxa} Hz`);
+        if (!deps.reamostrar) throw new Error(tr('pro.stems.taxa',{nome,hz:b.sampleRate,faixa:taxa}));
         b = await deps.reamostrar(b, taxa);
       }
       return b;
@@ -45,7 +45,7 @@
     function alinhados(buf, stems) {
       if (!deps.alinhar) return stems;
       const r = deps.alinhar(buf, stems);
-      if (!r || !r.ok) throw new Error(`não consegui alinhar os stems: ${(r && r.motivo) || 'recusado'}`);
+      if (!r || !r.ok) throw new Error(tr('pro.stems.alinhar',{motivo:trm(r && r.motivo) || tr('pro.stems.recusado')}));
       return r.stems;
     }
 
@@ -58,11 +58,11 @@
       andando[letra] = meu;
       try {
         const ctx = deps.ctx();
-        if (!ctx) throw new Error('o áudio ainda não foi iniciado (toque em qualquer botão e tente de novo)');
+        if (!ctx) throw new Error(tr('pro.stems.audio-nao-iniciado'));
         mostrar(letra, { fase: 'enviando' });
         const arq = await deps.arquivoDe(letra);
         if (!vale()) return 'descartado';
-        if (!arq) throw new Error('esta faixa não tem acesso ao arquivo original');
+        if (!arq) throw new Error(tr('pro.stems.sem-arquivo'));
         // Plugin Sidra (opcional): separa no próprio navegador, sem servidor. Sem ele (ou sem o modelo), segue pelo servidor.
         if (deps.navegador && await deps.navegador.disponivel()) {
           if (!vale()) return 'descartado';
@@ -71,31 +71,31 @@
           if (!vale()) return 'descartado';
           for (const n of NOMES) {
             if (stems[n].sampleRate === buf.sampleRate) continue;
-            if (!deps.reamostrar) throw new Error(`o stem ${n} veio a ${stems[n].sampleRate} Hz e a faixa está a ${buf.sampleRate} Hz`);
+            if (!deps.reamostrar) throw new Error(tr('pro.stems.taxa',{nome:n,hz:stems[n].sampleRate,faixa:buf.sampleRate}));
             stems[n] = await deps.reamostrar(stems[n], buf.sampleRate);
           }
           const res = deps.stems.carregar(letra, alinhados(buf, stems));
-          if (!res || !res.ok) throw new Error(`não consegui ligar os stems: ${(res && res.motivo) || 'recusado'}`);
+          if (!res || !res.ok) throw new Error(tr('pro.stems.ligar',{motivo:trm(res && res.motivo) || tr('pro.stems.recusado')}));
           mostrar(letra, { fase: 'pronto', progresso: 1 });
           return 'pronto';
         }
         let r;
         try { r = await deps.fetch(`/stems/enviar?nome=${encodeURIComponent(arq.name || 'faixa')}`, { method: 'POST', body: arq }); }
-        catch (_) { throw new Error('o servidor de stems está fora do ar (rode servir.py); o deck segue só com a faixa'); }
+        catch (_) { throw new Error(tr('pro.stems.servidor-fora')); }
         if (!vale()) return 'descartado';
         // hospedagem estática (GitHub Pages) não tem /stems: 404/405 = sem servidor, não falha de separação
-        if (r.status === 404 || r.status === 405 || r.status === 501) throw new Error('separador indisponível nesta versão (sem servidor de stems nem plugin do navegador); o deck segue só com a faixa');
+        if (r.status === 404 || r.status === 405 || r.status === 501) throw new Error(tr('pro.stems.separador-indisp'));
         const env = await lerJson(r);
         if (!r.ok || !env.id) throw new Error(env.erro || `o servidor recusou o envio (${r.status})`);
         const id = env.id;
         for (let i = 0; ; i++) {
           let e;
           try { const re = await deps.fetch(`/stems/estado/${id}`); e = await lerJson(re); if (!re.ok) throw new Error(e.erro || `estado ${re.status}`); }
-          catch (err) { throw new Error(`perdi o contato com o servidor de stems: ${err.message || err}`); }
+          catch (err) { throw new Error(tr('pro.stems.perdi-contato',{erro:err.message || err})); }
           if (!vale()) return 'descartado';
           if (e.estado === 'pronto') break;
-          if (e.estado === 'erro') throw new Error(e.erro || 'a separação falhou no servidor');
-          if (i >= MAX_TENTATIVAS_ESTADO) throw new Error('a separação demorou demais; tente de novo');
+          if (e.estado === 'erro') throw new Error(e.erro || tr('pro.stems.separacao-falhou'));
+          if (i >= MAX_TENTATIVAS_ESTADO) throw new Error(tr('pro.stems.separacao-demorou'));
           mostrar(letra, { fase: 'separando', carregando: e.fase === 'carregando', progresso: typeof e.progresso === 'number' ? e.progresso : 0 });
           await espera(intervalo);
           if (!vale()) return 'descartado';
@@ -105,7 +105,7 @@
         if (!vale()) return 'descartado';
         const stems = {}; NOMES.forEach((n, k) => { stems[n] = lista[k]; });
         const res = deps.stems.carregar(letra, alinhados(buf, stems));
-        if (!res || !res.ok) throw new Error(`não consegui ligar os stems: ${(res && res.motivo) || 'recusado'}`);
+        if (!res || !res.ok) throw new Error(tr('pro.stems.ligar',{motivo:trm(res && res.motivo) || tr('pro.stems.recusado')}));
         mostrar(letra, { fase: 'pronto', progresso: 1 });
         return 'pronto';
       } catch (e) {

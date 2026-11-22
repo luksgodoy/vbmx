@@ -50,7 +50,7 @@ body.browser-esq .tela > .browser { grid-column: 1; grid-row: 1; position: stick
   height: calc(100vh - var(--topo-h, 48px) - 24px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 42%); }
 
 /* ---- topo: alternador do browser e recolhedores ---- */
-.disp-botoes { display: inline-flex; gap: 6px; align-items: center; }
+.disp-botoes { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 6px; align-items: center; }
 .disp-bt { font-family: var(--fonte-display); font-weight: 600; letter-spacing: .06em; font-size: 12px; padding: 3px 9px;
   color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; white-space: nowrap; }
 .disp-bt:hover { color: var(--fg); border-color: var(--fg-3); }

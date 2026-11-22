@@ -11,14 +11,16 @@ const biblioEstado = { texto: "", bpmMin: "", bpmMax: "", casa: "", genero: "", 
   lista: "", destino: "", modoNome: "", apagando: false, editandoComent: "", rascunho: [] };
 // Ordem = trilhas da grade (biblio.css). "" = não ordena (capa, deck). duracao/compat/tocadas ordenam aqui na tela
 // (VbMxColecao.ordenar não as conhece); as demais passam pelo módulo puro.
-const BIBLIO_COLUNAS = [["","","h-capa"],["titulo","Título","c-titc"],["artista","Artista","c-art"],["bpm","BPM","c-bpm"],["camelot","Tom",""],
-  ["duracao","Dur.","c-dur"],["avaliacao","Nota","c-nota"],["","Deck","c-deck"],["tocadas","Já","c-toc"],["compat","≈","c-comp"]];
+// Os rótulos guardam a CHAVE do dicionário; quem desenha traduz (a troca de idioma redesenha a tela).
+const BIBLIO_COLUNAS = [["","","h-capa"],["titulo","pro.bib.col-titulo","c-titc"],["artista","pro.bib.col-artista","c-art"],["bpm","pro.bib.col-bpm","c-bpm"],["camelot","pro.bib.col-tom",""],
+  ["duracao","pro.bib.col-dur","c-dur"],["avaliacao","pro.bib.col-nota","c-nota"],["","pro.bib.col-deck","c-deck"],["tocadas","pro.bib.col-ja","c-toc"],["compat","pro.bib.col-comp","c-comp"]];
+const BIBLIO_COMPAT_ROT = { tocando: "pro.bib.compat-tocando", alta: "pro.bib.compat-alta", media: "pro.bib.compat-media", fora: "pro.bib.compat-fora" };
 const BIBLIO_ORDEM_TELA = ["duracao", "compat", "tocadas"];
-VbMxPrefs.declarar("biblio.densidade", "confortavel", { tipo: "opcao", modulo: "biblio", rotulo: "Densidade das linhas da biblioteca",
-  opcoes: [{ valor: "confortavel", rotulo: "Confortável" }, { valor: "compacta", rotulo: "Compacta" }] });
-const BIBLIO_AGRUPAR = [["","Sem grupos"],["camelot","Por tom"],["genero","Por gênero"],["ano","Por ano"],["bpm","Por faixa de BPM"],["artista","Por artista"]];
-const BIBLIO_CAMPOS_REGRA = [["bpm","BPM"],["camelot","Tom"],["genero","Gênero"],["artista","Artista"],["titulo","Título"],["comentario","Comentário"],["avaliacao","Avaliação"],["cor","Cor"],["data","Importada"]];
-const BIBLIO_OPS = { "=":"é", ">=":"pelo menos", "<=":"no máximo", entre:"entre", e:"é", "uma-de":"é um de", compativel:"compatível com", contem:"contém", nenhuma:"sem cor", depois:"desde", antes:"até" };
+VbMxPrefs.declarar("biblio.densidade", "confortavel", { tipo: "opcao", modulo: "biblio", rotulo: "pro.pref.biblio-densidade",
+  opcoes: [{ valor: "confortavel", rotulo: "pro.pref.biblio-conf" }, { valor: "compacta", rotulo: "pro.pref.biblio-comp" }] });
+const BIBLIO_AGRUPAR = [["","pro.bib.ag-nenhum"],["camelot","pro.bib.ag-tom"],["genero","pro.bib.ag-genero"],["ano","pro.bib.ag-ano"],["bpm","pro.bib.ag-bpm"],["artista","pro.bib.ag-artista"]];
+const BIBLIO_CAMPOS_REGRA = [["bpm","pro.bib.col-bpm"],["camelot","pro.bib.col-tom"],["genero","pro.bib.campo-genero"],["artista","pro.bib.col-artista"],["titulo","pro.bib.col-titulo"],["comentario","pro.bib.campo-comentario"],["avaliacao","pro.bib.campo-avaliacao"],["cor","pro.bib.campo-cor"],["data","pro.bib.campo-data"]];
+const BIBLIO_OPS = { "=":"pro.bib.op-eq", ">=":"pro.bib.op-min", "<=":"pro.bib.op-max", entre:"pro.bib.op-entre", e:"pro.bib.op-eq", "uma-de":"pro.bib.op-uma-de", compativel:"pro.bib.op-compativel", contem:"pro.bib.op-contem", nenhuma:"pro.bib.op-nenhuma", depois:"pro.bib.op-depois", antes:"pro.bib.op-antes" };
 
 VbMxUI.declararEvento("meta:mudou");                       // {} — quem gravar em VbMxMeta por fora emite, a tela recarrega
 let biblioMetas = new Map(), biblioListas = [], biblioPersist = null;
@@ -58,7 +60,7 @@ let biblioCompat = new Map();
 function biblioCompatMapa(){
   const m = new Map();
   if (typeof atual === "undefined" || !atual) return m;
-  m.set(atual.id, { nivel: "tocando", motivo: "É a faixa selecionada" });
+  m.set(atual.id, { nivel: "tocando", motivo: tr("pro.bib.faixa-selecionada") });
   if (!VbMxMotor.faixaValida || !VbMxMotor.faixaValida(atual)) return m;
   for (const c of VbMxMotor.compativeis(atual, BIBLIOTECA).compativeis) {
     const p = Math.abs(c.bpm.deltaPct);
@@ -94,7 +96,7 @@ const biblioIniciais = n => (String(n||"").match(/[\p{L}\p{N}]+/gu) || []).slice
 // Rótulo do campo de tom na notação escolhida ("Tom (Camelot)", "Tom (Círculo aberto)"...).
 function biblioRotuloTom(){
   const n = VbMxPrefs.ler("tom.notacao-exibir"), r = VbMxNotacao.ROTULOS[n] || "Camelot";
-  return `Tom (${r.replace(/\s*\(.*$/, "")})`;
+  return tr("pro.bib.tom-rot", { r: r.replace(/\s*\(.*$/, "") });
 }
 // A regra guarda Camelot (é o que biblioteca/meta.js avalia); a tela mostra e aceita a notação escolhida.
 const biblioTomRegraTela = t => String(t||"").split(",").map(p => p.trim() ? tomTexto(p.trim()) : "").join(", ");
@@ -102,21 +104,21 @@ const biblioTomRegraGravar = t => String(t||"").split(",").map(p => { const c = 
 // Selo de auto-loop: faixa mais curta que a preferência loops.auto-detectar (0 desliga); precisa da duração conhecida.
 function biblioSeloLoop(x){
   return x.duracao && VbMxLoops.ehFaixaCurta(x.duracao, VbMxPrefs.ler("loops.auto-detectar"))
-    ? `<span class="selo-loop" title="Faixa curta (${Math.round(x.duracao)} s): vira loop ao carregar" aria-label="Vira loop ao carregar">LOOP</span>` : "";
+    ? `<span class="selo-loop" title="${tr("pro.bib.loop-tit", { s: Math.round(x.duracao) })}" aria-label="${tr("pro.bib.loop-aria")}">LOOP</span>` : "";
 }
 function biblioOpcoes(valores, escolhido, vazio, texto){
   return `<option value="">${esc(vazio)}</option>` + valores.map(v=>`<option value="${esc(v)}"${String(v)===String(escolhido)?" selected":""}>${esc(texto?texto(v):v)}</option>`).join("");
 }
 function biblioEstrelas(x){
   const n = x.avaliacao || 0;
-  return `<span class="estrelas" role="group" aria-label="Avaliação: ${n} de 5">${[1,2,3,4,5].map(i=>`<button type="button" class="estrela${i<=n?" on":""}" data-nota="${i}" aria-label="${i} estrela${i>1?"s":""}${i===n?" (clique para zerar)":""}">★</button>`).join("")}</span>`;
+  return `<span class="estrelas" role="group" aria-label="${tr("pro.bib.avaliacao-aria", { n })}">${[1,2,3,4,5].map(i=>`<button type="button" class="estrela${i<=n?" on":""}" data-nota="${i}" aria-label="${tr("pro.bib.estrela", { n: i })}${i===n?" " + tr("pro.bib.estrela-zerar"):""}">★</button>`).join("")}</span>`;
 }
-function biblioDataImp(ms){ return ms ? new Date(ms).toLocaleDateString("pt-BR") : ""; }
+function biblioDataImp(ms){ return ms ? new Date(ms).toLocaleDateString((typeof VbMxI18n !== "undefined" && VbMxI18n.idioma && VbMxI18n.idioma()) || "pt-BR") : ""; }
 function biblioAcoes(x, i, total){
   const lista = biblioListaAtual();
-  if (lista && lista.tipo==="playlist") return `<span class="c-acoes"><button type="button" class="bib-mini" data-lista-sobe="${i}" aria-label="Subir na lista"${i===0?" disabled":""}>▲</button><button type="button" class="bib-mini" data-lista-desce="${i}" aria-label="Descer na lista"${i===total-1?" disabled":""}>▼</button><button type="button" class="bib-mini" data-lista-tira="1" aria-label="Tirar da lista">✕</button></span>`;
+  if (lista && lista.tipo==="playlist") return `<span class="c-acoes"><button type="button" class="bib-mini" data-lista-sobe="${i}" aria-label="${tr("pro.bib.subir")}"${i===0?" disabled":""}>▲</button><button type="button" class="bib-mini" data-lista-desce="${i}" aria-label="${tr("pro.bib.descer")}"${i===total-1?" disabled":""}>▼</button><button type="button" class="bib-mini" data-lista-tira="1" aria-label="${tr("pro.bib.tirar")}">✕</button></span>`;
   const dest = biblioListas.find(l=>l.id===biblioEstado.destino && l.tipo==="playlist");
-  return `<span class="c-acoes"><button type="button" class="bib-mini" data-lista-poe="1"${dest?"":" disabled"} title="${dest?`Adicionar a “${esc(dest.nome)}”`:"Escolha uma lista de destino acima"}" aria-label="Adicionar à lista de destino">＋</button></span>`;
+  return `<span class="c-acoes"><button type="button" class="bib-mini" data-lista-poe="1"${dest?"":" disabled"} title="${dest?tr("pro.bib.adicionar-a", { nome: esc(dest.nome) }):tr("pro.bib.escolha-destino")}" aria-label="${tr("pro.bib.adicionar-destino")}">＋</button></span>`;
 }
 function biblioLinha(x, i, total){
   const sem = x.analisavel===false, sel = atual && x.id===atual.id, m = biblioEstado;
@@ -124,21 +126,21 @@ function biblioLinha(x, i, total){
   const decksDe = sem ? [] : biblioDeckDe(x), vezes = sem ? 0 : biblioVezesTocada(x), comp = sem ? null : biblioCompat.get(x.id);
   const cls = ["linha", sel?"sel":"", sem?"sem-analise":"", decksDe.map(l=>"deck-"+l).join(" "), vezes&&!sel?"ja-tocada":""].filter(Boolean).join(" ");
   const editando = m.editandoComent===biblioChave(x);
-  const edit = editando ? `<div class="c-com-edit"><input type="text" class="bib-coment-edit" id="bib-coment-edit" value="${esc(x.comentario||"")}" maxlength="2000" aria-label="Comentário de ${esc(x.titulo)}" placeholder="Comentário (Enter grava, Esc cancela)"></div>` : "";
+  const edit = editando ? `<div class="c-com-edit"><input type="text" class="bib-coment-edit" id="bib-coment-edit" value="${esc(x.comentario||"")}" maxlength="2000" aria-label="${tr("pro.bib.coment-de", { t: esc(x.titulo) })}" placeholder="${tr("pro.bib.coment-ph")}"></div>` : "";
   const nivelTxt = { tocando: "●", alta: "●", media: "●", fora: "○" };
-  const compHtml = comp ? `<span class="c-comp ${comp.nivel}" title="${esc(comp.motivo)}" aria-label="Compatibilidade: ${comp.nivel==="tocando"?"é a faixa selecionada":comp.nivel==="alta"?"alta":comp.nivel==="media"?"média":"fora"}">${nivelTxt[comp.nivel]}</span>` : `<span class="c-comp" title="Sem leitura: selecione uma faixa com BPM e tom">·</span>`;
+  const compHtml = comp ? `<span class="c-comp ${comp.nivel}" title="${esc(trm(comp.motivo))}" aria-label="${tr("pro.bib.compat-aria", { n: tr(BIBLIO_COMPAT_ROT[comp.nivel]) })}">${nivelTxt[comp.nivel]}</span>` : `<span class="c-comp" title="${tr("pro.bib.sem-leitura")}">·</span>`;
   const deckBtns = sem ? "" : paraDeck(x).replace(/class="para-deck"( role="button" tabindex="0" data-carregar="([AB])")/g, (t, r, l) => `class="para-deck${decksDe.includes(l)?" carregado-"+l:""}"${r}`);
   return `
-    <div class="${cls}" data-chave="${ch}" data-i="${i}" ${sem?`data-sem-analise title="${esc(x.erro||"não analisada")}"`:`data-faixa="${x.id}" draggable="true" role="button" tabindex="0" title="Clique para selecionar; arraste para um deck"`}>
-      <span class="capa" style="--cor:${sem?"var(--fg-3)":corCamelot(x.camelot)}" aria-hidden="false">${esc(biblioIniciais(x.artista))}<button type="button" class="c-cor cor-ponto${x.cor?" cor-"+x.cor:""}" data-cor-ciclo="1" title="${x.cor?esc(x.cor)+" — clique para mudar":"Sem cor — clique para colorir"}" aria-label="Cor da faixa: ${x.cor?esc(x.cor):"nenhuma"}"></button></span>
-      <span class="c-tit" title="${esc(x.titulo)}">${esc(x.titulo)}${biblioSeloLoop(x)}<span class="sub">${sem?"não analisada":esc(x.artista)}</span></span>
-      <span class="c-art" title="${sem?"":esc(x.artista)}">${sem?`<span class="sem-tom">não analisada</span>`:esc(x.artista)}</span>
+    <div class="${cls}" data-chave="${ch}" data-i="${i}" ${sem?`data-sem-analise title="${esc(trm(x.erro)||tr("pro.bib.nao-analisada"))}"`:`data-faixa="${x.id}" draggable="true" role="button" tabindex="0" title="${tr("pro.bib.linha-tit")}"`}>
+      <span class="capa" style="--cor:${sem?"var(--fg-3)":corCamelot(x.camelot)}" aria-hidden="false">${esc(biblioIniciais(x.artista))}<button type="button" class="c-cor cor-ponto${x.cor?" cor-"+x.cor:""}" data-cor-ciclo="1" title="${x.cor?esc(x.cor)+" — "+tr("pro.bib.cor-mudar"):tr("pro.bib.cor-colorir")}" aria-label="${tr("pro.bib.cor-aria", { c: x.cor?esc(x.cor):tr("pro.bib.nenhuma") })}"></button></span>
+      <span class="c-tit" title="${esc(x.titulo)}">${esc(x.titulo)}${biblioSeloLoop(x)}<span class="sub">${sem?tr("pro.bib.nao-analisada"):esc(x.artista)}</span></span>
+      <span class="c-art" title="${sem?"":esc(x.artista)}">${sem?`<span class="sem-tom">${tr("pro.bib.nao-analisada")}</span>`:esc(x.artista)}</span>
       <span class="c-bpm mono">${sem?"—":fmtBpm(x.bpm)}</span>
       ${sem?`<span class="chave">—</span>`:chave(x.camelot)}
       <span class="c-dur mono">${biblioDuracaoTxt(x.duracao)}</span>
-      <span class="c-nota">${biblioEstrelas(x)}<button type="button" class="c-ed${x.comentario?" tem":""}" data-coment="1" title="${x.comentario?esc(x.comentario):"Clique para comentar"}" aria-label="Comentário de ${esc(x.titulo)}">✎</button></span>
+      <span class="c-nota">${biblioEstrelas(x)}<button type="button" class="c-ed${x.comentario?" tem":""}" data-coment="1" title="${x.comentario?esc(x.comentario):tr("pro.bib.coment-clique")}" aria-label="${tr("pro.bib.coment-de", { t: esc(x.titulo) })}">✎</button></span>
       <span class="c-deck">${sem?"":deckBtns}${biblioAcoes(x, i, total)}</span>
-      <span class="c-toc${vezes?" sim":""}" title="${vezes?`Já tocada ${vezes}× neste set`:"Ainda não tocou neste set"}">${vezes?"✓"+(vezes>1?vezes:""):""}</span>
+      <span class="c-toc${vezes?" sim":""}" title="${vezes?tr("pro.bib.ja-tocada", { n: vezes }):tr("pro.bib.ainda-nao")}">${vezes?"✓"+(vezes>1?vezes:""):""}</span>
       ${compHtml}
       ${edit}
     </div>`;
@@ -150,15 +152,15 @@ function biblioBarraListas(){
   const pls = biblioListas.filter(l=>l.tipo==="playlist"), ints = biblioListas.filter(l=>l.tipo==="inteligente");
   const pastaFiltro = window.VbMxPainel ? VbMxPainel.pastasParaFiltro() : { nomes: [], escolha: "", ocupado: false };
   const opt = l => `<option value="${esc(l.id)}"${l.id===e.lista?" selected":""}>${esc(l.nome)}</option>`;
-  const nomeando = e.modoNome ? `<span class="bib-nome"><input type="text" id="bib-nome" maxlength="120" placeholder="${e.modoNome==="renomear"?"novo nome":"nome da lista"}" value="${e.modoNome==="renomear"&&lista?esc(lista.nome):""}" aria-label="Nome da lista"><button type="button" class="bib-limpar" id="bib-nome-ok">OK</button><button type="button" class="bib-limpar" id="bib-nome-cancela">Cancelar</button></span>` : "";
-  return `<div class="biblio-listas" role="group" aria-label="Listas">
-      <label>Lista <select id="bib-lista" aria-label="Qual lista mostrar"><option value="">Coleção (tudo)</option>${pls.length?`<optgroup label="Listas">${pls.map(opt).join("")}</optgroup>`:""}${ints.length?`<optgroup label="Inteligentes">${ints.map(opt).join("")}</optgroup>`:""}</select></label>
-      ${pastaFiltro.nomes.length?`<label>Pasta <select id="bib-pasta" aria-label="Pasta da biblioteca"${pastaFiltro.ocupado?" disabled":""}><option value="">Todas as pastas</option>${pastaFiltro.nomes.map(n=>`<option value="${esc(n)}"${n===pastaFiltro.escolha?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`:""}
-      <button type="button" class="bib-limpar" id="bib-nova-lista">Nova lista</button>
-      <button type="button" class="bib-limpar" id="bib-nova-int">Nova inteligente</button>
-      ${lista?`<button type="button" class="bib-limpar" id="bib-renomear">Renomear</button>${e.apagando?`<button type="button" class="bib-limpar bib-perigo" id="bib-apagar-sim">Apagar mesmo</button><button type="button" class="bib-limpar" id="bib-apagar-nao">Não</button>`:`<button type="button" class="bib-limpar" id="bib-apagar">Apagar</button>`}`:""}
+  const nomeando = e.modoNome ? `<span class="bib-nome"><input type="text" id="bib-nome" maxlength="120" placeholder="${e.modoNome==="renomear"?tr("pro.bib.novo-nome"):tr("pro.bib.nome-lista")}" value="${e.modoNome==="renomear"&&lista?esc(lista.nome):""}" aria-label="${tr("pro.bib.nome-aria")}"><button type="button" class="bib-limpar" id="bib-nome-ok">OK</button><button type="button" class="bib-limpar" id="bib-nome-cancela">${tr("pro.bib.cancelar")}</button></span>` : "";
+  return `<div class="biblio-listas" role="group" aria-label="${tr("pro.bib.listas")}">
+      <label>${tr("pro.bib.lista")} <select id="bib-lista" aria-label="${tr("pro.bib.qual-lista")}"><option value="">${tr("pro.bib.colecao")}</option>${pls.length?`<optgroup label="${tr("pro.bib.listas")}">${pls.map(opt).join("")}</optgroup>`:""}${ints.length?`<optgroup label="${tr("pro.bib.inteligentes")}">${ints.map(opt).join("")}</optgroup>`:""}</select></label>
+      ${pastaFiltro.nomes.length?`<label>${tr("pro.bib.pasta")} <select id="bib-pasta" aria-label="${tr("pro.bib.pasta-aria")}"${pastaFiltro.ocupado?" disabled":""}><option value="">${tr("pro.bib.todas-pastas")}</option>${pastaFiltro.nomes.map(n=>`<option value="${esc(n)}"${n===pastaFiltro.escolha?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`:""}
+      <button type="button" class="bib-limpar" id="bib-nova-lista">${tr("pro.bib.nova-lista")}</button>
+      <button type="button" class="bib-limpar" id="bib-nova-int">${tr("pro.bib.nova-int")}</button>
+      ${lista?`<button type="button" class="bib-limpar" id="bib-renomear">${tr("pro.bib.renomear")}</button>${e.apagando?`<button type="button" class="bib-limpar bib-perigo" id="bib-apagar-sim">${tr("pro.bib.apagar-mesmo")}</button><button type="button" class="bib-limpar" id="bib-apagar-nao">${tr("pro.bib.nao")}</button>`:`<button type="button" class="bib-limpar" id="bib-apagar">${tr("pro.bib.apagar")}</button>`}`:""}
       ${nomeando}
-      ${pls.length?`<label title="O botão ＋ de cada faixa adiciona a esta lista">Adicionar ao <select id="bib-destino" aria-label="Lista de destino do botão mais"><option value="">—</option>${pls.map(l=>`<option value="${esc(l.id)}"${l.id===e.destino?" selected":""}>${esc(l.nome)}</option>`).join("")}</select></label>`:""}
+      ${pls.length?`<label title="${tr("pro.bib.destino-tit")}">${tr("pro.bib.adicionar-ao")} <select id="bib-destino" aria-label="${tr("pro.bib.destino-aria")}"><option value="">—</option>${pls.map(l=>`<option value="${esc(l.id)}"${l.id===e.destino?" selected":""}>${esc(l.nome)}</option>`).join("")}</select></label>`:""}
     </div>${lista && lista.tipo==="inteligente" ? biblioEditorRegras(lista) : ""}`;
 }
 function biblioTextoValor(v){ return Array.isArray(v) ? v.join(v.length===2 ? " - " : ", ") : (v===undefined||v===null ? "" : String(v)); }
@@ -177,16 +179,16 @@ function biblioEditorRegras(lista){
   const linhas = e.rascunho.map((r,i)=>{
     const ops = VbMxMeta.CAMPOS[r.campo] || [];
     const valor = r.op==="nenhuma" ? "" : r.campo==="cor"
-      ? `<select data-regra-valor="${i}" aria-label="Valor da regra">${VbMxMeta.CORES.map(c=>`<option value="${c}"${c===r.texto?" selected":""}>${c}</option>`).join("")}</select>`
-      : `<input type="${r.campo==="data"?"date":"text"}" data-regra-valor="${i}" value="${esc(r.campo==="camelot"?biblioTomRegraTela(r.texto):r.texto)}" placeholder="${r.campo==="bpm"&&r.op==="entre"?"120 - 130":r.op==="uma-de"?tomTexto("8A")+", "+tomTexto("9A"):""}" aria-label="Valor da regra">`;
-    return `<div class="regra"><select data-regra-campo="${i}" aria-label="Campo da regra">${BIBLIO_CAMPOS_REGRA.map(([c,n])=>`<option value="${c}"${c===r.campo?" selected":""}>${c==="camelot"?esc(biblioRotuloTom()):n}</option>`).join("")}</select>
-      <select data-regra-op="${i}" aria-label="Operador da regra">${ops.map(o=>`<option value="${esc(o)}"${o===r.op?" selected":""}>${esc(BIBLIO_OPS[o]||o)}</option>`).join("")}</select>${valor}
-      <button type="button" class="bib-mini" data-regra-tira="${i}" aria-label="Remover regra">✕</button></div>`;
+      ? `<select data-regra-valor="${i}" aria-label="${tr("pro.bib.regra-valor")}">${VbMxMeta.CORES.map(c=>`<option value="${c}"${c===r.texto?" selected":""}>${trm(c)}</option>`).join("")}</select>`
+      : `<input type="${r.campo==="data"?"date":"text"}" data-regra-valor="${i}" value="${esc(r.campo==="camelot"?biblioTomRegraTela(r.texto):r.texto)}" placeholder="${r.campo==="bpm"&&r.op==="entre"?"120 - 130":r.op==="uma-de"?tomTexto("8A")+", "+tomTexto("9A"):""}" aria-label="${tr("pro.bib.regra-valor")}">`;
+    return `<div class="regra"><select data-regra-campo="${i}" aria-label="${tr("pro.bib.regra-campo")}">${BIBLIO_CAMPOS_REGRA.map(([c,n])=>`<option value="${c}"${c===r.campo?" selected":""}>${c==="camelot"?esc(biblioRotuloTom()):tr(n)}</option>`).join("")}</select>
+      <select data-regra-op="${i}" aria-label="${tr("pro.bib.regra-op")}">${ops.map(o=>`<option value="${esc(o)}"${o===r.op?" selected":""}>${esc(BIBLIO_OPS[o]?tr(BIBLIO_OPS[o]):o)}</option>`).join("")}</select>${valor}
+      <button type="button" class="bib-mini" data-regra-tira="${i}" aria-label="${tr("pro.bib.regra-remover")}">✕</button></div>`;
   }).join("");
-  return `<div class="biblio-regras" role="group" aria-label="Regras da lista inteligente">
-      <span class="rotulo">Regras</span> <label>casar <select id="bib-combinar" aria-label="Combinar regras"><option value="todas"${lista.combinar!=="qualquer"?" selected":""}>todas</option><option value="qualquer"${lista.combinar==="qualquer"?" selected":""}>qualquer</option></select></label>
-      ${linhas || `<span class="regra-vazia">Sem regras: mostra a coleção inteira.</span>`}
-      <button type="button" class="bib-limpar" id="bib-regra-nova">＋ regra</button></div>`;
+  return `<div class="biblio-regras" role="group" aria-label="${tr("pro.bib.regras-aria")}">
+      <span class="rotulo">${tr("pro.bib.regras")}</span> <label>${tr("pro.bib.casar")} <select id="bib-combinar" aria-label="${tr("pro.bib.combinar")}"><option value="todas"${lista.combinar!=="qualquer"?" selected":""}>${tr("pro.bib.todas")}</option><option value="qualquer"${lista.combinar==="qualquer"?" selected":""}>${tr("pro.bib.qualquer")}</option></select></label>
+      ${linhas || `<span class="regra-vazia">${tr("pro.bib.sem-regras")}</span>`}
+      <button type="button" class="bib-limpar" id="bib-regra-nova">${tr("pro.bib.regra-nova")}</button></div>`;
 }
 
 function renderBiblio(filtro){
@@ -208,29 +210,29 @@ function renderBiblio(filtro){
   let pos = 0;                                              // índice na lista mostrada (para ▲▼ da playlist)
   div.innerHTML = `
     <div class="biblio-cab">
-      <span class="rotulo">Biblioteca</span>
+      <span class="rotulo">${tr("pro.bib.biblioteca")}</span>
       ${arvvBotaoHTML()}
-      <input type="search" id="busca" placeholder="título, artista, gênero ou casa (ex.: 8A) · artista:nome · comentario:texto" value="${esc(e.texto)}" aria-label="Buscar na biblioteca">
-      <span class="cont">${itens.length}/${lista?"lista":BIBLIOTECA.length} · clique = selecionar · arraste para um deck</span>
+      <input type="search" id="busca" placeholder="${tr("pro.bib.busca-ph")}" value="${esc(e.texto)}" aria-label="${tr("pro.bib.busca-aria")}">
+      <span class="cont">${itens.length}/${lista?tr("pro.bib.lista-min"):BIBLIOTECA.length} · ${tr("pro.bib.cont-dica")}</span>
     </div>
     ${biblioBarraListas()}
-    <div class="biblio-filtros" role="group" aria-label="Filtros da biblioteca">
-      <label class="filtro-bpm">BPM <input type="number" id="bib-bpm-min" min="0" max="300" step="1" inputmode="numeric" placeholder="de" value="${esc(e.bpmMin)}" aria-label="BPM mínimo"> – <input type="number" id="bib-bpm-max" min="0" max="300" step="1" inputmode="numeric" placeholder="até" value="${esc(e.bpmMax)}" aria-label="BPM máximo"></label>
-      <label>Tom <select id="bib-casa" aria-label="Filtrar por tom">${biblioOpcoes(casas, e.casa, "todos", tomTexto)}</select></label>
-      ${generos.length ? `<label>Gênero <select id="bib-genero" aria-label="Filtrar por gênero">${biblioOpcoes(generos, e.genero, "todos")}</select></label>` : ""}
-      ${anos.length ? `<label>Ano <select id="bib-ano" aria-label="Filtrar por ano">${biblioOpcoes(anos, e.ano, "todos")}</select></label>` : ""}
-      <label>Estrelas <select id="bib-av" aria-label="Avaliação mínima">${["","1","2","3","4","5"].map(v=>`<option value="${v}"${v===e.avMin?" selected":""}>${v===""?"todas":"≥ "+v+" ★"}</option>`).join("")}</select></label>
-      <label>Cor <select id="bib-cor" aria-label="Filtrar por cor"><option value="">todas</option>${VbMxMeta.CORES.map(c=>`<option value="${c}"${c===e.cor?" selected":""}>${c}</option>`).join("")}</select></label>
-      <label class="filtro-compat" title="Só o que o motor aponta como mixável com a faixa selecionada (tom e BPM)"><input type="checkbox" id="bib-compat"${e.soCompat?" checked":""}> só compatíveis</label>
-      <label class="filtro-compat" title="Esconde o que já tocou neste set"><input type="checkbox" id="bib-tocadas"${e.esconderTocadas?" checked":""}> esconder já tocadas</label>
-      <label class="filtro-compat" title="Linhas mais baixas"><input type="checkbox" id="bib-compacto"${VbMxPrefs.ler("biblio.densidade")==="compacta"?" checked":""}> compacta</label>
-      <label>Grupos <select id="bib-agrupar" aria-label="Agrupar a lista">${BIBLIO_AGRUPAR.map(([v,r])=>`<option value="${v}"${v===e.agrupar?" selected":""}>${r}</option>`).join("")}</select></label>
-      ${biblioTemFiltro() || e.coluna ? `<button type="button" class="bib-limpar" id="bib-limpar">Limpar</button>` : ""}
+    <div class="biblio-filtros" role="group" aria-label="${tr("pro.bib.filtros")}">
+      <label class="filtro-bpm">BPM <input type="number" id="bib-bpm-min" min="0" max="300" step="1" inputmode="numeric" placeholder="${tr("pro.bib.de")}" value="${esc(e.bpmMin)}" aria-label="${tr("pro.bib.bpm-min")}"> – <input type="number" id="bib-bpm-max" min="0" max="300" step="1" inputmode="numeric" placeholder="${tr("pro.bib.ate")}" value="${esc(e.bpmMax)}" aria-label="${tr("pro.bib.bpm-max")}"></label>
+      <label>${tr("pro.bib.col-tom")} <select id="bib-casa" aria-label="${tr("pro.bib.filtrar-tom")}">${biblioOpcoes(casas, e.casa, tr("pro.bib.todos"), tomTexto)}</select></label>
+      ${generos.length ? `<label>${tr("pro.bib.campo-genero")} <select id="bib-genero" aria-label="${tr("pro.bib.filtrar-genero")}">${biblioOpcoes(generos, e.genero, tr("pro.bib.todos"))}</select></label>` : ""}
+      ${anos.length ? `<label>${tr("pro.bib.ano")} <select id="bib-ano" aria-label="${tr("pro.bib.filtrar-ano")}">${biblioOpcoes(anos, e.ano, tr("pro.bib.todos"))}</select></label>` : ""}
+      <label>${tr("pro.bib.estrelas")} <select id="bib-av" aria-label="${tr("pro.bib.av-min")}">${["","1","2","3","4","5"].map(v=>`<option value="${v}"${v===e.avMin?" selected":""}>${v===""?tr("pro.bib.todas-f"):"≥ "+v+" ★"}</option>`).join("")}</select></label>
+      <label>${tr("pro.bib.campo-cor")} <select id="bib-cor" aria-label="${tr("pro.bib.filtrar-cor")}"><option value="">${tr("pro.bib.todas-f")}</option>${VbMxMeta.CORES.map(c=>`<option value="${c}"${c===e.cor?" selected":""}>${trm(c)}</option>`).join("")}</select></label>
+      <label class="filtro-compat" title="${tr("pro.bib.so-compat-tit")}"><input type="checkbox" id="bib-compat"${e.soCompat?" checked":""}> ${tr("pro.bib.so-compat")}</label>
+      <label class="filtro-compat" title="${tr("pro.bib.esconder-tit")}"><input type="checkbox" id="bib-tocadas"${e.esconderTocadas?" checked":""}> ${tr("pro.bib.esconder")}</label>
+      <label class="filtro-compat" title="${tr("pro.bib.compacta-tit")}"><input type="checkbox" id="bib-compacto"${VbMxPrefs.ler("biblio.densidade")==="compacta"?" checked":""}> ${tr("pro.bib.compacta")}</label>
+      <label>${tr("pro.bib.grupos")} <select id="bib-agrupar" aria-label="${tr("pro.bib.agrupar")}">${BIBLIO_AGRUPAR.map(([v,r])=>`<option value="${v}"${v===e.agrupar?" selected":""}>${tr(r)}</option>`).join("")}</select></label>
+      ${biblioTemFiltro() || e.coluna ? `<button type="button" class="bib-limpar" id="bib-limpar">${tr("pro.bib.limpar")}</button>` : ""}
     </div>
     ${vistaArvore ? `<div class="lista lista-arvore">${arvoreVistaHTML()}</div>` : `<div class="lista">
-      <div class="lista-cab">${BIBLIO_COLUNAS.map(([c,r,cls])=>c ? `<button type="button" class="rotulo ord ${cls} ${e.coluna===c?"ativa":""}" data-ordem="${c}" aria-label="Ordenar por ${r}${e.coluna===c?(e.direcao==="asc"?" (crescente)":" (decrescente)"):""}">${r}${seta(c)}</button>` : `<span class="rotulo ${cls}">${r}</span>`).join("")}</div>
-      ${itens.length ? grupos.map(g=>`${e.agrupar?`<div class="grupo-cab"><span class="rotulo">${esc(e.agrupar==="camelot"&&g.rotulo?tomTexto(g.rotulo):g.rotulo)}</span><span class="grupo-n">${g.faixas.length}</span></div>`:""}${g.faixas.map(f=>biblioLinha(f, pos++, itens.length)).join("")}`).join("")
-        : `<div class="vazio-biblio">${lista && lista.tipo==="playlist" && !lista.chaves.length ? "Lista vazia. Escolha a lista em “Adicionar ao” e use ＋ nas faixas da coleção." : "Nenhuma faixa com esses filtros."} ${biblioTemFiltro()?`<button type="button" class="bib-limpar" id="bib-limpar-vazio">Limpar filtros</button>`:""}</div>`}
+      <div class="lista-cab">${BIBLIO_COLUNAS.map(([c,r,cls])=>c ? `<button type="button" class="rotulo ord ${cls} ${e.coluna===c?"ativa":""}" data-ordem="${c}" aria-label="${tr(e.coluna===c?(e.direcao==="asc"?"pro.bib.ordenar-asc":"pro.bib.ordenar-desc"):"pro.bib.ordenar", { r: tr(r) })}">${tr(r)}${seta(c)}</button>` : `<span class="rotulo ${cls}">${r ? tr(r) : ""}</span>`).join("")}</div>
+      ${itens.length ? grupos.map(g=>`${e.agrupar?`<div class="grupo-cab"><span class="rotulo">${esc(g.chave ? (e.agrupar==="camelot" ? tomTexto(g.rotulo) : g.rotulo) : trm(g.rotulo))}</span><span class="grupo-n">${g.faixas.length}</span></div>`:""}${g.faixas.map(f=>biblioLinha(f, pos++, itens.length)).join("")}`).join("")
+        : `<div class="vazio-biblio">${lista && lista.tipo==="playlist" && !lista.chaves.length ? tr("pro.bib.lista-vazia") : tr("pro.bib.nenhuma-faixa")} ${biblioTemFiltro()?`<button type="button" class="bib-limpar" id="bib-limpar-vazio">${tr("pro.bib.limpar-filtros")}</button>`:""}</div>`}
     </div>`}`;
   if (focoId) { const n = document.getElementById(focoId); if (n) { n.focus(); if (sel && n.setSelectionRange && /^(text|search)$/.test(n.type||"")) { try { n.setSelectionRange(sel[0], sel[1]); } catch(_){} } } }
   else if (e.editandoComent) { const n = document.getElementById("bib-coment-edit"); if (n) { n.focus(); n.select(); } }
@@ -423,6 +425,7 @@ function biblioTrocarLista(passo){
 }
 VbMxUI.registrar("acao", "biblio.mover", biblioMover);
 VbMxUI.registrar("acao", "biblio.lista", biblioTrocarLista);
+VbMxUI.aoIdioma(()=>renderBiblio());
 VbMxUI.aoIniciar(()=>{
   VbMxUI.ouvir("biblioteca:mudou", ({faixas})=>{ biblioLerTags(faixas); biblioMarcarImportadas(faixas); });
   for (const ev of ["deck:carregado", "deck:descarregado", "historico:mudou"]) VbMxUI.ouvir(ev, ()=>renderBiblio());   // deck-A/B, ✓ de já tocada

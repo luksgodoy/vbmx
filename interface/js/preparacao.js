@@ -19,9 +19,9 @@ function preparacaoMudou(aviso){
 function preparacaoPreparar(f){
   const antes = preparacaoLista.length;
   preparacaoLista = VbMxHistorico.preparacaoAdicionar(preparacaoLista, f);
-  preparacaoMudou(preparacaoLista.length > antes ? `na lista: ${f.titulo}` : `${f.titulo} já está na lista`);
+  preparacaoMudou(preparacaoLista.length > antes ? tr("pro.prep.na-lista",{t:f.titulo}) : tr("pro.prep.ja-esta",{t:f.titulo}));
 }
-VbMxUI.registrar("card-acao", { id: "preparar", rotulo: "+ preparar", titulo: "Pôr na lista de preparação do set", fazer: preparacaoPreparar });
+VbMxUI.registrar("card-acao", { id: "preparar", rotulo: "pro.prep.preparar", titulo: "pro.prep.preparar-t", fazer: preparacaoPreparar });
 
 
 function preparacaoDesenhar(){
@@ -32,29 +32,29 @@ function preparacaoDesenhar(){
     const viva = preparacaoResolver(x);
     const tom = x.camelot ? chave(x.camelot) : "";
     const bpm = x.bpm ? `<span class="mono">${fmtBpm(x.bpm)}</span> BPM` : "";
-    const deck = viva ? ["A", "B"].map(l => `<button type="button" class="para-deck" data-carregar="${l}" data-id="${viva.id}" title="Carregar no deck ${l}" aria-label="Carregar ${esc(x.titulo)} no deck ${l}">${l}</button>`).join("") : "";
+    const deck = viva ? ["A", "B"].map(l => `<button type="button" class="para-deck" data-carregar="${l}" data-id="${viva.id}" title="${tr("pro.carregar.titulo",{l})}" aria-label="${tr("pro.carregar.aria",{titulo:esc(x.titulo),l})}">${l}</button>`).join("") : "";
     return `<li class="prep-item${x.tocada ? " tocada" : ""}${viva ? "" : " ausente"}" ${viva ? `data-faixa="${viva.id}" draggable="true"` : ""} data-i="${i}" style="--cor:${x.camelot ? corCamelot(x.camelot) : "var(--fg-3)"}">
       <span class="faixa-cor"></span>
       <span class="prep-ordem mono">${i + 1}</span>
       <span class="prep-nome"><b>${esc(x.titulo)}</b><span>${esc(x.artista)} · ${bpm} ${tom}</span></span>
-      <span class="prep-estado">${x.tocada ? "tocou" : viva ? "" : "fora da biblioteca"}</span>
+      <span class="prep-estado">${x.tocada ? tr("pro.prep.tocou") : viva ? "" : tr("pro.prep.fora")}</span>
       <span class="prep-botoes">
-        <button type="button" data-prep="sobe" data-i="${i}" title="Subir na fila" aria-label="Subir ${esc(x.titulo)}"${i === 0 ? " disabled" : ""}>↑</button>
-        <button type="button" data-prep="desce" data-i="${i}" title="Descer na fila" aria-label="Descer ${esc(x.titulo)}"${i === lista.length - 1 ? " disabled" : ""}>↓</button>
+        <button type="button" data-prep="sobe" data-i="${i}" title="${tr("pro.prep.sobe")}" aria-label="${tr("pro.prep.sobe-a",{t:esc(x.titulo)})}"${i === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" data-prep="desce" data-i="${i}" title="${tr("pro.prep.desce")}" aria-label="${tr("pro.prep.desce-a",{t:esc(x.titulo)})}"${i === lista.length - 1 ? " disabled" : ""}>↓</button>
         ${deck}
-        <button type="button" data-prep="tira" data-i="${i}" title="Tirar da lista" aria-label="Tirar ${esc(x.titulo)} da lista">✕</button>
+        <button type="button" data-prep="tira" data-i="${i}" title="${tr("pro.prep.tira")}" aria-label="${tr("pro.prep.tira-a",{t:esc(x.titulo)})}">✕</button>
       </span>
     </li>`;
   }).join("");
   slot.hidden = false;
   slot.className = "prep";
   slot.innerHTML = `<div class="prep-cab">
-      <h3>Preparação do set</h3>
-      <span class="hist-taxa"><b class="mono">${lista.length}</b> ${lista.length === 1 ? "faixa" : "faixas"}${lista.filter(x => x.tocada).length ? ` · <b class="mono">${lista.filter(x => x.tocada).length}</b> já tocou` : ""}</span>
+      <h3>${tr("pro.prep.titulo")}</h3>
+      <span class="hist-taxa"><b class="mono">${lista.length}</b> ${lista.length === 1 ? tr("pro.prep.faixa") : tr("pro.prep.faixas")}${lista.filter(x => x.tocada).length ? ` · <b class="mono">${lista.filter(x => x.tocada).length}</b> ${tr("pro.prep.ja-tocou")}` : ""}</span>
     </div>
-    ${lista.length ? `<div class="prep-barra"><button type="button" data-prep="limpa">Limpar lista</button><button type="button" data-prep="limpa-tocadas">Tirar as que já tocaram</button></div>` : ""}
+    ${lista.length ? `<div class="prep-barra"><button type="button" data-prep="limpa">${tr("pro.prep.limpa")}</button><button type="button" data-prep="limpa-tocadas">${tr("pro.prep.limpa-tocadas")}</button></div>` : ""}
     ${preparacaoAviso ? `<div class="prep-aviso" role="status">${esc(preparacaoAviso)}</div>` : ""}
-    ${lista.length ? `<ol class="prep-lista">${itens}</ol>` : `<div class="prep-vazio">Vazia. Use <b>+ preparar</b> nos cards da sugestão e na biblioteca para montar a fila do set; arraste um item para um deck.</div>`}`;
+    ${lista.length ? `<ol class="prep-lista">${itens}</ol>` : `<div class="prep-vazio">${tr("pro.prep.vazia")}</div>`}`;
 }
 
 VbMxUI.aoIniciar(() => {
@@ -81,3 +81,4 @@ VbMxUI.aoIniciar(() => {
   }
   preparacaoDesenhar();
 });
+if (typeof VbMxUI !== "undefined") VbMxUI.aoIdioma(() => { if (typeof preparacaoLista !== "undefined") preparacaoDesenhar(); });

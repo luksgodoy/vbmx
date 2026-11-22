@@ -5,7 +5,7 @@ const COR_TOCADO = "rgba(242,177,52,.9)", COR_RESTO = "rgba(154,163,178,.5)", CO
 // Modo da onda (VB-28): "espectro" pinta cada coluna pela cor das 3 bandas (mais claro = mais agudo);
 // "onda" é a cor lisa de antes. As cores por coluna saem de VbMxWaveform.coresPorColuna (uma vez por faixa).
 VbMxPrefs.declarar("onda.modo", "espectro", { tipo: "opcao", modulo: "onda", rotulo: "Modo da onda",
-  opcoes: [{ valor: "espectro", rotulo: "Espectro (cor pelas frequências)" }, { valor: "onda", rotulo: "Onda lisa" }] });
+  opcoes: [{ valor: "espectro", rotulo: "pro.pref.onda-espectro" }, { valor: "onda", rotulo: "pro.pref.onda-lisa" }] });
 function coresDaOnda(d){ return VbMxPrefs.ler("onda.modo") === "espectro" ? VbMxWaveform.coresPorColuna(d.picos) : null; }
 function ajustarCanvas(cv){
   const dpr = window.devicePixelRatio || 1;
@@ -30,7 +30,7 @@ function marcadorCue(c, x){
 function fmtCue(t){ const s = Math.floor(t), dec = Math.floor((t - s)*10); return `${VbMxReproducao.formatarTempo(s)}.${dec}`; }
 function desenharZoom(cv, d, pos, letra){
   const c = ajustarCanvas(cv), { g, w, h, dpr } = c;
-  if (!d.picos) { mensagemNaOnda(c, d.faixa ? (d.carga || "sem áudio") : "deck vazio — arraste uma faixa para cá"); return; }
+  if (!d.picos) { mensagemNaOnda(c, d.faixa ? (d.carga || tr("pro.ondas.sem-audio")) : tr("pro.deck.vazio")); return; }
   const J = VbMxWaveform.janelaDoZoom(d.picos, pos, w, VbMxWaveform.JANELA_SEG), esc = (h/2 - 2*dpr) / Math.max(d.picos.pico, 1e-6), cx = Math.floor(w/2);
   const cores = coresDaOnda(d), J_ = VbMxWaveform.JANELA_SEG;
   for (let x = 0; x < w; x++) {
@@ -65,7 +65,7 @@ function marcadoresDaFaixaInteira(c, d, letra, dur){
 function ligarFaixaInteira(cv, letra){
   if (cv.dataset.faixaInteira) return;
   cv.dataset.faixaInteira = "1";
-  cv.setAttribute("aria-label", `Faixa inteira do deck ${letra}. Clique salta para o ponto (na batida, com quantize); Shift+clique define o CUE`);
+  cv.setAttribute("aria-label", tr("pro.ondas.geral-aria",{letra}));
   cv.addEventListener("pointerdown", ev => {
     if (ev.button > 0 || !decks[letra].buffer) return;
     ev.stopImmediatePropagation();
@@ -150,6 +150,6 @@ function pintarOndas(div, d, pos){
   const letra = div.dataset.deck;
   ligarFaixaInteira(cg, letra); ligarArrastoNaOnda(cz, letra);
   desenharZoom(cz, d, pos, letra); desenharGeral(cg, d, pos, letra);
-  const ci = div.querySelector(".cue-info"); if (ci) ci.textContent = d.buffer ? `CUE em ${fmtCue(d.cue)}${d.previa ? " · prévia" : ""}` : "";
+  const ci = div.querySelector(".cue-info"); if (ci) ci.textContent = d.buffer ? tr("pro.ondas.cue-em",{t:fmtCue(d.cue)}) + (d.previa ? " · " + tr("pro.ondas.previa") : "") : "";
 }
 

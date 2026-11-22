@@ -213,7 +213,7 @@ const VbMxPecas = (() => {
       el.innerHTML = `<div class="pc-dado"><span class="pc-dnome">BPM</span><span class="pc-bpm">${b ? `${b[0]}<small>,${b[1]}</small>` : "---<small>,-</small>"}</span></div>
         <div class="pc-dado"><span class="pc-dnome">Pitch</span><span class="pc-pitch">${(estado.pitch > 0 ? "+" : estado.pitch < 0 ? "−" : "±") + Math.abs(estado.pitch).toFixed(1).replace(".", ",")}%</span></div>
         <div class="pc-dado"><span class="pc-dnome">${estado.tom ? "Tom" : "Tempo"}</span>${estado.tom ? `<span class="pc-tom" style="--cor:${esc(estado.corTom || "#5f6875")}">${esc(estado.tom)}</span>` : `<span class="pc-tempo">${fmtTempo(estado.tempo)}</span>`}</div>`;
-      el.setAttribute("aria-label", `BPM ${estado.bpm == null ? "indisponível" : estado.bpm.toFixed(1)}, pitch ${estado.pitch.toFixed(1)}%${estado.tom ? ", tom " + estado.tom : ""}`);
+      el.setAttribute("aria-label", tr("pro.pc.bpm-aria",{bpm:estado.bpm == null ? tr("pro.pc.indisp") : estado.bpm.toFixed(1),pitch:estado.pitch.toFixed(1)}) + (estado.tom ? tr("pro.pc.tom-aria",{tom:estado.tom}) : ""));
     };
     pintar();
     return { el, definir(parcial) { Object.assign(estado, parcial); pintar(); }, destruir() { el.remove(); } };
@@ -227,7 +227,7 @@ const VbMxPecas = (() => {
     const n = op.leds || 48;
     el.className = "pc-jog" + (op.tamanho === "compacto" ? " pc-compacto" : "");
     el.setAttribute("role", "slider"); el.setAttribute("tabindex", "0");
-    el.setAttribute("aria-label", op.rotuloAria || "Prato: gire para buscar ou fazer scratch; tocando, a borda acelera ou freia");
+    el.setAttribute("aria-label", op.rotuloAria || tr("pro.pc.prato"));
     el.setAttribute("aria-valuemin", "0"); el.setAttribute("aria-valuemax", "100");
     // anel de LEDs: um círculo tracejado (pathLength = n) por baixo e um cópia acesa recortada pelo setor da posição
     el.innerHTML = `<svg class="pc-jog-leds" viewBox="0 0 100 100" aria-hidden="true">
@@ -244,7 +244,7 @@ const VbMxPecas = (() => {
       const a = 360 * Math.min(1, Math.max(0, estado.posicao));
       const [x0, y0] = polar(50, 50, 60, 0), [x1, y1] = polar(50, 50, 60, a);
       clipPath.setAttribute("d", a <= 0.1 ? "" : a >= 359.9 ? "M-10 -10H110V110H-10Z" : `M50 50 L${x0.toFixed(2)} ${y0.toFixed(2)} A60 60 0 ${a > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`);
-      el.setAttribute("aria-valuenow", String(Math.round(estado.posicao * 100))); el.setAttribute("aria-valuetext", `${Math.round(estado.posicao * 100)}% da faixa`);
+      el.setAttribute("aria-valuenow", String(Math.round(estado.posicao * 100))); el.setAttribute("aria-valuetext", tr("pro.pc.pct-faixa",{p:Math.round(estado.posicao * 100)}));
     };
     const pintarAng = () => el.style.setProperty("--ang", estado.ang.toFixed(2) + "deg");
     const miolo = el.querySelector(".pc-jog-miolo");

@@ -201,16 +201,16 @@
     const ctx = cfg.ctx;
     if (kl.ctx !== ctx) { kl.estado = 'nada'; kl.promessa = null; kl.motivo = ''; kl.ctx = ctx; }
     if (kl.promessa) return kl.promessa;
-    if (!ctx) { kl.motivo = 'sem áudio ainda (dê play ou solte uma faixa)'; return Promise.resolve(false); }
+    if (!ctx) { kl.motivo = tr('pro.tocador.sem-audio'); return Promise.resolve(false); }
     if (!ctx.audioWorklet || typeof ctx.audioWorklet.addModule !== 'function' || typeof raiz.AudioWorkletNode !== 'function') {
-      kl.estado = 'erro'; kl.motivo = 'este navegador não tem AudioWorklet';
+      kl.estado = 'erro'; kl.motivo = tr('pro.tocador.sem-worklet');
       kl.promessa = Promise.resolve(false); return kl.promessa;
     }
     kl.estado = 'carregando';
     kl.promessa = ctx.audioWorklet.addModule(cfg.worklets.motor)
       .then(() => ctx.audioWorklet.addModule(cfg.worklets.processador))
       .then(() => { kl.estado = 'pronto'; kl.motivo = ''; return true; },
-            (err) => { kl.estado = 'erro'; kl.motivo = `o worklet do key lock não carregou (${err && err.message ? err.message : err})`; return false; });
+            (err) => { kl.estado = 'erro'; kl.motivo = tr('pro.tocador.worklet-falhou',{erro:err && err.message ? err.message : err}); return false; });
     return kl.promessa;
   }
   const querWorklet = (d) => d.keyLock || d.semitons !== 0;

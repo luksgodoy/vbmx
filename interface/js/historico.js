@@ -43,7 +43,7 @@ function historicoGravar(){
   if (!historicoSet || !historicoArmazem) return;
   historicoSet.entradas = historicoSessao.entradas();
   historicoSujo = false; historicoUltimaGravacao = historicoAgora();
-  historicoArmazem.gravarSet(historicoSet).catch(e => { historicoAviso = `não consegui gravar o histórico: ${(e && e.message) || e}`; historicoDesenhar(); });
+  historicoArmazem.gravarSet(historicoSet).catch(e => { historicoAviso = tr("pro.hist.nao-gravou",{erro:(e && e.message) || e}); historicoDesenhar(); });
 }
 
 // ---- liga os eventos do deck e do mixer à sessão ----
@@ -64,7 +64,7 @@ VbMxUI.ouvir("preparacao:mudou", d => { if (historicoSet) { historicoSet.prepara
 function historicoNovoId(){ return "set-" + Date.now().toString(36); }
 async function historicoAbrir(){
   try { historicoArmazem = VbMxHistorico.criarArmazemIDB(typeof indexedDB !== "undefined" ? indexedDB : null); await historicoArmazem.listarSets(); }
-  catch (e) { historicoArmazem = VbMxHistorico.criarArmazemMemoria(); historicoAviso = "sem IndexedDB neste navegador: o histórico vale só até fechar a aba"; }
+  catch (e) { historicoArmazem = VbMxHistorico.criarArmazemMemoria(); historicoAviso = tr("pro.hist.sem-idb"); }
   let set = null;
   try { const id = await historicoArmazem.lerMeta("atual"); set = id ? await historicoArmazem.lerSet(id) : null; } catch (_) { set = null; }
   if (!set) set = VbMxHistorico.novoSet(historicoNovoId(), "", Date.now());
@@ -101,7 +101,7 @@ function historicoBaixar(){
 }
 async function historicoCopiar(){
   try { await navigator.clipboard.writeText(historicoTexto()); historicoAviso = "texto copiado"; }
-  catch (_) { historicoAviso = "o navegador não deixou copiar; use Baixar .txt"; }
+  catch (_) { historicoAviso = tr("pro.hist.nao-copiou"); }
   historicoDesenhar();
 }
 
@@ -111,29 +111,29 @@ function historicoDesenhar(){
   if (!slot) return;
   const entradas = historicoSessao.entradas();
   const r = VbMxHistorico.taxaDeAceitacao(entradas);
-  const taxa = r.total ? `${r.aceitas} de ${r.total} · ${Math.round(r.taxa * 100)}%` : "sem faixa ainda";
+  const taxa = r.total ? tr("pro.hist.taxa",{a:r.aceitas,t:r.total,p:Math.round(r.taxa * 100)}) : tr("pro.hist.sem-faixa");
   const vivas = ["A", "B"].map(l => ({ l, e: historicoSessao.estado(l) })).filter(x => x.e && x.e.faixa && x.e.tocando && !x.e.registrada && x.e.acumulado > 0)
-    .map(x => `<span class="hist-conta mono">deck ${x.l}: ${Math.floor(x.e.acumulado)}/${VbMxHistorico.MINIMO_NO_AR} s no ar</span>`).join("");
+    .map(x => `<span class="hist-conta mono">${tr("pro.hist.conta",{l:x.l,s:Math.floor(x.e.acumulado),min:VbMxHistorico.MINIMO_NO_AR})}</span>`).join("");
   const linhas = entradas.slice().reverse().map(e => `<li class="hist-item">
       <span class="hist-hora mono">${VbMxHistorico.fmtHora(e.inicio_ms)}</span>
       <span class="hist-nome"><b>${esc(e.faixa.titulo)}</b><span>${esc(e.faixa.artista)}</span></span>
-      <span class="hist-meta mono">deck ${e.deck} · ${VbMxHistorico.fmtDuracao(e.segundos)}</span>
-      <span class="hist-origem ${e.veio_da_sugestao ? "sugerida" : ""}" title="${e.veio_da_sugestao ? "carregada a partir do painel de sugestão" : "não veio do painel de sugestão"}">${e.veio_da_sugestao ? "sugestão" : "livre"}</span>
+      <span class="hist-meta mono">${tr("pro.mestre.deck")} ${e.deck} · ${VbMxHistorico.fmtDuracao(e.segundos)}</span>
+      <span class="hist-origem ${e.veio_da_sugestao ? "sugerida" : ""}" title="${e.veio_da_sugestao ? tr("pro.hist.veio-t") : tr("pro.hist.livre-t")}">${e.veio_da_sugestao ? tr("pro.hist.sugestao") : tr("pro.hist.livre")}</span>
     </li>`).join("");
   slot.hidden = false;
   slot.className = "hist";
   slot.innerHTML = `<div class="prep-cab hist-cab">
-      <h3>Histórico do set</h3>
-      <span class="hist-taxa" title="Aceitação = faixas que vieram da sugestão ÷ faixas que tocaram (30 s ou mais no ar). É o X do VB-04.">aceitação <b class="mono">${taxa}</b></span>
+      <h3>${tr("pro.hist.titulo")}</h3>
+      <span class="hist-taxa" title="${tr("pro.hist.aceitacao-t")}">${tr("pro.hist.aceitacao")} <b class="mono">${taxa}</b></span>
     </div>
     <div class="prep-barra">
-      <button type="button" data-hist="copiar">Copiar texto</button>
-      <button type="button" data-hist="baixar">Baixar .txt</button>
-      <button type="button" data-hist="novo" title="Fecha este set (fica guardado) e começa outro">Novo set</button>
+      <button type="button" data-hist="copiar">${tr("pro.hist.copiar")}</button>
+      <button type="button" data-hist="baixar">${tr("pro.hist.baixar")}</button>
+      <button type="button" data-hist="novo" title="${tr("pro.hist.novo-t")}">${tr("pro.hist.novo")}</button>
     </div>
     ${vivas ? `<div class="hist-vivas">${vivas}</div>` : ""}
     ${historicoAviso ? `<div class="prep-aviso" role="status">${esc(historicoAviso)}</div>` : ""}
-    ${entradas.length ? `<ol class="hist-lista">${linhas}</ol>` : `<div class="prep-vazio">Nada tocou ainda. Uma faixa entra aqui quando soma ${VbMxHistorico.MINIMO_NO_AR} s no ar (deck tocando, volume e crossfader abertos).</div>`}`;
+    ${entradas.length ? `<ol class="hist-lista">${linhas}</ol>` : `<div class="prep-vazio">${tr("pro.hist.vazio",{min:VbMxHistorico.MINIMO_NO_AR})}</div>`}`;
 }
 
 VbMxUI.aoIniciar(() => {
@@ -150,7 +150,7 @@ VbMxUI.aoIniciar(() => {
     });
   }
   historicoDesenhar();
-  historicoAbrir().catch(e => { historicoAviso = `histórico indisponível: ${(e && e.message) || e}`; historicoDesenhar(); });
+  historicoAbrir().catch(e => { historicoAviso = tr("pro.hist.indisponivel",{erro:(e && e.message) || e}); historicoDesenhar(); });
   historicoTimer = setInterval(() => {
     historicoSessao.avancar(historicoAgora());
     const algumContando = ["A", "B"].some(l => { const s = historicoSessao.estado(l); return s && s.tocando && !s.registrada; });
@@ -159,3 +159,4 @@ VbMxUI.aoIniciar(() => {
   }, 1000);
   window.addEventListener("pagehide", () => { if (historicoPronto) historicoGravar(); });
 });
+if (typeof VbMxUI !== "undefined") VbMxUI.aoIdioma(() => { if (typeof historicoSessao !== "undefined" && historicoSessao) historicoDesenhar(); });

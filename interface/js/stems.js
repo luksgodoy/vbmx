@@ -122,7 +122,7 @@
   }
   function carregar(letra, stems) {
     const ctx = cfg.ctx, toc = tocador();
-    if (!ctx || !toc || typeof toc.definirVozes !== 'function') return { ok: false, motivo: 'sem áudio ainda (configurar no 1º gesto)' };
+    if (!ctx || !toc || typeof toc.definirVozes !== 'function') return { ok: false, motivo: tr('pro.stems.sem-audio') };
     const v = SM.validar(toc.bufferDe(letra), stems);
     if (!v.ok) return v;
     if (decks[letra]) descarregar(letra);
@@ -134,7 +134,7 @@
     aplicar(letra);
     dk.stems = stems; dk.principal = toc.bufferDe(letra); dk.desligado = false;
     const ok = entrarVozes(letra, dk);
-    if (!ok) { largar(letra, 0); return { ok: false, motivo: 'o tocador não aceitou as vozes' }; }
+    if (!ok) { largar(letra, 0); return { ok: false, motivo: tr('pro.stems.tocador-recusou') }; }
     avisar(letra, null);
     return { ok: true, motivo: '' };
   }

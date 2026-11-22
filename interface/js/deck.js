@@ -11,7 +11,7 @@ async function carregarNoDeck(letra, id){
   const nova = BIBLIOTECA.find(f=>f.id===id);
   if (!nova || nova.analisavel===false) {
     const d0 = decks[letra];
-    d0.carga = nova ? `faixa sem análise não carrega: ${nova.erro || "não analisada"}` : "faixa não está mais na biblioteca (a lista mudou); arraste de novo";
+    d0.carga = nova ? tr("pro.deck.sem-analise",{erro:trm(nova.erro) || tr("pro.deck.nao-analisada")}) : tr("pro.deck.saiu-biblioteca");
     d0.cargaCls = "erro"; atualizarTransporte(letra); return;
   }
   const recusa = VbMxUI.motivoParaNaoCarregar(letra, nova);   // guardas registradas (ex.: trava de carga no ar)
@@ -20,18 +20,18 @@ async function carregarNoDeck(letra, id){
   const d = decks[letra], meu = ++d.token;
   Object.assign(d, { faixa: nova, pitch: 0, sync: false, aviso: "", avisoCls: "", buffer: null, cupApertado: false, reverso: false,
     picos: null, cue: cuesPorFaixa.get(chaveCue(nova)) || 0, previa: false, cacheGeral: null });
-  syncSoltar(letra==="A" ? "B" : "A", `o deck ${letra} trocou de faixa`);   // o seguidor não muda de andamento sozinho
+  syncSoltar(letra==="A" ? "B" : "A", tr("pro.deck.trocou-faixa",{letra}));   // o seguidor não muda de andamento sozinho
   if (atual!==nova) { atual = nova; VbMxUI.emitir("selecao:mudou", { faixa: atual }); }
   filtroCasa = null;
   if (typeof nova.obter !== "function") {
-    d.carga = ehExemplo ? "sem áudio (faixa de exemplo)" : `erro: esta faixa não tem acesso ao arquivo${MODULO_VELHO ? " — " + AVISO_MODULO : " (recarregue a pasta)"}`;
+    d.carga = ehExemplo ? tr("pro.deck.sem-audio-exemplo") : tr("pro.deck.sem-acesso") + (MODULO_VELHO ? " — " + AVISO_MODULO() : " " + tr("pro.deck.recarregue-pasta"));
     d.cargaCls = "erro"; renderTudo(); return;
   }
   d.carga = "carregando…"; d.cargaCls = "";
   renderTudo();
   try {
     const ctx = garantirAudio();
-    if (!ctx) throw new Error("este navegador não tem Web Audio");
+    if (!ctx) throw new Error(tr("pro.deck.sem-webaudio"));
     const arq = await nova.obter();
     const buf = await ctx.decodeAudioData(await arq.arrayBuffer());
     if (meu!==d.token) return;
@@ -41,7 +41,7 @@ async function carregarNoDeck(letra, id){
     d.carga = `pronto · ${VbMxReproducao.formatarTempo(buf.duration)}`; d.cargaCls = "ok";
   } catch(e){
     if (meu!==d.token) return;
-    d.carga = `erro ao carregar: ${(e && e.message) || e}`; d.cargaCls = "erro";
+    d.carga = tr("pro.deck.erro-carregar",{msg:(e && e.message) || e}); d.cargaCls = "erro";
   }
   atualizarNumerosDoDeck(letra);   // aplica a taxa e já mostra o BPM da grade (o que o SYNC usa)
   atualizarTransporte(letra);
@@ -53,10 +53,10 @@ function tocarPausar(letra){
   if (!d.buffer) { atualizarTransporte(letra); return; }   // exemplo, carregando ou erro: a linha de estado já diz
   if (d.previa) { d.previa = false; atualizarTransporte(letra); return; }   // ▶ durante a prévia do CUE: segue tocando ao soltar
   const ctx = garantirAudio();
-  if (!ctx) { d.carga = "erro: este navegador não tem Web Audio"; d.cargaCls = "erro"; atualizarTransporte(letra); return; }
+  if (!ctx) { d.carga = tr("pro.deck.erro-webaudio"); d.cargaCls = "erro"; atualizarTransporte(letra); return; }
   if (ctx.state !== "running") {                         // dentro do gesto do clique; se o navegador negar, a tela diz
-    ctx.resume().then(()=>{ if (ctx.state!=="running") avisoSaida(letra, "o navegador não liberou o áudio (clique de novo na página)"); },
-                      e=>avisoSaida(letra, `o navegador recusou iniciar o áudio: ${(e && e.message) || e}`));
+    ctx.resume().then(()=>{ if (ctx.state!=="running") avisoSaida(letra, tr("pro.deck.audio-nao-liberou")); },
+                      e=>avisoSaida(letra, tr("pro.deck.audio-recusou",{msg:(e && e.message) || e})));
   }
   if (tocandoDeck(letra)) {
     VbMxTocador.pausar(letra);
@@ -72,7 +72,7 @@ function tocarPausar(letra){
   atualizarTransporte(letra);
 }
 function avisoSaida(letra, texto){
-  const d = decks[letra]; d.carga = `erro: ${texto}`; d.cargaCls = "erro"; atualizarTransporte(letra);
+  const d = decks[letra]; d.carga = tr("pro.deck.erro-texto",{texto}); d.cargaCls = "erro"; atualizarTransporte(letra);
 }
 // CUE clássico (regra em docs/decisoes.md, 2026-10-25): tocando → volta ao cue e para; parado fora do
 // cue → define o cue aqui; parado no cue → segure para ouvir (prévia), solte para voltar.
@@ -188,7 +188,7 @@ function atualizarTransporte(letra){
   if (div) {
     div.classList.toggle("rodando", tocando);
     const play = div.querySelector("[data-play]");
-    if (play) { play.textContent = tocando ? "❚❚" : "▶"; play.classList.toggle("tocando", tocando); play.setAttribute("aria-label", tocando ? `Pausar o deck ${letra}` : `Tocar o deck ${letra}`); }
+    if (play) { play.textContent = tocando ? "❚❚" : "▶"; play.classList.toggle("tocando", tocando); play.setAttribute("aria-label", tr(tocando ? "pro.deck.pausar" : "pro.deck.tocar",{letra})); }
     const bc = div.querySelector("[data-cue]");
     if (bc) { bc.disabled = !d.buffer; bc.classList.toggle("cue-ativo", d.previa); }
     const bp = div.querySelector("[data-cup]");
@@ -246,7 +246,7 @@ function pintarTomResultante(div, faixa, d){
   el.hidden = !mostrar;
   if (!mostrar) { el.innerHTML = ""; return; }
   el.innerHTML = `${chave(tom.camelot)}<span class="tom-desvio">${VbMxTom.formatarDesvio(tom)}</span>`;
-  el.title = `Tom resultante com o pitch e o KEY (${tomTexto(tom.original)} → ${tomTexto(tom.camelot)}): a sugestão usa este tom`;
+  el.title = tr("pro.deck.tom-resultante",{de:tomTexto(tom.original),para:tomTexto(tom.camelot)});
 }
 function atualizarNumerosDoDeck(letra){
   aplicarTaxa(letra);
@@ -278,24 +278,25 @@ function sincronizar(letra){
   const outra = letra==="A" ? "B" : "A";
   const d = decks[letra];
   // Toggle: SYNC já aceso → apertar de novo só desliga (syncSoltar mantém pitch, mestre, quantização e faixa do pitch).
-  if (d.sync) { syncSoltar(letra, "apertado de novo (o pitch fica onde está)"); return; }
-  if (!faixaDoDeck(letra)) { d.aviso = "SYNC: este deck está vazio"; d.avisoCls = "erro"; atualizarNumerosDoDeck(letra); return; }
+  if (d.sync) { syncSoltar(letra, tr("pro.sync.apertado-de-novo")); return; }
+  if (!faixaDoDeck(letra)) { d.aviso = tr("pro.sync.deck-vazio"); d.avisoCls = "erro"; atualizarNumerosDoDeck(letra); return; }
   if (!faixaDoDeck(outra)) {
-    d.aviso = `SYNC: o deck ${outra} está vazio — arraste uma faixa para ele`; d.avisoCls = "erro";
+    d.aviso = tr("pro.sync.outro-vazio",{outra}); d.avisoCls = "erro";
     atualizarNumerosDoDeck(letra); return;
   }
   mestreAoSincronizar(letra);   // VB-35: o líder do SYNC vira o mestre (AUTO) e o mestre nunca segue
   decks[outra].sync = false;   // um líder só: quem apertou SYNC segue o outro (antes de mexer no pitch)
   syncPintarBotao(outra);
   const r = syncAplicar(letra);
-  if (!r.ok) { d.sync = false; d.aviso = `SYNC com ${syncLider(letra) === "relogio" ? `o relógio (${fmtBpm(mestreBpm())} BPM)` : `o deck ${outra}`} não aplicado: ${r.motivo}`; d.avisoCls = "erro"; atualizarNumerosDoDeck(letra); return; }
+  if (!r.ok) { d.sync = false; d.aviso = tr(syncLider(letra) === "relogio" ? "pro.sync.nao-aplicado-relogio" : "pro.sync.nao-aplicado-deck",{bpm:fmtBpm(mestreBpm()),outra,motivo:trm(r.motivo)}); d.avisoCls = "erro"; atualizarNumerosDoDeck(letra); return; }
   d.sync = true;
   const fase = syncAlinharFase(letra);
   const ms = fase ? Math.round(Math.abs(fase.erro.relogio) * 1000) : 0;
   const peloRelogio = syncLider(letra) === "relogio";   // o relógio sempre "toca": a fase alinha no play deste deck
-  d.aviso = `SYNC com ${peloRelogio ? "o relógio" : outra}: pitch ${VbMxPitch.formatarPitch(r.pitch)} → ${fmtBpm(r.bpmResultante)} BPM${r.fator!==1 ? ` (${r.razao} ${peloRelogio ? "do relógio" : `do deck ${outra}`})` : ""}`
-    + (fase ? ` · fase alinhada (estava ${ms} ms ${fase.erro.relogio > 0 ? "adiantado" : "atrasado"})`
-            : (peloRelogio || tocandoDeck(outra) ? " · a fase alinha ao dar play" : ""));
+  d.aviso = tr("pro.sync.aplicado",{com:peloRelogio ? tr("pro.sync.o-relogio") : outra,pitch:VbMxPitch.formatarPitch(r.pitch),bpm:fmtBpm(r.bpmResultante)})
+    + (r.fator!==1 ? " " + tr("pro.sync.razao",{razao:trm(r.razao),de:peloRelogio ? tr("pro.sync.do-relogio") : tr("pro.sync.do-deck",{outra})}) : "")
+    + (fase ? " · " + tr(fase.erro.relogio > 0 ? "pro.sync.fase-adiantado" : "pro.sync.fase-atrasado",{ms})
+            : (peloRelogio || tocandoDeck(outra) ? " · " + tr("pro.sync.fase-no-play") : ""));
   d.avisoCls = "ok";
   atualizarNumerosDoDeck(letra);
 }
@@ -326,7 +327,7 @@ function voltarAoInicio(letra){
 function passoDePitch(letra, sinal, passo){
   const d = decks[letra];
   const r = VbMxMapaControle.passoDePitch(d.pitch, sinal, passo, d.sync);
-  if (r.soltarSync) syncSoltar(letra, "pitch mexido em passos (SHIFT+Nudge)");
+  if (r.soltarSync) syncSoltar(letra, tr("pro.sync.pitch-passos"));
   const aviso = d.aviso, cls = d.avisoCls;
   mudarPitch(letra, r.pitch);
   if (r.soltarSync) { d.aviso = aviso; d.avisoCls = cls; atualizarNumerosDoDeck(letra); }   // mudarPitch limpa o aviso

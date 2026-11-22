@@ -6,6 +6,10 @@
 (function () {
   'use strict';
   const B = window.VbMxBiblioteca;
+  // texto pelo idioma (interface/js/i18n.js; o Profissional só carrega o pt-BR). A frase já exibida só troca no evento seguinte;
+  // as frases de biblioteca/biblioteca.js (resumoFila, fraseReabertura…) saem em pt-BR e são traduzidas aqui por trm (interface/js/msg-motor.js).
+  const tr = (chave, params) => (window.VbMxI18n ? window.VbMxI18n.t(chave, params) : chave);
+  const trm = (s) => (window.VbMxMsg ? window.VbMxMsg.traduzir(s) : s);
   const TAXA = 44100, JANELA_S = 90, MAX_S = 480; // JANELA_S: trecho do meio só para o tom; o BPM olha a faixa inteira (até MAX_S, centrada)
   const CDN = 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/';
 
@@ -68,8 +72,8 @@
       worker = new Worker(url);
       worker.onmessage = (e) => { const p = pendentes.get(e.data.id); if (p) { pendentes.delete(e.data.id); p(e.data); } };
       const falhaGeral = (msg) => { for (const p of pendentes.values()) p({ erro: msg }); pendentes.clear(); };
-      worker.onerror = (e) => falhaGeral((e && e.message) || 'falha no worker (sem internet para o CDN do Essentia?)');
-      worker.onmessageerror = () => falhaGeral('mensagem do worker ilegível');
+      worker.onerror = (e) => falhaGeral((e && e.message) || tr('pastas.erro-worker'));
+      worker.onmessageerror = () => falhaGeral(tr('pastas.erro-mensagem'));
       return worker;
     }
     async function decodificar(arquivo) {
@@ -91,7 +95,7 @@
       if (r.erro) throw new Error(r.erro);
       // oitava por consenso, ticks da faixa inteira, ataque do bumbo no envelope, 1 do compasso, um BPM só
       const a = window.VbMxBpm.resolver(r.candidatos, inicio, null, r.graves, r.fluxo);
-      if (!a) throw new Error('BPM não detectado');
+      if (!a) throw new Error(tr('pastas.sem-bpm'));
       return { bpm: a.bpm, camelot: window.Camelot.paraCamelot(r.nota, r.escala), forca: r.forca, grade: a.grade, ritmo: a.ritmo || null, duracao };
     }
     return { analisar, fechar() { try { worker && worker.terminate(); } catch (_) {} try { ctx && ctx.close(); } catch (_) {} worker = ctx = null; } };
@@ -114,7 +118,7 @@
   const novaChave = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   // Ambiente lido do navegador; a escolha em si mora em biblioteca.js (testada em Node).
   const ambiente = () => ({ temPicker: typeof window.showDirectoryPicker === 'function', userAgent: navigator.userAgent, plataforma: navigator.platform, toques: navigator.maxTouchPoints });
-  const LEMBRA_SO_COM_PICKER = ' Esta pasta não será lembrada na próxima recarga: este caminho de seleção não dá ao navegador um acesso que possa ser guardado.';
+  const lembraSoComPicker = () => tr('pastas.nao-lembra');
 
   function iniciar({ montarEm, aoMudar, preferencia, aoDesenhar }) {
     const pastas = []; // { chave, nome, handle?, itens, resultados:[{item,resultado}], lembrada?, erro? }
@@ -139,18 +143,19 @@
       const sig = JSON.stringify(pastasParaFiltro());
       if (sig !== assinatura) { assinatura = sig; if (aoDesenhar) { try { aoDesenhar(); } catch (_) { /* barra ainda não existe */ } } }
       const total = pastas.reduce((n, p) => n + p.itens.length, 0);
-      const nota = (p) => (p.erro ? `<span class="n" title="${esc(p.erro)}">${esc(p.erro)}</span>` : p.lembrada ? '<span class="n">lembrada — clique para reabrir</span>' : `<span class="n">${p.itens.length}</span>`);
+      const nota = (p) => (p.erro ? `<span class="n" title="${esc(p.erro)}">${esc(p.erro)}</span>` : p.lembrada ? `<span class="n">${esc(tr('pastas.lembrada'))}</span>` : `<span class="n">${p.itens.length}</span>`);
+      const estado = aviso || (progresso ? tr('pastas.analisando', { feitas: progresso.feitas, total: progresso.total, cache: progresso.doCache ? tr('pastas.do-cache', { n: progresso.doCache }) : '', atual: progresso.atual ? ' · ' + progresso.atual.split('/').pop() : '' }) : (pastas.length ? tr('pastas.contagem', { total, n: pastas.length }) : tr(caminho === 'faixas' ? 'pastas.nenhuma-faixas' : 'pastas.nenhuma-pasta')));
       montarEm.innerHTML = `
         <div class="pastas-cab">
-          <button type="button" class="botao-pasta" id="add-pasta" ${ocupado ? 'disabled' : ''}>${caminho === 'faixas' ? 'Adicionar faixas' : 'Adicionar pasta'}</button>
-          ${aReabrir() ? `<button type="button" class="botao-pasta" id="reabrir-pastas" ${ocupado ? 'disabled' : ''}>Reabrir pastas</button>` : ''}
+          <button type="button" class="botao-pasta" id="add-pasta" ${ocupado ? 'disabled' : ''}>${tr(caminho === 'faixas' ? 'pastas.add-faixas' : 'pastas.add-pasta')}</button>
+          ${aReabrir() ? `<button type="button" class="botao-pasta" id="reabrir-pastas" ${ocupado ? 'disabled' : ''}>${tr('pastas.reabrir')}</button>` : ''}
           ${caminho === 'faixas'
             ? '<input type="file" id="add-pasta-input" multiple accept="audio/*,.mp3,.wav,.aif,.aiff" hidden>'
             : '<input type="file" id="add-pasta-input" webkitdirectory multiple hidden>'}
-          ${ocupado ? '<button type="button" class="botao-pasta" id="cancelar-analise">Cancelar</button>' : ''}
-          <span class="pastas-estado" role="status">${esc(aviso || (progresso ? `Analisando ${progresso.feitas}/${progresso.total}${progresso.doCache ? ` · ${progresso.doCache} do cache` : ''}${progresso.atual ? ' · ' + progresso.atual.split('/').pop() : ''}` : (pastas.length ? `${total} arquivo(s) de áudio em ${pastas.length} pasta(s)` : (caminho === 'faixas' ? 'Nenhuma faixa: usando faixas de exemplo.' : 'Nenhuma pasta: usando faixas de exemplo.'))))}</span>
+          ${ocupado ? `<button type="button" class="botao-pasta" id="cancelar-analise">${tr('pastas.cancelar')}</button>` : ''}
+          <span class="pastas-estado" role="status">${esc(estado)}</span>
         </div>
-        ${pastas.length ? `<ul class="pastas-lista">${pastas.map((p, i) => `<li><span>${esc(p.nome)}</span>${nota(p)}<button type="button" data-remover="${i}" aria-label="Remover a pasta ${esc(p.nome)}" ${ocupado ? 'disabled' : ''}>×</button></li>`).join('')}</ul>` : ''}`;
+        ${pastas.length ? `<ul class="pastas-lista">${pastas.map((p, i) => `<li><span>${esc(p.nome)}</span>${nota(p)}<button type="button" data-remover="${i}" aria-label="${esc(tr('pastas.remover', { nome: p.nome }))}" ${ocupado ? 'disabled' : ''}>×</button></li>`).join('')}</ul>` : ''}`;
       montarEm.querySelector('#add-pasta').onclick = escolher;
       montarEm.querySelector('#add-pasta-input').onchange = (e) => {
         const arquivos = Array.from(e.target.files || []);
@@ -165,29 +170,29 @@
       montarEm.querySelectorAll('[data-remover]').forEach((b) => (b.onclick = () => {
         const [p] = pastas.splice(Number(b.dataset.remover), 1);
         if (p && p.chave) memoria.remover(p.chave); // × também esquece o handle guardado
-        aviso = p ? `Pasta "${p.nome}" removida${p.handle ? ' e esquecida' : ''}.` : ''; desenhar(); aoMudar(faixas());
+        aviso = p ? tr(p.handle ? 'pastas.removida-esquecida' : 'pastas.removida', { nome: p.nome }) : ''; desenhar(); aoMudar(faixas());
       }));
     }
     // Todo caminho termina com uma frase em `aviso` (ou com o progresso na tela): a página nunca fica muda.
     async function escolher() {
       if (ocupado) return;
       if (caminho !== 'diretorio') {
-        aviso = caminho === 'faixas' ? 'Abrindo o seletor de faixas…' : 'Abrindo o seletor de pastas…'; desenhar();
+        aviso = tr(caminho === 'faixas' ? 'pastas.abrindo-faixas' : 'pastas.abrindo-pastas'); desenhar();
         montarEm.querySelector('#add-pasta-input').click(); return;
       }
-      aviso = 'Abrindo o seletor de pastas…'; desenhar();
+      aviso = tr('pastas.abrindo-pastas'); desenhar();
       let handle;
       try { handle = await window.showDirectoryPicker({ mode: 'read' }); }
       catch (e) {
-        aviso = e && e.name === 'AbortError' ? 'Nenhuma pasta escolhida.' : `Não foi possível abrir o seletor (${(e && e.name) || 'erro'}: ${(e && e.message) || e}). Tente de novo ou use um Chrome recente.`;
+        aviso = e && e.name === 'AbortError' ? tr('pastas.cancelou') : tr('pastas.seletor-falhou', { nome: (e && e.name) || 'erro', msg: (e && e.message) || e });
         desenhar(); return;
       }
-      aviso = `Varrendo "${handle.name}"…`; desenhar();
+      aviso = tr('pastas.varrendo', { nome: handle.name }); desenhar();
       try {
-        const itens = await B.varrerDiretorio(handle, { aoAchar: (n) => { aviso = `Varrendo "${handle.name}"… ${n} faixa(s) encontrada(s)`; const e = montarEm.querySelector('.pastas-estado'); if (e) e.textContent = aviso; else desenhar(); } });
+        const itens = await B.varrerDiretorio(handle, { aoAchar: (n) => { aviso = tr('pastas.varrendo-n', { nome: handle.name, n }); const e = montarEm.querySelector('.pastas-estado'); if (e) e.textContent = aviso; else desenhar(); } });
         const igual = await B.acharIgual(pastas, handle); // mesma pasta do disco: substitui, não duplica
         await adicionar({ nome: igual ? igual.nome : handle.name, chave: igual && igual.chave, itens, handle });
-      } catch (e) { aviso = `Não foi possível ler a pasta "${handle.name}": ${(e && e.message) || e}`; desenhar(); }
+      } catch (e) { aviso = tr('pastas.leitura-falhou', { nome: handle.name, msg: (e && e.message) || e }); desenhar(); }
     }
     // Analisa os itens de uma pasta já colocada na lista; quem chama liga/desliga `ocupado`.
     async function analisarPasta(pasta) {
@@ -199,9 +204,9 @@
       return r;
     }
     async function adicionar(pasta) {
-      if (!pasta) { aviso = caminho === 'faixas' ? 'Nenhuma faixa escolhida.' : 'Nenhuma pasta escolhida.'; desenhar(); return; }
-      if (ocupado) { aviso = 'Espere a análise em curso terminar (ou cancele) antes de adicionar outra pasta.'; desenhar(); return; }
-      if (!pasta.itens.length) { aviso = caminho === 'faixas' ? 'Nenhum MP3/WAV/AIFF entre os arquivos escolhidos.' : `Nenhum MP3/WAV/AIFF em "${pasta.nome}".`; desenhar(); return; }
+      if (!pasta) { aviso = tr(caminho === 'faixas' ? 'pastas.nada-faixas' : 'pastas.cancelou'); desenhar(); return; }
+      if (ocupado) { aviso = tr('pastas.espere'); desenhar(); return; }
+      if (!pasta.itens.length) { aviso = caminho === 'faixas' ? tr('pastas.sem-audio-faixas') : tr('pastas.sem-audio', { nome: pasta.nome }); desenhar(); return; }
       pasta.resultados = [];
       const anterior = pastas.find((p) => p.nome === pasta.nome);
       pasta.chave = pasta.chave || (pasta.handle ? (anterior && anterior.chave) || novaChave() : undefined);
@@ -209,14 +214,14 @@
       let lembrou = '';
       if (pasta.handle) {
         const gravou = await memoria.gravar({ chave: pasta.chave, nome: pasta.nome, handle: pasta.handle });
-        if (!gravou) lembrou = ' Não consegui guardar esta pasta para a próxima recarga (IndexedDB indisponível).';
-      } else lembrou = LEMBRA_SO_COM_PICKER;
-      aviso = `${pasta.itens.length} faixa(s) encontrada(s) em "${pasta.nome}"${substituiu ? ' (pasta já listada: reanalisando o que não tinha resultado)' : ''}. Preparando o analisador…`;
+        if (!gravou) lembrou = tr('pastas.sem-indexeddb');
+      } else lembrou = lembraSoComPicker();
+      aviso = tr('pastas.encontradas', { n: pasta.itens.length, nome: pasta.nome, repetida: substituiu ? tr('pastas.repetida') : '' });
       ocupado = true; controle = B.criarControle(); analisador = analisador || criarAnalisador(); desenhar();
       try {
         const r = await analisarPasta(pasta);
-        aviso = B.resumoFila(r, pasta.itens.length) + lembrou;
-      } catch (e) { aviso = 'Falha na análise: ' + ((e && e.message) || e) + lembrou; }
+        aviso = trm(B.resumoFila(r, pasta.itens.length)) + lembrou;
+      } catch (e) { aviso = tr('pastas.analise-falhou', { msg: (e && e.message) || e }) + lembrou; }
       ocupado = false; progresso = null; desenhar(); aoMudar(faixas());
     }
 
@@ -224,26 +229,26 @@
     // varredura e análise. Devolve null se deu certo, ou o motivo da falha.
     async function reabrirUma(p, estado) {
       try {
-        if (estado !== 'granted') return 'sem permissão de leitura (o navegador não liberou a pasta)';
+        if (estado !== 'granted') return tr('pastas.sem-permissao');
         p.itens = await B.varrerDiretorio(p.handle, { cancelado: () => controle && controle.cancelado });
-        if (!p.itens.length) return 'nenhum MP3/WAV/AIFF encontrado';
+        if (!p.itens.length) return tr('pastas.sem-audio-curto');
         p.lembrada = false; p.erro = ''; p.resultados = [];
         analisador = analisador || criarAnalisador();
         await analisarPasta(p);
         return null;
-      } catch (e) { return B.motivoFalha(e); }
+      } catch (e) { return trm(B.motivoFalha(e)); }
     }
     async function reabrirLote(lista, estados) {
-      ocupado = true; controle = B.criarControle(); aviso = 'Reabrindo pastas lembradas…'; desenhar();
+      ocupado = true; controle = B.criarControle(); aviso = tr('pastas.reabrindo-todas'); desenhar();
       const falhas = [];
       for (let i = 0; i < lista.length; i++) {
         if (controle.cancelado) break;
         const p = lista[i];
-        aviso = `Reabrindo "${p.nome}"…`; progresso = null; desenhar();
+        aviso = tr('pastas.reabrindo', { nome: p.nome }); progresso = null; desenhar();
         const motivo = await reabrirUma(p, estados[i]);
         if (motivo) { p.erro = motivo; p.lembrada = true; falhas.push({ nome: p.nome, motivo }); }
       }
-      aviso = (controle.cancelado ? 'Cancelado. ' : '') + B.fraseReabertura(lista.length, falhas);
+      aviso = (controle.cancelado ? tr('pastas.cancelado') : '') + trm(B.fraseReabertura(lista.length, falhas));
       ocupado = false; progresso = null; desenhar(); aoMudar(faixas());
     }
     // Clique em "Reabrir pastas": UM gesto, e todos os pedidos de permissão saem juntos, de forma
@@ -251,9 +256,9 @@
     async function reabrirPastas() {
       if (ocupado) return;
       const lista = pastas.filter((p) => p.lembrada && p.handle);
-      if (!lista.length) { aviso = 'Nenhuma pasta lembrada para reabrir.'; desenhar(); return; }
+      if (!lista.length) { aviso = tr('pastas.nenhuma-lembrada'); desenhar(); return; }
       const pedidos = lista.map((p) => Promise.resolve().then(() => p.handle.requestPermission({ mode: 'read' })).catch((e) => ({ erro: e })));
-      aviso = 'Pedindo permissão ao navegador…'; desenhar();
+      aviso = tr('pastas.pedindo'); desenhar();
       const estados = (await Promise.all(pedidos)).map((r) => (typeof r === 'string' ? r : 'erro'));
       lista.forEach((p, i) => { p.erro = ''; });
       await reabrirLote(lista, estados);
@@ -270,15 +275,16 @@
         try { estados.push(await p.handle.queryPermission({ mode: 'read' })); } catch (_) { estados.push('prompt'); }
       }
       const plano = B.planejarReabertura(estados);
-      aviso = B.fraseLembradas(novas.length, plano.pendentes.length); desenhar();
+      aviso = trm(B.fraseLembradas(novas.length, plano.pendentes.length)); desenhar();
       if (plano.prontas.length) {
         await reabrirLote(plano.prontas.map((i) => novas[i]), plano.prontas.map(() => 'granted'));
-        if (plano.pendentes.length) aviso += ' ' + B.fraseLembradas(novas.length, plano.pendentes.length);
+        if (plano.pendentes.length) aviso += ' ' + trm(B.fraseLembradas(novas.length, plano.pendentes.length));
         desenhar();
       }
     }
+    if (window.VbMxI18n) window.VbMxI18n.aoMudar(() => desenhar());   // só os rótulos fixos; a frase em `aviso` segue no idioma em que nasceu
     desenhar();
-    carregarLembradas().catch((e) => { aviso = 'Não consegui ler as pastas lembradas: ' + ((e && e.message) || e); ocupado = false; desenhar(); });
+    carregarLembradas().catch((e) => { aviso = tr('pastas.lembradas-falhou', { msg: (e && e.message) || e }); ocupado = false; desenhar(); });
     return { faixas, adicionar };
   }
 

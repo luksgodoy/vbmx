@@ -19,18 +19,18 @@ function sugestaoNotaTom(){
   if (!ref || ref === atual) return "";
   const l = deckDaReferencia(), d = decks[l];
   const tom = VbMxTom.tomEfetivo(atual.camelot, d.pitch, opcoesDoTom(d));
-  return `deck ${l} a ${VbMxPitch.formatarPitch(d.pitch)}: ${tom.mudou ? `${tomTexto(tom.original)} → ${tomTexto(tom.camelot)} (${VbMxTom.formatarDesvio(tom)})` : `${tomTexto(tom.original)} (${VbMxTom.formatarDesvio(tom)})`} · ${fmtBpm(atual.bpm)} → ${fmtBpm(ref.bpm)} BPM`;
+  return tr("pro.sug.nota-tom",{l,pitch:VbMxPitch.formatarPitch(d.pitch),tom:tom.mudou ? `${tomTexto(tom.original)} → ${tomTexto(tom.camelot)} (${VbMxTom.formatarDesvio(tom)})` : `${tomTexto(tom.original)} (${VbMxTom.formatarDesvio(tom)})`,de:fmtBpm(atual.bpm),para:fmtBpm(ref.bpm)});
 }
 
 function cardHTML(c){
   const perto = Math.abs(c.bpm.deltaPct) <= 0.02;
-  const [motivoTom, ...resto] = c.motivo.split(" · ");
+  const [motivoTom, ...resto] = c.motivo.split(" · ").map(p => trm(p));
   return `
-    <div class="card" data-faixa="${c.faixa.id}" draggable="true" role="button" tabindex="0" style="--cor:${corCamelot(c.faixa.camelot)}" title="Clique para selecionar e recalcular; arraste para um deck">
+    <div class="card" data-faixa="${c.faixa.id}" draggable="true" role="button" tabindex="0" style="--cor:${corCamelot(c.faixa.camelot)}" title="${tr("pro.sug.card-titulo")}">
       <span class="faixa-cor"></span>
       ${chave(c.faixa.camelot)}
       <span class="c-nome"><b>${esc(c.faixa.titulo)}</b><span>${esc(c.faixa.artista)} · <span class="mono">${fmtBpm(c.faixa.bpm)}</span> BPM</span></span>
-      <span class="c-motivo"><span class="motivo">${esc(motivoTom)}</span><span class="dbpm ${perto?"perto":"longe"}" title="ΔBPM contra a faixa tocando">${esc(resto.join(" · "))}</span></span>
+      <span class="c-motivo"><span class="motivo">${esc(motivoTom)}</span><span class="dbpm ${perto?"perto":"longe"}" title="${tr("pro.sug.dbpm-titulo")}">${esc(resto.join(" · "))}</span></span>
       ${paraDeck(c.faixa)}
     </div>`;
 }
@@ -38,13 +38,14 @@ function cardHTML(c){
 function regrasHTML(lista){
   const usados = new Set(lista.map(c=>c.casa.relacao));
   const temDobro = lista.some(c=>c.bpm.fator!==1);
-  const regras = ["mesma casa","±1 na roda","relativa maior/menor"];
+  const REGRAS_ROTULO = { "mesma casa": "pro.sug.regra-mesma", "±1 na roda": "pro.sug.regra-vizinha", "relativa maior/menor": "pro.sug.regra-relativa" };   // as chaves são as relações do motor/
+  const regras = Object.keys(REGRAS_ROTULO);
   return `<div class="regras">
-    ${regras.map(r=>`<span class="regra ${usados.has(r)?"ativa":""}">${r}</span>`).join("")}
-    <span class="regra ativa" title="Alcance do pitch dos decks: o que cabe aqui dá para igualar no SYNC">BPM ±${Math.round(VbMxMotor.JANELA_BPM*100)}%</span>
-    <span class="regra ${temDobro?"ativa":""}">dobro/metade</span>
-    <span class="regra depois">estilo · depois</span>
-    <span class="regra depois">momento · depois</span>
+    ${regras.map(r=>`<span class="regra ${usados.has(r)?"ativa":""}">${tr(REGRAS_ROTULO[r])}</span>`).join("")}
+    <span class="regra ativa" title="${tr("pro.sug.alcance-titulo")}">BPM ±${Math.round(VbMxMotor.JANELA_BPM*100)}%</span>
+    <span class="regra ${temDobro?"ativa":""}">${tr("pro.sug.regra-dobro")}</span>
+    <span class="regra depois">${tr("pro.sug.regra-estilo")}</span>
+    <span class="regra depois">${tr("pro.sug.regra-momento")}</span>
   </div>`;
 }
 
@@ -68,7 +69,7 @@ function rodaHTML(lista, ref){
       const acesa = n>0 || tom===filtroCasa;
       const cls = (acesa?"":"apagado") + (tom===ref.camelot?" atual":"") + (filtroCasa===tom?" filtro":"");
       const tx = (cx+rm*Math.cos(a)).toFixed(1), ty = (cy+rm*Math.sin(a)).toFixed(1);
-      const rotulo = acesa ? `${tomTexto(tom)} · ${n} mixáve${n===1?"l":"is"}${filtroCasa===tom?" · filtro ativo, clique para limpar":" · clique para filtrar"}` : `${tomTexto(tom)} · fora da compatibilidade`;
+      const rotulo = acesa ? `${tomTexto(tom)} · ${tr("pro.sug.casa-mixaveis",{n})}${tr(filtroCasa===tom?"pro.sug.casa-limpar":"pro.sug.casa-filtrar")}` : `${tomTexto(tom)} · ${tr("pro.sug.casa-fora")}`;
       s += `<g class="setor ${cls}" data-casa="${tom}" ${acesa?`tabindex="0" role="button" aria-pressed="${filtroCasa===tom}"`:""} aria-label="${rotulo}">
               <title>${rotulo}</title>
               <path d="${arco(r1,r2,i)}" fill="${corCamelot(tom)}"/>
@@ -81,15 +82,15 @@ function rodaHTML(lista, ref){
         <text class="centro-txt" x="${cx}" y="${cy-2}" font-size="22">${tomTexto(ref.camelot)}</text>
         <text class="centro-sub" x="${cx}" y="${cy+14}">${fmtBpm(ref.bpm)} BPM</text>`;
   return `<div class="roda" id="roda">
-    <svg viewBox="0 0 250 250" role="group" aria-label="Roda de Camelot: casas acesas têm faixas mixáveis com ${tomTexto(ref.camelot)}">${s}</svg>
-    <span class="dica">${filtroCasa ? `filtrando por <b>${tomTexto(filtroCasa)}</b> · clique na casa de novo ou em Limpar` : "casas acesas = têm faixa mixável · clique numa para filtrar a lista"}</span>
+    <svg viewBox="0 0 250 250" role="group" aria-label="${tr("pro.sug.roda-aria",{tom:tomTexto(ref.camelot)})}">${s}</svg>
+    <span class="dica">${filtroCasa ? tr("pro.sug.dica-filtrando",{tom:`<b>${tomTexto(filtroCasa)}</b>`}) : tr("pro.sug.dica-casas")}</span>
   </div>`;
 }
 
 function renderSugestao(){
   const div = document.getElementById("sugestao");
   if (!atual) {
-    div.innerHTML = `<div class="sugestao-cab"><h3>Próximas possíveis</h3></div><div class="vazio-sug">Escolha uma faixa analisada na biblioteca para ver o que mixa com ela.</div>`;
+    div.innerHTML = `<div class="sugestao-cab"><h3>${tr("pro.sug.titulo")}</h3></div><div class="vazio-sug">${tr("pro.sug.escolha")}</div>`;
     return;
   }
   const rolagem = div.querySelector(".cards")?.scrollTop ?? 0;
@@ -98,26 +99,26 @@ function renderSugestao(){
   const nota = sugestaoNotaTom();
   const total = motor.compativeis.length;
   const lista = filtroCasa ? motor.compativeis.filter(c=>c.faixa.camelot===filtroCasa) : motor.compativeis;
-  const contagem = filtroCasa ? `<b class="contagem">${lista.length} de ${total}</b>` : `<b class="contagem">${total}</b>`;
+  const contagem = filtroCasa ? `<b class="contagem">${tr("pro.sug.n-de-total",{n:lista.length,total})}</b>` : `<b class="contagem">${total}</b>`;
   div.innerHTML = `
     <div class="sugestao-cab">
-      <h3>Próximas possíveis</h3>
-      <button class="alternador" id="alternar-roda" aria-pressed="${rodaAberta}" aria-controls="roda" aria-expanded="${rodaAberta}" title="Mostrar ou esconder a roda de Camelot">
+      <h3>${tr("pro.sug.titulo")}</h3>
+      <button class="alternador" id="alternar-roda" aria-pressed="${rodaAberta}" aria-controls="roda" aria-expanded="${rodaAberta}" title="${tr("pro.sug.roda-alternar")}">
         <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v4M8 10.5v4M1.5 8h4M10.5 8h4" stroke="currentColor" stroke-width="1.2"/></svg>
-        Roda
+        ${tr("pro.sug.roda")}
       </button>
-      <span class="resumo">${contagem} de ${motor.contagem.total} mixáveis com <b>${esc(atual.titulo)}</b> · ${tomTexto(ref.camelot)} · ${fmtBpm(ref.bpm)} BPM</span>
-      ${nota ? `<span class="resumo tom-efetivo" title="Sem key lock, o pitch desloca o tom: a lista usa o tom e o BPM efetivos">${esc(nota)}</span>` : ""}
-      <span class="resumo">ordem: menor diferença de BPM, depois casa na roda (mesma casa antes) · cada card mostra o ΔBPM</span>
+      <span class="resumo">${tr("pro.sug.resumo",{contagem,total:motor.contagem.total,titulo:`<b>${esc(atual.titulo)}</b>`})} · ${tomTexto(ref.camelot)} · ${fmtBpm(ref.bpm)} BPM</span>
+      ${nota ? `<span class="resumo tom-efetivo" title="${tr("pro.sug.tom-efetivo-titulo")}">${esc(nota)}</span>` : ""}
+      <span class="resumo">${tr("pro.sug.ordem")}</span>
     </div>
     ${regrasHTML(motor.compativeis)}
     ${rodaAberta ? rodaHTML(motor.compativeis, ref) : ""}
-    ${filtroCasa ? `<div class="filtro-ativo" id="filtro-ativo">Filtro
-        <span class="chip">${filtroCasa}<button data-limpar title="Tirar o filtro ${filtroCasa}" aria-label="Tirar o filtro ${filtroCasa}">×</button></span>
-        <button class="limpar" data-limpar>Limpar</button></div>` : ""}
+    ${filtroCasa ? `<div class="filtro-ativo" id="filtro-ativo">${tr("pro.sug.filtro")}
+        <span class="chip">${filtroCasa}<button data-limpar title="${tr("pro.sug.tirar-filtro",{casa:filtroCasa})}" aria-label="${tr("pro.sug.tirar-filtro",{casa:filtroCasa})}">×</button></span>
+        <button class="limpar" data-limpar>${tr("pro.sug.limpar")}</button></div>` : ""}
     <div class="cards">${lista.length
       ? lista.map(cardHTML).join("")
-      : `<div class="vazio-sug">${filtroCasa ? `Nenhuma mixável em ${filtroCasa}. Limpe o filtro ou escolha outra casa.` : "Nada mixável só por tom e BPM. Troque a faixa."}</div>`}</div>`;
+      : `<div class="vazio-sug">${filtroCasa ? tr("pro.sug.nenhuma-em",{casa:filtroCasa}) : tr("pro.sug.nada-mixavel")}</div>`}</div>`;
   div.querySelector(".cards").scrollTop = rolagem;
   div.querySelector("#alternar-roda").addEventListener("click", alternarRoda);
   div.querySelectorAll("[data-limpar]").forEach(b=>b.addEventListener("click", limparFiltro));

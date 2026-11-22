@@ -14,9 +14,9 @@ function medidoresMontarTela(){
   const slot = VbMxUI.slot("mixer-medidores"), mixerEl = document.getElementById("mixer");
   if (!slot || !mixerEl) return;
   slot.classList.add("medidores");
-  slot.setAttribute("aria-label", "Medidores de nível");
-  slot.innerHTML = `<canvas class="medidores-canvas" title="Clique para limpar o CLIPE" aria-hidden="true"></canvas>
-    <div class="so-leitor">${MEDIDORES_COLUNAS.map(([id]) => `<div role="meter" data-medidor="${id}" aria-label="Nível ${id === "L" ? "do master, lado esquerdo" : id === "R" ? "do master, lado direito" : "do canal " + id}" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60"></div>`).join("")}</div>`;
+  slot.setAttribute("aria-label", tr("pro.medidores.rotulo"));
+  slot.innerHTML = `<canvas class="medidores-canvas" title="${tr("pro.medidores.limpar")}" aria-hidden="true"></canvas>
+    <div class="so-leitor">${MEDIDORES_COLUNAS.map(([id]) => `<div role="meter" data-medidor="${id}" aria-label="${id === "L" ? tr("pro.medidores.master-e") : id === "R" ? tr("pro.medidores.master-d") : tr("pro.medidores.canal",{id})}" aria-valuemin="-60" aria-valuemax="0" aria-valuenow="-60"></div>`).join("")}</div>`;
   medidoresPosicionar(mixerEl, slot);
   slot.hidden = false;
   medidores.canvas = slot.querySelector("canvas");

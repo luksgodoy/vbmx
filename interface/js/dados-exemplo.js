@@ -29,5 +29,5 @@ const MODULO_VELHO = (()=>{
     return typeof t.obter !== "function";
   } catch(_){ return true; }
 })();
-const AVISO_MODULO = "biblioteca.js desatualizado no cache do navegador: as faixas das pastas não tocam. Recarregue com Cmd+Shift+R (ou sirva com servir.py).";
+const AVISO_MODULO = () => VbMxUI.t("pro.aviso-modulo");   // texto no dicionário; função para seguir o idioma
 

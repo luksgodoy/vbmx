@@ -58,7 +58,7 @@ async function importarDescarregar(){
   VbMxUI.emitir("meta:mudou", {});
   return n;
 }
-const importarEstado = { colecao: null, texto: "", nome: "", pronto: false, ocupado: false };
+const importarEstado = { colecao: null, texto: "", nome: "", pronto: false, ocupado: false, rel: null, erro: null };
 
 // Tamanho e data do arquivo (a chave de cache e de marcadores usa os dois); falha vira -1, como na varredura.
 async function importarMedir(faixa){
@@ -139,27 +139,28 @@ function importarDesenhar(rel, erro){
   const el = importarPainel();
   if (!el) return;
   const c = importarEstado.colecao;
+  importarEstado.rel = rel || null; importarEstado.erro = erro || null;
   let corpo = "";
   if (erro) corpo = `<p class="importar-erro">${esc(erro)}</p>`;
   else if (rel) {
     const naoGravou = [];
-    if (c && c.faixas.some(f => f.rating !== null || f.cor || f.comentario) && !importarDestinos.gravarMeta) naoGravou.push("nota, cor e comentário");
-    if (c && c.playlists.some(p => p.tipo !== "PROTOCOL") && !importarDestinos.gravarPlaylists) naoGravou.push("playlists");
-    const lista = (titulo, itens, fmt) => itens.length ? `<details><summary>${titulo} (${itens.length})</summary><ul>${itens.slice(0, 50).map(i => `<li>${esc(fmt(i))}</li>`).join("")}${itens.length > 50 ? `<li>… e mais ${itens.length - 50}</li>` : ""}</ul></details>` : "";
+    if (c && c.faixas.some(f => f.rating !== null || f.cor || f.comentario) && !importarDestinos.gravarMeta) naoGravou.push(tr("pro.imp.nao-meta"));
+    if (c && c.playlists.some(p => p.tipo !== "PROTOCOL") && !importarDestinos.gravarPlaylists) naoGravou.push(tr("pro.imp.nao-playlists"));
+    const lista = (titulo, itens, fmt) => itens.length ? `<details><summary>${titulo} (${itens.length})</summary><ul>${itens.slice(0, 50).map(i => `<li>${esc(fmt(i))}</li>`).join("")}${itens.length > 50 ? `<li>${tr("pro.imp.e-mais", { n: itens.length - 50 })}</li>` : ""}</ul></details>` : "";
     corpo = `<p class="importar-resumo">${esc(VbMxNml.textoRelatorio(rel))}</p>`
-      + (naoGravou.length ? `<p class="importar-aviso">Lidos mas ainda não gravados: ${esc(naoGravou.join(" e "))} (sem armazém de metadados).</p>` : "")
-      + `<p class="importar-nota">Slots de hotcue lidos em base ${rel.baseSlots} (${rel.baseSlots === 0 ? "o 0 do arquivo é o 1º slot" : "o 0 do arquivo é \"sem slot\"; 1 é o 1º slot"}). Se um hotcue caiu no slot errado, avise: é a lacuna 4 de docs/formatos.md.</p>`
-      + lista("Conflitos", rel.conflitos, x => `${x.faixa} · ${x.campo}: VbMx ${x.atual} / arquivo ${x.nml}${x.sobrescrito ? " (sobrescrito)" : " (mantido o do VbMx)"}`)
-      + lista("Sem par", rel.semPar, x => `${x.arquivo} — ${x.motivo}`)
-      + lista("Ambíguas", rel.ambiguas, x => `${x.arquivo} — ${x.motivo}`)
-      + lista("Avisos", rel.avisos, x => x);
+      + (naoGravou.length ? `<p class="importar-aviso">${tr("pro.imp.nao-gravados", { o: esc(naoGravou.join(tr("pro.imp.e"))) })}</p>` : "")
+      + `<p class="importar-nota">${tr("pro.imp.slots", { base: rel.baseSlots, regra: rel.baseSlots === 0 ? tr("pro.imp.slots-0") : tr("pro.imp.slots-1") })}</p>`
+      + lista(tr("pro.imp.conflitos"), rel.conflitos, x => `${x.faixa} · ${x.campo}: VbMx ${x.atual} / ${tr("pro.imp.arquivo")} ${x.nml}${x.sobrescrito ? " " + tr("pro.imp.sobrescrito") : " " + tr("pro.imp.mantido")}`)
+      + lista(tr("pro.imp.sem-par"), rel.semPar, x => `${x.arquivo} — ${trm(x.motivo)}`)
+      + lista(tr("pro.imp.ambiguas"), rel.ambiguas, x => `${x.arquivo} — ${trm(x.motivo)}`)
+      + lista(tr("pro.imp.avisos"), rel.avisos, x => trm(x));
   } else if (c) {
-    corpo = `<p class="importar-resumo">${esc(importarEstado.nome)}: ${c.faixas.length} faixas, ${c.playlists.filter(p => p.tipo !== "PROTOCOL").length} playlist(s).</p>`
-      + `<label class="importar-sob"><input type="checkbox" id="importar-sob"> sobrescrever o que já editei no VbMx (grade, cues, tom)</label>`
-      + `<button type="button" class="botao-pasta" id="importar-ir" ${importarEstado.ocupado ? "disabled" : ""}>Importar para a biblioteca</button>`;
+    corpo = `<p class="importar-resumo">${tr("pro.imp.resumo", { nome: esc(importarEstado.nome), f: c.faixas.length, p: c.playlists.filter(p => p.tipo !== "PROTOCOL").length })}</p>`
+      + `<label class="importar-sob"><input type="checkbox" id="importar-sob"> ${tr("pro.imp.sobrescrever")}</label>`
+      + `<button type="button" class="botao-pasta" id="importar-ir" ${importarEstado.ocupado ? "disabled" : ""}>${tr("pro.imp.importar")}</button>`;
   }
-  if (c) corpo += `<div class="importar-diag"><button type="button" class="botao-pasta" id="importar-diagnostico" ${importarEstado.ocupado ? "disabled" : ""}>Diagnóstico da análise</button>`
-    + `<span class="pastas-estado"> BPM e grade do VbMx × .nml, só números agregados (nenhum nome sai daqui)</span><div class="importar-diag-corpo"></div></div>`;
+  if (c) corpo += `<div class="importar-diag"><button type="button" class="botao-pasta" id="importar-diagnostico" ${importarEstado.ocupado ? "disabled" : ""}>${tr("pro.imp.diag")}</button>`
+    + `<span class="pastas-estado"> ${tr("pro.imp.diag-nota")}</span><div class="importar-diag-corpo"></div></div>`;
   el.querySelector(".importar-corpo").innerHTML = corpo;
   const ir = document.getElementById("importar-ir");
   if (ir) ir.onclick = importarExecutar;
@@ -174,7 +175,7 @@ function importarCarregarDiagnostico(){
     const s = document.createElement("script");
     s.src = "../biblioteca/diagnostico.js";
     s.onload = () => ok();
-    s.onerror = () => falha(new Error("não consegui carregar biblioteca/diagnostico.js"));
+    s.onerror = () => falha(new Error(tr("pro.imp.erro-diag-js")));
     document.head.appendChild(s);
   });
 }
@@ -190,17 +191,17 @@ async function importarDiagnosticar(){
   if (importarEstado.ocupado || !importarEstado.texto) return;
   const caixa = importarPainel().querySelector(".importar-diag-corpo");
   importarEstado.ocupado = true;
-  caixa.innerHTML = `<p class="importar-resumo">Medindo…</p>`;
+  caixa.innerHTML = `<p class="importar-resumo">${tr("pro.imp.medindo")}</p>`;
   try {
     await importarCarregarDiagnostico();
     const faixas = ehExemplo ? [] : await importarProxies(BIBLIOTECA);
-    if (!faixas.length) throw new Error("Adicione a pasta de músicas antes: o diagnóstico compara a análise de cada faixa com o .nml.");
+    if (!faixas.length) throw new Error(tr("pro.imp.sem-pasta-diag"));
     const cache = importarCacheAnalise();
     const r = await VbMxDiagnostico.diagnosticar(importarEstado.texto, faixas, (f) => importarAnaliseDoCache(cache, f));
-    const vazio = r.comBpm ? "" : `<p class="importar-aviso">Nenhuma faixa casada tem análise na versão ${VbMxBiblioteca.VERSAO_ANALISE} do cache: adicione a pasta de novo (ela é reanalisada uma vez) e repita.</p>`;
+    const vazio = r.comBpm ? "" : `<p class="importar-aviso">${tr("pro.imp.sem-analise", { v: VbMxBiblioteca.VERSAO_ANALISE })}</p>`;
     caixa.innerHTML = vazio + `<pre class="importar-resumo" style="white-space:pre-wrap">${esc(VbMxDiagnostico.textoResumo(r))}</pre>`
-      + `<p class="importar-nota">Só contagens, medianas e p95: copie o bloco acima e mande. Nenhum nome de faixa ou pasta entra nele.</p>`;
-  } catch (e) { caixa.innerHTML = `<p class="importar-erro">${esc("Diagnóstico falhou: " + ((e && e.message) || e))}</p>`; }
+      + `<p class="importar-nota">${tr("pro.imp.diag-rodape")}</p>`;
+  } catch (e) { caixa.innerHTML = `<p class="importar-erro">${esc(tr("pro.imp.diag-falhou") + " " + ((e && e.message) || e))}</p>`; }
   finally { importarEstado.ocupado = false; }
 }
 
@@ -209,35 +210,35 @@ async function importarExecutar(){
   const sob = !!(document.getElementById("importar-sob") || {}).checked;
   importarEstado.ocupado = true;
   const corpo = importarPainel().querySelector(".importar-corpo");
-  corpo.innerHTML = `<p class="importar-resumo">Importando…</p>`;
+  corpo.innerHTML = `<p class="importar-resumo">${tr("pro.imp.importando")}</p>`;
   try {
     const faixas = ehExemplo ? [] : await importarProxies(BIBLIOTECA);
-    if (!faixas.length) throw new Error("Adicione uma pasta de músicas antes: as faixas de exemplo não têm arquivo para casar.");
+    if (!faixas.length) throw new Error(tr("pro.imp.sem-pasta"));
     const rel = await VbMxNml.importar(importarEstado.colecao, faixas, importarAlvo(), { sobrescrever: sob });
     await importarDescarregar();
     importarDesenhar(rel);
     if (typeof renderTudo === "function") renderTudo();
-  } catch (e) { importarDesenhar(null, "Falhou: " + ((e && e.message) || e)); }
+  } catch (e) { importarDesenhar(null, tr("pro.imp.falhou") + " " + ((e && e.message) || e)); }
   finally { importarEstado.ocupado = false; }
 }
 
 async function importarLerArquivo(arquivo){
   importarEstado.colecao = null; importarEstado.texto = ""; importarEstado.nome = arquivo.name;
   const corpo = importarPainel().querySelector(".importar-corpo");
-  corpo.innerHTML = `<p class="importar-resumo">Lendo ${esc(arquivo.name)}…</p>`;
+  corpo.innerHTML = `<p class="importar-resumo">${tr("pro.imp.lendo", { nome: esc(arquivo.name) })}</p>`;
   try {
     const texto = await arquivo.text();
     importarEstado.colecao = VbMxNml.lerColecao(texto);
     importarEstado.texto = texto; // o diagnóstico relê a âncora crua (lerColecao a reduz ao período)
     importarDesenhar(null);
-  } catch (e) { importarDesenhar(null, "Não consegui ler o arquivo: " + ((e && e.message) || e)); }
+  } catch (e) { importarDesenhar(null, tr("pro.imp.erro-ler") + " " + ((e && e.message) || e)); }
 }
 
 async function importarEscolher(){
   // showOpenFilePicker (Chrome) deixa o painel sem <input>; o input é a reserva.
   if (typeof window.showOpenFilePicker === "function") {
     try {
-      const [h] = await window.showOpenFilePicker({ multiple: false, types: [{ description: "Coleção do Traktor", accept: { "text/xml": [".nml"] } }] });
+      const [h] = await window.showOpenFilePicker({ multiple: false, types: [{ description: tr("pro.imp.colecao"), accept: { "text/xml": [".nml"] } }] });
       return importarLerArquivo(await h.getFile());
     } catch (e) { if (e && e.name === "AbortError") return; /* outro erro: cai no input */ }
   }
@@ -249,11 +250,20 @@ VbMxUI.aoIniciar(() => {
   if (!ancora || importarPainel()) return;
   const sec = document.createElement("section");
   sec.id = "importar-nml"; sec.className = "importar";
-  sec.setAttribute("aria-label", "Importar coleção do Traktor");
-  sec.innerHTML = `<div class="importar-cab"><button type="button" class="botao-pasta" id="importar-abrir">Importar collection.nml</button>`
-    + `<span class="pastas-estado">grade, tom, cues e hotcues entram na biblioteca já carregada; o que você editou fica.</span>`
+  sec.setAttribute("aria-label", tr("pro.imp.aria"));
+  sec.innerHTML = `<div class="importar-cab"><button type="button" class="botao-pasta" id="importar-abrir">${tr("pro.imp.abrir")}</button>`
+    + `<span class="pastas-estado">${tr("pro.imp.cab-nota")}</span>`
     + `<input type="file" id="importar-entrada" accept=".nml,text/xml,application/xml" hidden></div><div class="importar-corpo"></div>`;
   ancora.insertAdjacentElement("afterend", sec);
   document.getElementById("importar-abrir").onclick = importarEscolher;
   document.getElementById("importar-entrada").onchange = (ev) => { const f = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (f) importarLerArquivo(f); };
+});
+// Troca de idioma: refaz os textos fixos do painel e o corpo (o relatório volta do estado guardado).
+VbMxUI.aoIdioma(() => {
+  const sec = importarPainel();
+  if (!sec) return;
+  sec.setAttribute("aria-label", tr("pro.imp.aria"));
+  const ab = document.getElementById("importar-abrir"); if (ab) ab.textContent = tr("pro.imp.abrir");
+  const nota = sec.querySelector(".importar-cab .pastas-estado"); if (nota) nota.textContent = tr("pro.imp.cab-nota");
+  if (!importarEstado.ocupado && (importarEstado.colecao || importarEstado.erro)) importarDesenhar(importarEstado.rel, importarEstado.erro);
 });

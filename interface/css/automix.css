@@ -1,0 +1,26 @@
+/* automix.css — mixagem automática no Profissional (js/automix.js): a barra dentro da vista de árvore, a fileira de
+   critérios acima da raiz e a marca de quem só entra porque um critério está desmarcado. Nada aqui aparece com o modo
+   desligado: todas as classes só são emitidas com ele ligado. */
+.amx-barra { position: sticky; top: 0; left: 0; z-index: 3; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 5px 8px; background: var(--bg-2); border-bottom: 1px solid var(--linha, var(--bg-3)); font-size: 12px; }
+.amx-titulo { font-family: var(--fonte-display); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--acento); white-space: nowrap; }
+.amx-criterios { display: inline-flex; align-items: center; gap: 10px; }
+.amx-crit { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; color: var(--fg-1, inherit); }
+.amx-crit input { accent-color: var(--acento); margin: 0; }
+.amx-barra .alternador { flex: none; }
+.amx-status { flex: 1 1 260px; min-width: 0; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* fileira de critérios: marcado = sólido; desmarcado = tracejado e esmaecido, no ponto em que entraria */
+.arvore .no-crit { position: absolute; display: flex; align-items: center; justify-content: space-between; gap: 4px; box-sizing: border-box; padding: 0 6px; border-radius: 11px; border: 1px solid var(--acento); background: var(--bg-3); font-size: 10px; line-height: 1; white-space: nowrap; cursor: help; }
+.arvore .no-crit .crit-nome { font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.arvore .no-crit .crit-n { color: var(--fg-2); }
+.arvore .no-crit.fora { border-style: dashed; border-color: var(--fg-3); background: transparent; color: var(--fg-3); opacity: .75; }
+.arvore .no-crit.fora .crit-n { color: var(--fg-3); }
+.arvore .crit-legenda { position: absolute; font-size: 10px; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); white-space: nowrap; }
+.lig.crit { stroke: var(--acento); stroke-dasharray: 1 3; opacity: .5; }
+
+/* nó que só está na árvore porque um critério está desmarcado */
+.arvore .no.sairia { border-style: dashed; border-color: var(--aviso); opacity: .72; }
+.arvore .no.sairia:hover, .arvore .no.sairia:focus-visible { opacity: 1; border-color: var(--aviso); }
+.arvore .no-sairia { flex: none; font-size: 9px; line-height: 1; padding: 2px 3px; border: 1px dashed var(--aviso); border-radius: 3px; color: var(--aviso); }
+/* a próxima da mixagem automática (a que está no deck livre) */
+.arvore .no.proxima { box-shadow: inset 0 0 0 1px var(--acento); border-color: var(--acento); border-style: solid; opacity: 1; }

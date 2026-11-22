@@ -14,16 +14,16 @@
 //                                                   moram em abas do browser (os nós são MOVIDOS uma vez no boot, nunca recriados)
 //   (gaveta embaixo)                                D4: janela baixa (≤860px) com o browser embaixo vira gaveta com aba de 30px
 // Lógica pura (dispClasses) testada em Node por interface/testar-disposicao.js.
-const DISP_BROWSER = [{ valor: "baixo", rotulo: "embaixo" }, { valor: "esquerda", rotulo: "à esquerda" }];
-VbMxPrefs.declarar("layout.browser", "baixo", { tipo: "opcao", modulo: "layout", rotulo: "Browser (biblioteca e sugestões)", opcoes: DISP_BROWSER });
+const DISP_BROWSER = [{ valor: "baixo", rotulo: "pro.disp.embaixo" }, { valor: "esquerda", rotulo: "pro.disp.esquerda" }];
+VbMxPrefs.declarar("layout.browser", "baixo", { tipo: "opcao", modulo: "layout", rotulo: "pro.pref.browser", opcoes: DISP_BROWSER });
 for (const l of ["a", "b"]) {
-  VbMxPrefs.declarar(`deck.mini-${l}`, false, { tipo: "booleano", modulo: "layout", rotulo: `Deck ${l.toUpperCase()} recolhido (mini deck)` });
-  VbMxPrefs.declarar(`layout.stems-recolhido-${l}`, false, { tipo: "booleano", modulo: "layout", rotulo: `Stems do deck ${l.toUpperCase()} recolhidos` });
+  VbMxPrefs.declarar(`deck.mini-${l}`, false, { tipo: "booleano", modulo: "layout", rotulo: `pro.pref.mini-${l}` });
+  VbMxPrefs.declarar(`layout.stems-recolhido-${l}`, false, { tipo: "booleano", modulo: "layout", rotulo: `pro.pref.stems-rec-${l}` });
 }
-VbMxPrefs.declarar("layout.fx-recolhido", false, { tipo: "booleano", modulo: "layout", rotulo: "FX recolhido" });
-VbMxPrefs.declarar("layout.grade-visivel", false, { tipo: "booleano", modulo: "layout", rotulo: "Barra de GRADE visível (oculta por padrão)" });
-VbMxPrefs.declarar("layout.mixer-compacto", false, { tipo: "booleano", modulo: "layout", rotulo: "Mixer compacto" });
-VbMxPrefs.declarar("layout.stems-detalhe", false, { tipo: "booleano", modulo: "layout", rotulo: "Stems detalhados (oculta hot cues e loops)" });
+VbMxPrefs.declarar("layout.fx-recolhido", false, { tipo: "booleano", modulo: "layout", rotulo: "pro.pref.fx-rec" });
+VbMxPrefs.declarar("layout.grade-visivel", false, { tipo: "booleano", modulo: "layout", rotulo: "pro.pref.grade-vis" });
+VbMxPrefs.declarar("layout.mixer-compacto", false, { tipo: "booleano", modulo: "layout", rotulo: "pro.pref.mixer-compacto" });
+VbMxPrefs.declarar("layout.stems-detalhe", false, { tipo: "booleano", modulo: "layout", rotulo: "pro.pref.stems-detalhe" });
 
 // Estado → lista de classes do <body>. Valor desconhecido de `browser` cai em "baixo".
 function dispClasses(e) {
@@ -54,11 +54,11 @@ function dispChave(nome) {
 
 // D1 (VB-UI-ROLAGEM, 2026-11-08): abas do browser. id → rótulo e os seletores do que a aba carrega; "biblioteca" é a tabela + sugestões.
 const DISP_ABAS = [
-  { id: "biblioteca", rotulo: "Biblioteca", nos: [] },
-  { id: "pastas", rotulo: "Pastas · importar", nos: ["#pastas", "#importar-nml"] },
-  { id: "preparacao", rotulo: "Preparação", nos: ['[data-slot="preparacao"]'] },
-  { id: "historico", rotulo: "Histórico", nos: ['[data-slot="historico"]'] },
-  { id: "gravador", rotulo: "Gravador", nos: ['[data-slot="gravador"]'] },
+  { id: "biblioteca", rotulo: "pro.aba.biblioteca", nos: [] },
+  { id: "pastas", rotulo: "pro.aba.pastas", nos: ["#pastas", "#importar-nml"] },
+  { id: "preparacao", rotulo: "pro.aba.preparacao", nos: ['[data-slot="preparacao"]'] },
+  { id: "historico", rotulo: "pro.aba.historico", nos: ['[data-slot="historico"]'] },
+  { id: "gravador", rotulo: "pro.aba.gravador", nos: ['[data-slot="gravador"]'] },
 ];
 function dispAbaValida(id) { return DISP_ABAS.some(a => a.id === id) ? id : "biblioteca"; }
 
@@ -75,13 +75,13 @@ function dispAbaMostrar(id) {
 function dispAbasMontar() {
   const br = document.querySelector("section.browser"); if (!br || br.querySelector(".browser-abas")) return;
   const barra = document.createElement("div");
-  barra.className = "browser-abas"; barra.setAttribute("role", "tablist"); barra.setAttribute("aria-label", "Abas do browser");
-  barra.innerHTML = DISP_ABAS.map(a => `<button type="button" class="browser-aba-bt" role="tab" data-aba="${a.id}" aria-selected="false">${a.rotulo}</button>`).join("");
+  barra.className = "browser-abas"; barra.setAttribute("role", "tablist"); barra.setAttribute("aria-label", tr("pro.disp.abas"));
+  barra.innerHTML = DISP_ABAS.map(a => `<button type="button" class="browser-aba-bt" role="tab" data-aba="${a.id}" aria-selected="false">${tr(a.rotulo)}</button>`).join("");
   br.insertBefore(barra, br.firstChild);
   for (const a of DISP_ABAS) {
     if (!a.nos.length) continue;
     const p = document.createElement("div");
-    p.className = "browser-painel"; p.dataset.painel = a.id; p.setAttribute("role", "tabpanel"); p.setAttribute("aria-label", a.rotulo);
+    p.className = "browser-painel"; p.dataset.painel = a.id; p.setAttribute("role", "tabpanel"); p.setAttribute("aria-label", tr(a.rotulo));
     for (const sel of a.nos) { const el = document.querySelector(sel); if (el) p.appendChild(el); }
     br.appendChild(p);
   }
@@ -96,14 +96,14 @@ function dispAplicar() {
   for (const el of document.querySelectorAll("[data-recolher]")) {
     const ch = dispChave(el.dataset.recolher), lig = ch ? !!VbMxPrefs.ler(ch) : false;
     el.setAttribute("aria-pressed", String(lig));
-    el.title = el.title.replace(/^(Recolher|Expandir)/, lig ? "Expandir" : "Recolher");
+    el.title = el.title.replace(/^(Recolher|Expandir|Collapse|Expand|Contraer|Replier|Déplier)/, lig ? tr("pro.disp.expandir") : tr("pro.disp.recolher"));
   }
   if (dispBotoes) {
-    dispBotoes.querySelector("[data-disp-browser]").textContent = `Browser: ${est.browser === "esquerda" ? "à esquerda" : "embaixo"}`;
+    dispBotoes.querySelector("[data-disp-browser]").textContent = tr("pro.disp.browser",{lado:est.browser === "esquerda" ? tr("pro.disp.esquerda") : tr("pro.disp.embaixo")});
     dispBotoes.querySelector("[data-disp-fx]").setAttribute("aria-pressed", String(est.fx));
     dispBotoes.querySelector("[data-disp-mixer]").setAttribute("aria-pressed", String(est.mixer));
     const g = dispBotoes.querySelector("[data-disp-grade]");
-    g.setAttribute("aria-pressed", String(!!est.grade)); g.textContent = est.grade ? "Grade ▾" : "Grade ▸";
+    g.setAttribute("aria-pressed", String(!!est.grade)); g.textContent = tr("pro.disp.grade") + (est.grade ? " ▾" : " ▸");
     dispBotoes.querySelector("[data-disp-stems-detalhe]").setAttribute("aria-pressed", String(!!est.stemsDetalhe));
   }
   const topo = document.querySelector("header.topo");
@@ -115,11 +115,11 @@ VbMxUI.aoIniciar(() => {
   if (topo) {
     dispBotoes = document.createElement("div");
     dispBotoes.className = "disp-botoes";
-    dispBotoes.innerHTML = `<button type="button" class="disp-bt" data-disp-browser title="Alternar o browser entre embaixo e à esquerda (fica guardado)" aria-label="Posição do browser: alternar entre embaixo e à esquerda"></button>
-      <button type="button" class="disp-bt" data-disp-fx aria-pressed="false" title="Recolher ou mostrar as faixas de FX" aria-label="Recolher FX">FX ▾</button>
-      <button type="button" class="disp-bt" data-disp-grade aria-pressed="false" title="Mostrar ou ocultar a barra de ajuste da grade (BPM, 1ª batida, TAP, TICK…); oculta por padrão" aria-label="Barra de grade">Grade ▸</button>
-      <button type="button" class="disp-bt" data-disp-stems-detalhe aria-pressed="false" title="Stems detalhados: oculta hot cues e loops e dá o espaço aos stems, com os valores de cada controle (fica guardado)" aria-label="Stems detalhados, sem hot cues e loops">Stems+</button>
-      <button type="button" class="disp-bt" data-disp-mixer aria-pressed="false" title="Mixer compacto: só canais, crossfader e master" aria-label="Mixer compacto">Mixer ▾</button>`;
+    dispBotoes.innerHTML = `<button type="button" class="disp-bt" data-disp-browser title="${tr("pro.disp.browser-t")}" aria-label="${tr("pro.disp.browser-a")}"></button>
+      <button type="button" class="disp-bt" data-disp-fx aria-pressed="false" title="${tr("pro.disp.fx-t")}" aria-label="${tr("pro.disp.fx-a")}">FX ▾</button>
+      <button type="button" class="disp-bt" data-disp-grade aria-pressed="false" title="${tr("pro.disp.grade-t")}" aria-label="${tr("pro.disp.grade-a")}">${tr("pro.disp.grade")} ▸</button>
+      <button type="button" class="disp-bt" data-disp-stems-detalhe aria-pressed="false" title="${tr("pro.disp.stems-t")}" aria-label="${tr("pro.disp.stems-a")}">Stems+</button>
+      <button type="button" class="disp-bt" data-disp-mixer aria-pressed="false" title="${tr("pro.disp.mixer-t")}" aria-label="${tr("pro.disp.mixer-a")}">Mixer ▾</button>`;
     topo.insertBefore(dispBotoes, topo.querySelector(".estado-global"));
     dispBotoes.querySelector("[data-disp-browser]").addEventListener("click", () =>
       VbMxPrefs.gravar("layout.browser", VbMxPrefs.ler("layout.browser") === "baixo" ? "esquerda" : "baixo"));
@@ -132,8 +132,8 @@ VbMxUI.aoIniciar(() => {
   const tela = document.querySelector("main.tela");
   if (tela) {
     const aba = document.createElement("button");
-    aba.type = "button"; aba.className = "browser-aba"; aba.textContent = "BIBLIOTECA";
-    aba.title = "Abrir ou fechar a biblioteca e as sugestões"; aba.setAttribute("aria-label", "Abrir ou fechar o browser");
+    aba.type = "button"; aba.className = "browser-aba"; aba.textContent = tr("pro.disp.biblioteca-aba");
+    aba.title = tr("pro.disp.aba-t"); aba.setAttribute("aria-label", tr("pro.disp.aba-a"));
     tela.insertBefore(aba, tela.firstChild);
     aba.addEventListener("click", () => document.body.classList.toggle("browser-aberto"));
     document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("browser-aberto"); });

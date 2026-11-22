@@ -7,20 +7,20 @@
 // Botão CUE por canal (data-cue): o clique é tratado em js/saidas.js (fone/PFL, VB-23).
 // Os números vêm de VbMxMixer (motor/mixer.js); aqui só ficam o estado e a tela. Medidores: js/medidores.js.
 const EQ_LIM = 12;
-VbMxPrefs.declarar("mixer.eq-modo", "atual", { rotulo: "EQ do mixer", tipo: "opcao", modulo: "mixer",
-  opcoes: [{ valor: "atual", rotulo: "Atual (shelf/peaking, ±12 dB)" }, { valor: "isolador", rotulo: "Isolador (kill total)" }] });
-VbMxPrefs.declarar("mixer.curva", "corte", { rotulo: "Curva do crossfader", tipo: "opcao", modulo: "mixer",
-  opcoes: [{ valor: "corte", rotulo: "Corte (a de sempre)" }, { valor: "suave", rotulo: "Suave (potência constante)" }, { valor: "ajustavel", rotulo: "Ajustável (suave a afiada)" }] });
-VbMxPrefs.declarar("mixer.afiada", 50, { rotulo: "Afiada da curva ajustável (0 suave … 100 afiada)", tipo: "numero", min: 0, max: 100, modulo: "mixer" });
-VbMxPrefs.declarar("mixer.curva-fader", "linear", { rotulo: "Curva do fader de volume", tipo: "opcao", modulo: "mixer",
-  opcoes: [{ valor: "linear", rotulo: "Linear" }, { valor: "quadratica", rotulo: "Quadrática" }, { valor: "db", rotulo: "Em dB (−60 dB no fim)" }] });
-VbMxPrefs.declarar("mixer.fade-tempo", 2, { rotulo: "Tempo do fade automático do crossfader (s)", tipo: "numero", min: 0.1, max: 30, modulo: "mixer" });
-VbMxPrefs.declarar("mixer.xfade-passo", 10, { rotulo: "Passo do crossfader (botões ‹ ›)", tipo: "numero", min: 1, max: 100, modulo: "mixer" });
-VbMxPrefs.declarar("mixer.avancado", false, { rotulo: "Painel avançado do mixer (mostra PAN)", tipo: "booleano", modulo: "mixer" });
-VbMxPrefs.declarar("mixer.autogain", true, { rotulo: "Auto gain (nivela as faixas antes do fader)", tipo: "booleano", modulo: "mixer" });
-VbMxPrefs.declarar("mixer.reverso", false, { rotulo: "Crossfader reverso (hamster)", tipo: "booleano", modulo: "mixer" });
-VbMxPrefs.declarar("mixer.limiter", true, { rotulo: "Limitador no master", tipo: "booleano", modulo: "mixer" });
-VbMxPrefs.declarar("mixer.fx-canal-lista", VbMxMixer.FX_LISTA_PADRAO, { rotulo: "Efeitos de canal no seletor (4 dos 7, ids separados por vírgula: sopro, picote, rebate, camara, granulado, vaivem, caverna; o filtro sempre aparece)", tipo: "texto", modulo: "mixer" });
+VbMxPrefs.declarar("mixer.eq-modo", "atual", { rotulo: "pro.pref.mx-eq-modo", tipo: "opcao", modulo: "mixer",
+  opcoes: [{ valor: "atual", rotulo: "pro.pref.mx-eq-atual" }, { valor: "isolador", rotulo: "pro.pref.mx-eq-isolador" }] });
+VbMxPrefs.declarar("mixer.curva", "corte", { rotulo: "pro.pref.mx-curva", tipo: "opcao", modulo: "mixer",
+  opcoes: [{ valor: "corte", rotulo: "pro.pref.mx-curva-corte" }, { valor: "suave", rotulo: "pro.pref.mx-curva-suave" }, { valor: "ajustavel", rotulo: "pro.pref.mx-curva-aj" }] });
+VbMxPrefs.declarar("mixer.afiada", 50, { rotulo: "pro.pref.mx-afiada", tipo: "numero", min: 0, max: 100, modulo: "mixer" });
+VbMxPrefs.declarar("mixer.curva-fader", "linear", { rotulo: "pro.pref.mx-curva-fader", tipo: "opcao", modulo: "mixer",
+  opcoes: [{ valor: "linear", rotulo: "pro.pref.mx-linear" }, { valor: "quadratica", rotulo: "pro.pref.mx-quad" }, { valor: "db", rotulo: "pro.pref.mx-db" }] });
+VbMxPrefs.declarar("mixer.fade-tempo", 2, { rotulo: "pro.pref.mx-fade-tempo", tipo: "numero", min: 0.1, max: 30, modulo: "mixer" });
+VbMxPrefs.declarar("mixer.xfade-passo", 10, { rotulo: "pro.pref.mx-xfade-passo", tipo: "numero", min: 1, max: 100, modulo: "mixer" });
+VbMxPrefs.declarar("mixer.avancado", false, { rotulo: "pro.pref.mx-avancado", tipo: "booleano", modulo: "mixer" });
+VbMxPrefs.declarar("mixer.autogain", true, { rotulo: "pro.pref.mx-autogain", tipo: "booleano", modulo: "mixer" });
+VbMxPrefs.declarar("mixer.reverso", false, { rotulo: "pro.pref.mx-reverso", tipo: "booleano", modulo: "mixer" });
+VbMxPrefs.declarar("mixer.limiter", true, { rotulo: "pro.pref.mx-limiter", tipo: "booleano", modulo: "mixer" });
+VbMxPrefs.declarar("mixer.fx-canal-lista", VbMxMixer.FX_LISTA_PADRAO, { rotulo: "pro.pref.mx-fx-lista", tipo: "texto", modulo: "mixer" });
 const mixer = VbMxMixer.estadoPadrao();
 mixer.fxLista = VbMxPrefs.ler("mixer.fx-canal-lista");
 mixer.eqModo = VbMxPrefs.ler("mixer.eq-modo");
@@ -49,10 +49,10 @@ function mixerFmtPan(v){ return v === 0 ? "C" : (v < 0 ? "E " : "D ") + Math.abs
 function mixerFmt(banda, v){ return banda === "pan" ? mixerFmtPan(v) : banda === "vol" || banda === "fxQtd" ? String(v) : banda === "filtro" ? mixerFmtFiltro(v) : fmtDb(v); }
 function faderV(letra, banda, nome, vol){
   const id = `mx-${letra}-${banda}`;
-  const rotuloAria = vol ? `Volume do canal ${letra}, de 0 a 100` : `${nome} do canal ${letra}, de −${EQ_LIM} a +${EQ_LIM} dB; para cima aumenta`;
+  const rotuloAria = vol ? tr("pro.mx.vol-canal",{letra}) : tr("pro.mx.eq-canal",{nome,letra,lim:EQ_LIM});
   const [min,max,step] = vol ? [0,100,1] : [-EQ_LIM,EQ_LIM,1];
   const v = mixer[letra][banda];
-  const kill = vol ? "" : `<button type="button" class="kill pc-botao pc-botao--kill pc-compacto" data-kill="${banda}" data-canal="${letra}" aria-pressed="false" aria-label="Kill ${nome} do canal ${letra}" title="Kill ${nome} (corta a banda)">K</button>`;
+  const kill = vol ? "" : `<button type="button" class="kill pc-botao pc-botao--kill pc-compacto" data-kill="${banda}" data-canal="${letra}" aria-pressed="false" aria-label="${tr('pro.mx.kill-aria',{nome,letra})}" title="${tr('pro.mx.kill-t',{nome})}">K</button>`;
   return `<div class="fader-v${vol?" volume":""}">
     <label class="nome" for="${id}">${nome}</label>
     <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}" data-mx="${letra}" data-banda="${banda}" aria-orientation="vertical" aria-label="${rotuloAria}">
@@ -76,45 +76,45 @@ function renderMixer(){
   div.innerHTML = `
     <div class="canais">
       ${["A","B"].map(l=>`<div class="canal" data-canal="${l}">
-        <span class="rotulo">Canal ${l}</span>
+        <span class="rotulo">${tr("pro.mx.canal",{l})}</span>
         ${mixerLinha(l, "trim", "TRIM", -EQ_LIM, EQ_LIM, 0.5, `Ganho de entrada (trim) do canal ${l}, de −${EQ_LIM} a +${EQ_LIM} dB; duplo clique zera`)}
         <div class="faders">
           ${BANDAS.map(([b,n])=>faderV(l,b,n,false)).join("")}
           ${faderV(l,"vol","VOL",true)}
         </div>
-        <div class="linha-mx"><label class="nome" for="mx-${l}-fx">FX</label><select id="mx-${l}-fx" data-fxsel="${l}" aria-label="Efeito do canal ${l}"></select><span></span></div>
-        <div class="so-filtro">${mixerLinha(l, "filtro", "FILTRO", -100, 100, 1, `Filtro do canal ${l}: à esquerda passa-baixa, à direita passa-alta; duplo clique zera`)}</div>
+        <div class="linha-mx"><label class="nome" for="mx-${l}-fx">FX</label><select id="mx-${l}-fx" data-fxsel="${l}" aria-label="${tr('pro.mx.fx-aria',{l})}"></select><span></span></div>
+        <div class="so-filtro">${mixerLinha(l, "filtro", "FILTRO", -100, 100, 1, tr("pro.mx.filtro-aria",{l}))}</div>
         <div class="so-fx">${mixerLinha(l, "fxQtd", "QTD", 0, 100, 1, `Quantidade do efeito do canal ${l}, de 0 (som intacto) a 100; duplo clique zera`)}</div>
-        <div class="so-avancado">${mixerLinha(l, "pan", "PAN", -100, 100, 1, `Balanço (pan) do canal ${l}, de −100 (esquerda) a +100 (direita); duplo clique centraliza`)}</div>
-        <div class="atribuicao" role="group" aria-label="Lado do crossfader para o canal ${l}">
-          ${[["A","A"],["off","–"],["B","B"]].map(([v,r])=>`<button type="button" class="pc-botao pc-botao--sync pc-compacto" data-lado="${v}" data-canal="${l}" aria-pressed="false" aria-label="Canal ${l} no lado ${v === "off" ? "nenhum (fora do crossfader)" : v} do crossfader">${r}</button>`).join("")}
-          <button type="button" class="pc-botao pc-botao--cue pc-compacto" data-cue="${l}" aria-pressed="false" aria-label="Cue (fone) do canal ${l}" title="Cue: ouve este canal no fone (antes do fader)">CUE</button>
-          <button type="button" class="pc-botao pc-botao--play pc-compacto" data-auto="${l}" aria-pressed="false" aria-label="Auto gain do canal ${l}" title="Auto gain: nivela a faixa antes do fader">AG</button>
+        <div class="so-avancado">${mixerLinha(l, "pan", "PAN", -100, 100, 1, tr("pro.mx.pan-aria",{l}))}</div>
+        <div class="atribuicao" role="group" aria-label="${tr('pro.mx.lado-grupo',{l})}">
+          ${[["A","A"],["off","–"],["B","B"]].map(([v,r])=>`<button type="button" class="pc-botao pc-botao--sync pc-compacto" data-lado="${v}" data-canal="${l}" aria-pressed="false" aria-label="${tr('pro.mx.lado-aria',{l,v:v === "off" ? tr('pro.mx.nenhum') : v})}">${r}</button>`).join("")}
+          <button type="button" class="pc-botao pc-botao--cue pc-compacto" data-cue="${l}" aria-pressed="false" aria-label="${tr('pro.mx.cue-aria',{l})}" title="${tr('pro.saidas.cue-t')}">CUE</button>
+          <button type="button" class="pc-botao pc-botao--play pc-compacto" data-auto="${l}" aria-pressed="false" aria-label="${tr('pro.mx.ag-aria',{l})}" title="${tr('pro.mx.ag-t')}">AG</button>
         </div>
       </div>`).join("")}
     </div>
     <div class="xfade">
-      <input type="range" id="crossfader" min="-100" max="100" step="1" value="${mixer.xfade}" aria-label="Crossfader, de deck A (esquerda) a deck B (direita)">
-      <div class="fader-x-rotulos"><span>A</span><span>crossfader</span><span>B</span></div>
+      <input type="range" id="crossfader" min="-100" max="100" step="1" value="${mixer.xfade}" aria-label="${tr('pro.mx.xf-aria')}">
+      <div class="fader-x-rotulos"><span>A</span><span>${tr("pro.mx.crossfader")}</span><span>B</span></div>
       <div class="xfade-botoes">
-        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-fade-a" aria-label="Fade automático do crossfader para o lado A" title="Fade automático para A">⏮ A</button>
-        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-passo-a" aria-label="Um passo do crossfader para o lado A">‹</button>
-        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-passo-b" aria-label="Um passo do crossfader para o lado B">›</button>
-        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-fade-b" aria-label="Fade automático do crossfader para o lado B" title="Fade automático para B">B ⏭</button>
+        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-fade-a" aria-label="${tr('pro.mx.fade-a-aria')}" title="${tr('pro.mx.fade-a-t')}">⏮ A</button>
+        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-passo-a" aria-label="${tr('pro.mx.passo-a')}">‹</button>
+        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-passo-b" aria-label="${tr('pro.mx.passo-b')}">›</button>
+        <button type="button" class="pc-botao pc-botao--neutro pc-compacto" id="mx-fade-b" aria-label="${tr('pro.mx.fade-b-aria')}" title="${tr('pro.mx.fade-b-t')}">B ⏭</button>
       </div>
     </div>
     <div class="mixer-opcoes">
-      <label>EQ <select id="mx-eq-modo" aria-label="Tipo de EQ"><option value="atual">atual</option><option value="isolador">isolador</option></select></label>
-      <label>Curva <select id="mx-curva" aria-label="Curva do crossfader"><option value="corte">corte</option><option value="suave">suave</option><option value="ajustavel">ajustável</option></select></label>
-      <label class="so-ajustavel">Afiada <input type="range" id="mx-afiada" min="0" max="100" step="1" value="${mixer.afiada}" aria-label="Afiada da curva do crossfader, de 0 (suave) a 100 (afiada)"></label>
-      <label>Fader <select id="mx-curva-fader" aria-label="Curva do fader de volume"><option value="linear">linear</option><option value="quadratica">quadrática</option><option value="db">dB</option></select></label>
-      <label>Fade <input type="number" id="mx-fade-tempo" min="0.1" max="30" step="0.1" value="${mixer.fadeTempo}" aria-label="Tempo do fade automático, em segundos"> s</label>
-      <label class="check"><input type="checkbox" id="mx-avancado"> avançado</label>
+      <label>EQ <select id="mx-eq-modo" aria-label="${tr('pro.mx.eq-tipo')}"><option value="atual">${tr('pro.mx.atual')}</option><option value="isolador">${tr('pro.mx.isolador')}</option></select></label>
+      <label>${tr('pro.mx.curva')} <select id="mx-curva" aria-label="${tr('pro.pref.mx-curva')}"><option value="corte">${tr('pro.mx.corte')}</option><option value="suave">${tr('pro.mx.suave')}</option><option value="ajustavel">${tr('pro.mx.ajustavel')}</option></select></label>
+      <label class="so-ajustavel">${tr("pro.mx.afiada")} <input type="range" id="mx-afiada" min="0" max="100" step="1" value="${mixer.afiada}" aria-label="${tr('pro.mx.afiada-aria')}"></label>
+      <label>Fader <select id="mx-curva-fader" aria-label="${tr('pro.pref.mx-curva-fader')}"><option value="linear">${tr('pro.mx.linear')}</option><option value="quadratica">${tr('pro.mx.quadratica')}</option><option value="db">dB</option></select></label>
+      <label>Fade <input type="number" id="mx-fade-tempo" min="0.1" max="30" step="0.1" value="${mixer.fadeTempo}" aria-label="${tr('pro.mx.fade-seg')}"> s</label>
+      <label class="check"><input type="checkbox" id="mx-avancado"> ${tr("pro.mx.avancado")}</label>
       <label class="check"><input type="checkbox" id="mx-reverso"> reverso</label>
     </div>
     <div class="mixer-master">
       <label class="nome" for="mx-master-vol">MASTER</label>
-      <input type="range" id="mx-master-vol" min="0" max="100" step="1" value="${mixer.master.vol}" aria-label="Volume master, de 0 a 100">
+      <input type="range" id="mx-master-vol" min="0" max="100" step="1" value="${mixer.master.vol}" aria-label="${tr('pro.mx.master-aria')}">
       <span class="val mono" id="mx-master-vol-v">${mixer.master.vol}</span>
       <label class="check"><input type="checkbox" id="mx-limiter"> limitador</label>
     </div>`;
@@ -183,7 +183,7 @@ function mixerSincronizarTela(){
     if (ag) { ag.setAttribute("aria-pressed", String(mixer[l].auto)); ag.classList.toggle("ligado", mixer[l].auto); ag.title = "Auto gain: " + (mixer[l].auto ? "ligado, aplicando " + fmtDb(Math.round(mixer[l].autoDb * 10) / 10) + " dB" : "desligado"); }
     const sel = div.querySelector(`select[data-fxsel="${l}"]`), disp = VbMxMixer.fxDisponiveis(mixer.fxLista);
     if (sel) {   // seletor: o filtro + os 4 efeitos da preferência; refaz as opções só se a lista mudou
-      if (sel.dataset.lista !== disp.join()) { sel.innerHTML = disp.map(id=>`<option value="${id}" title="${VbMxMixer.descricaoDoFx(id)}">${VbMxMixer.nomeDoFx(id)}</option>`).join(""); sel.dataset.lista = disp.join(); }
+      if (sel.dataset.lista !== disp.join()) { sel.innerHTML = disp.map(id=>`<option value="${id}" title="${trm(VbMxMixer.descricaoDoFx(id))}">${trm(VbMxMixer.nomeDoFx(id))}</option>`).join(""); sel.dataset.lista = disp.join(); }
       sel.value = mixer[l].fx;
     }
     const canalEl = div.querySelector(`.canal[data-canal="${l}"]`); if (canalEl) canalEl.dataset.fx = mixer[l].fx;

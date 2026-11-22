@@ -95,31 +95,32 @@ function fxMudar(novo, n, redesenhar) {
 
 // ---------- tela ----------
 const fxM = VbMxFx;
-function fxOpcoes(sel) { return fxM.TIPOS.map(t => `<option value="${t}"${t === sel ? " selected" : ""}>${fxM.NOMES[t]}</option>`).join(""); }
+function fxOpcoes(sel) { return fxM.TIPOS.map(t => `<option value="${t}"${t === sel ? " selected" : ""}>${trm(fxM.NOMES[t])}</option>`).join(""); }
 function fxKnob(id, rotulo, d, valor, tipo, indice) {
+  rotulo = trm(rotulo);
   const passo = d.inteiro ? 1 : d.bipolar ? 1 : 0.01;
-  return `<label class="fx-knob" title="${rotulo}; duplo clique restaura o padrão">
+  return `<label class="fx-knob" title="${rotulo}; ${tr("pro.fx.duplo-restaura")}">
     <span class="fx-nome">${rotulo}</span>
     <input type="range" min="${d.min}" max="${d.max}" step="${passo}" value="${valor}" data-fx-id="${id}" data-padrao="${d.padrao}" aria-label="${rotulo}">
-    <span class="fx-val" data-fx-val="${id}">${tipo ? fxM.rotuloDoParametro(tipo, indice, valor) : Math.round(valor * 100) + "%"}</span></label>`;
+    <span class="fx-val" data-fx-val="${id}">${tipo ? trm(fxM.rotuloDoParametro(tipo, indice, valor)) : Math.round(valor * 100) + "%"}</span></label>`;
 }
 function fxHtml(u) {
   const n = u.n, c = fxM.CANAIS;
   const cab = `<div class="fx-cab">
     <span class="fx-titulo">FX ${n}</span>
     <span class="fx-canais" role="group" aria-label="Atribuir a canais">${c.map(l => `<button type="button" class="fx-bt fx-canal" data-fx-canal="${l}" aria-pressed="${u.atribuicao[l]}" title="Unidade ${n} no canal ${l}">${l}</button>`).join("")}</span>
-    <button type="button" class="fx-bt fx-rota" data-fx-rota aria-label="Rota: ${fxM.ROTULOS_ROTA[u.rota]}; clique para trocar" title="Rota: inserção (antes do fader) → pós-fader → envio (paralelo, só o processado)">${fxM.ROTULOS_ROTA[u.rota]}</button>${u.rota === "envio" ? fxKnob("nivel", "envio", { min: 0, max: 1, padrao: fxM.NIVEL_ENVIO_PADRAO }, u.nivelEnvio, "", -1) : ""}
-    <button type="button" class="fx-bt fx-modo" data-fx-modo aria-label="Modo ${u.modo === "unico" ? "único" : "grupo"}; clique para trocar" title="${u.modo === "unico" ? "Modo único (1 efeito)" : "Modo grupo (3 efeitos)"}">${u.modo === "unico" ? "●" : "●●●"}</button>
+    <button type="button" class="fx-bt fx-rota" data-fx-rota aria-label="${tr("pro.fx.rota-aria",{r:trm(fxM.ROTULOS_ROTA[u.rota])})}" title="${tr("pro.fx.rota-titulo")}">${fxM.ROTULOS_ROTA[u.rota]}</button>${u.rota === "envio" ? fxKnob("nivel", "envio", { min: 0, max: 1, padrao: fxM.NIVEL_ENVIO_PADRAO }, u.nivelEnvio, "", -1) : ""}
+    <button type="button" class="fx-bt fx-modo" data-fx-modo aria-label="${u.modo === "unico" ? tr("pro.fx.modo-unico-a") : tr("pro.fx.modo-grupo-a")}" title="${u.modo === "unico" ? tr("pro.fx.modo-unico-t") : tr("pro.fx.modo-grupo-t")}">${u.modo === "unico" ? "●" : "●●●"}</button>
     <button type="button" class="fx-bt fx-liga" data-fx-liga aria-pressed="${u.ligada}" title="Liga a unidade">ON</button></div>`;
   let corpo;
   if (u.modo === "unico") {
     const e = u.unico, def = fxM.DEFS[e.tipo];
-    corpo = `<div class="fx-linha"><select data-fx-tipo aria-label="Efeito da unidade ${n}">${fxOpcoes(e.tipo)}</select>
+    corpo = `<div class="fx-linha"><select data-fx-tipo aria-label="${tr("pro.fx.efeito-un",{n})}">${fxOpcoes(e.tipo)}</select>
       <label class="fx-knob fx-dw"><span class="fx-nome">D/W</span><input type="range" min="0" max="1" step="0.01" value="${e.dw}" data-fx-id="dw" data-padrao="${def.dw}" aria-label="Mistura seco/processado"><span class="fx-val" data-fx-val="dw">${Math.round(e.dw * 100)}%</span></label></div>
       <div class="fx-knobs">${def.params.map((d, i) => fxKnob("p" + i, d.rotulo, d, e.params[i], e.tipo, i)).join("")}</div>
-      <div class="fx-linha">${def.botoes.map((r, i) => `<button type="button" class="fx-bt fx-botao" data-fx-botao="${i}" aria-pressed="${e.botoes[i]}">${r}</button>`).join("")}
-      <button type="button" class="fx-bt" data-fx-reset title="Volta aos padrões do efeito">reset</button>
-      <button type="button" class="fx-bt" data-fx-snap title="Guarda estes valores para a próxima vez que o efeito for escolhido">salvar</button></div>`;
+      <div class="fx-linha">${def.botoes.map((r, i) => `<button type="button" class="fx-bt fx-botao" data-fx-botao="${i}" aria-pressed="${e.botoes[i]}">${trm(r)}</button>`).join("")}
+      <button type="button" class="fx-bt" data-fx-reset title="${tr("pro.fx.reset-t")}">${tr("pro.fx.reset")}</button>
+      <button type="button" class="fx-bt" data-fx-snap title="${tr("pro.fx.salvar-t")}">${tr("pro.fx.salvar")}</button></div>`;
   } else {
     corpo = `<div class="fx-grupo">${u.grupo.slots.map((s, i) => {
       const d = fxM.DEFS[s.tipo].params[0];
@@ -127,7 +128,7 @@ function fxHtml(u) {
         ${fxKnob("s" + i, d.rotulo, d, s.valor, s.tipo, 0)}
         <button type="button" class="fx-bt" data-fx-slot-liga="${i}" aria-pressed="${s.ligado}">ON</button></div>`;
     }).join("")}</div>
-    <div class="fx-linha"><label class="fx-knob fx-dw"><span class="fx-nome">D/W</span><input type="range" min="0" max="1" step="0.01" value="${u.grupo.dw}" data-fx-id="dw" data-padrao="0.5" aria-label="Mistura seco/processado da cadeia"><span class="fx-val" data-fx-val="dw">${Math.round(u.grupo.dw * 100)}%</span></label></div>`;
+    <div class="fx-linha"><label class="fx-knob fx-dw"><span class="fx-nome">D/W</span><input type="range" min="0" max="1" step="0.01" value="${u.grupo.dw}" data-fx-id="dw" data-padrao="0.5" aria-label="${tr("pro.fx.dw")}"><span class="fx-val" data-fx-val="dw">${Math.round(u.grupo.dw * 100)}%</span></label></div>`;
   }
   return `<div class="fx-un" data-fx-un="${n}">${cab}${corpo}</div>`;
 }
@@ -152,12 +153,12 @@ function fxAtualizar(n) {
   const tn = el.querySelector('[data-fx-val="nivel"]'); if (tn) tn.textContent = Math.round(u.nivelEnvio * 100) + "%";
   if (u.modo === "unico") {
     const e = u.unico;
-    e.params.forEach((v, i) => { const t = el.querySelector(`[data-fx-val="p${i}"]`); if (t) t.textContent = fxM.rotuloDoParametro(e.tipo, i, v); });
+    e.params.forEach((v, i) => { const t = el.querySelector(`[data-fx-val="p${i}"]`); if (t) t.textContent = trm(fxM.rotuloDoParametro(e.tipo, i, v)); });
     for (const b of el.querySelectorAll("[data-fx-botao]")) b.setAttribute("aria-pressed", String(e.botoes[b.dataset.fxBotao]));
     const t = el.querySelector('[data-fx-val="dw"]'); if (t) t.textContent = Math.round(e.dw * 100) + "%";
   } else {
     u.grupo.slots.forEach((s, i) => {
-      const t = el.querySelector(`[data-fx-val="s${i}"]`); if (t) t.textContent = fxM.rotuloDoParametro(s.tipo, 0, s.valor);
+      const t = el.querySelector(`[data-fx-val="s${i}"]`); if (t) t.textContent = trm(fxM.rotuloDoParametro(s.tipo, 0, s.valor));
       el.querySelector(`[data-fx-slot-liga="${i}"]`).setAttribute("aria-pressed", String(s.ligado));
     });
     const t = el.querySelector('[data-fx-val="dw"]'); if (t) t.textContent = Math.round(u.grupo.dw * 100) + "%";

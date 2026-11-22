@@ -25,7 +25,9 @@
     RAIZ_X: 620, RAIZ_L: 200, RAIZ_A: 56,
     N1_X: 900, N1_L: 250, N1_A: 26, CAB_X: 896,
     N2_X: 1220, N2_L: 220, N2_A: 26, N2_PASSO: 32, N2_MAX: 6,
-    PASSO_MAX: 30, Y_MIN: 22
+    PASSO_MAX: 30, Y_MIN: 22,
+    // mixagem automática (2026-11-14): fileira dos critérios logo acima da raiz, terminando na borda direita dela
+    CRIT_L: 64, CRIT_A: 22, CRIT_PASSO: 68, CRIT_FOLGA: 24, N1_MAX_AUTO: 10
   });
   // Ordem fixa dos grupos: é a ordem das relações do motor (docs/taxonomia da sugestão).
   const RELACOES = Object.freeze(['mesma casa', '±1 na roda', 'relativa maior/menor']);
@@ -50,9 +52,9 @@
     return (compativeis || []).filter(c => !ex.has(idDe(c)));
   }
 
-  // Agrupa por motivo harmônico, na ordem de RELACOES; grupo vazio não aparece.
-  function agrupar(lista) {
-    return RELACOES
+  // Agrupa por motivo harmônico, na ordem de RELACOES (ou da lista dada); grupo vazio não aparece.
+  function agrupar(lista, relacoes) {
+    return (relacoes || RELACOES)
       .map(motivo => ({ motivo, itens: (lista || []).filter(c => c.casa && c.casa.relacao === motivo) }))
       .filter(g => g.itens.length);
   }
@@ -92,6 +94,19 @@
   }
   function classeDelta(bpm) { return bpm && Math.abs(Number(bpm.deltaPct) || 0) <= 0.02 ? 'perto' : 'longe'; }
 
+  // Fileira dos critérios da mixagem automática: um nó por critério, na ordem dada, entre a raiz e o "pode vir" —
+  // o ponto em que cada um entra (ou entraria, se desmarcado). Devolve [{id, x, y, l, a}] e a linha que os liga.
+  function posicoesCriterios(ids, H) {
+    H = H || GEO.ALTURA;
+    const lista = ids || [];
+    const y = H / 2 - GEO.RAIZ_A / 2 - GEO.CRIT_FOLGA - GEO.CRIT_A;
+    const x0 = GEO.RAIZ_X + GEO.RAIZ_L - (lista.length - 1) * GEO.CRIT_PASSO - GEO.CRIT_L;
+    const nos = lista.map((id, i) => ({ id, x: x0 + i * GEO.CRIT_PASSO, y, l: GEO.CRIT_L, a: GEO.CRIT_A }));
+    const meio = y + GEO.CRIT_A / 2, fim = GEO.RAIZ_X + GEO.RAIZ_L;
+    const caminho = lista.length ? `M${x0} ${meio} L${fim} ${meio} M${fim - GEO.CRIT_L / 2} ${y + GEO.CRIT_A} L${fim - GEO.CRIT_L / 2} ${H / 2 - GEO.RAIZ_A / 2}` : '';
+    return { nos, caminho, y };
+  }
+
   // Caminhos SVG das ligações, como no handoff.
   function caminhoRaiz(y, H) { H = H || GEO.ALTURA; const m = H / 2, yy = y + 13; return `M820 ${m} C860 ${m} 860 ${yy} 900 ${yy}`; }
   function caminhoN2(yCand, y2) { const a = yCand + 13, b = y2 + 13; return `M1150 ${a} C1185 ${a} 1185 ${b} 1220 ${b}`; }
@@ -99,7 +114,7 @@
   // Modelo completo. `compativeis(faixa)` é a função que consulta o motor (VbMxMotor.compativeis
   // com a biblioteca já fechada); é chamada uma vez para a raiz e, se houver candidata, uma para
   // ela (o nível 2 é a SEGUNDA chamada, o motor não muda).
-  //   { ref, compativeis, historicoIds, candidataId, filtroCasa, H }
+  //   { ref, compativeis, historicoIds, candidataId, filtroCasa, H, relacoes }   relacoes: grupos do nível 1 (padrão RELACOES)
   function montar(op) {
     const H = op.H || GEO.ALTURA;
     const ref = op.ref;
@@ -108,7 +123,7 @@
     const r1 = ref ? op.compativeis(ref) : { compativeis: [], contagem: { total: 0 } };
     const limpa = limpar(r1.compativeis, excluir);
     const visiveis = op.filtroCasa ? limpa.filter(c => c.faixa.camelot === op.filtroCasa) : limpa;
-    const grupos = agrupar(limpa);              // o filtro APAGA galhos, não os tira: a forma da árvore fica
+    const grupos = agrupar(limpa, op.relacoes);             // o filtro APAGA galhos, não os tira: a forma da árvore fica
     const dist = distribuir(grupos, H);
     const nos = dist.nos.map(n => ({
       c: n.c, y: n.y, x: GEO.N1_X, id: idDe(n.c),
@@ -149,5 +164,5 @@
     return ultimo === 'A' || ultimo === 'B' ? de(ultimo, 'empate de volume: o último a tocar') : de('A', 'empate de volume: deck A');
   }
 
-  return { GEO, RELACOES, escolherBase, idsDoHistorico, limpar, agrupar, distribuir, yNivel2, deltaCurto, classeDelta, caminhoRaiz, caminhoN2, montar };
+  return { GEO, RELACOES, escolherBase, idsDoHistorico, limpar, agrupar, distribuir, yNivel2, deltaCurto, classeDelta, posicoesCriterios, caminhoRaiz, caminhoN2, montar };
 });

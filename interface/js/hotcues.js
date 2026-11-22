@@ -163,26 +163,26 @@ function hotcuesDesenhar(letra){
   let celulas = "";
   for (let i = 0; i < VbMxCues.SLOTS; i++) {
     const h = reg && reg.hotcues[i], cor = h ? VbMxCues.corDe(h) : "";
-    const rot = h ? `${VbMxCues.TIPOS[h.tipo].rotulo} · ${hotcuesFmt(h.t)}${h.nome ? " · " + h.nome : ""}` : "vazio";
+    const rot = h ? `${VbMxCues.TIPOS[h.tipo].rotulo} · ${hotcuesFmt(h.t)}${h.nome ? " · " + h.nome : ""}` : tr("pro.hc.vazio");
     celulas += `<div class="hotcues-celula${h?" cheio":""}${hotcues.previa[letra]===i?" previa":""}${hotcues.sel[letra]===i?" sel":""}${hotcues.map[letra]&&hotcues.origem[letra]===i?" origem":""}"${h?` style="--cor:${cor}"`:""}>`
-      + `<button class="hotcues-slot pc-hotcue${h?" pc-cheio":""}" data-hc="${i}" ${pronto?"":"disabled"} aria-label="Hotcue ${i+1} do deck ${letra}: ${esc(rot)}" `
-      + `title="${h ? "Clique salta (parado: segure para ouvir) · Shift+clique apaga · Alt+clique muda o tipo" : "Clique define aqui"}">`
+      + `<button class="hotcues-slot pc-hotcue${h?" pc-cheio":""}" data-hc="${i}" ${pronto?"":"disabled"} aria-label="${tr("pro.hc.slot-aria",{n:i+1,letra,rot:esc(rot)})}" `
+      + `title="${h ? tr("pro.hc.slot-cheio") : tr("pro.hc.slot-vazio")}">`
       + `<b>${i+1}</b><span>${h ? hotcuesFmt(h.t) : "—"}</span></button>`
-      + (h ? `<button class="hotcues-apagar" data-hc-apagar="${i}" aria-label="Apagar o hotcue ${i+1} do deck ${letra}" title="Apagar">✕</button>` : "")
+      + (h ? `<button class="hotcues-apagar" data-hc-apagar="${i}" aria-label="${tr("pro.hc.apagar-aria",{n:i+1,letra})}" title="${tr("pro.hc.apagar")}">✕</button>` : "")
       + `</div>`;
   }
   const sel = reg && reg.hotcues[hotcues.sel[letra]];
   const dis = pronto ? "" : "disabled";
-  const lista = `<div class="hotcues-lista" role="group" aria-label="Lista de cues do deck ${letra}">`
+  const lista = `<div class="hotcues-lista" role="group" aria-label="${tr("pro.hc.lista",{letra})}">`
     + `<button data-hc-acao="anterior" ${dis} aria-label="Cue anterior" title="Cue anterior">◀</button>`
-    + `<button data-hc-acao="proximo" ${dis} aria-label="Próximo cue" title="Próximo cue">▶</button>`
-    + `<span class="hotcues-info" aria-live="polite">${sel ? `${hotcues.sel[letra]+1} · ${VbMxCues.TIPOS[sel.tipo].rotulo} · ${VbMxCues.formatarTempo(sel.t)}${sel.fim ? " → " + VbMxCues.formatarTempo(sel.fim) : ""}` : "nenhum cue selecionado"}</span>`
-    + `<button data-hc-acao="tipo" ${sel?"":"disabled"} title="Muda o tipo do cue selecionado">Tipo</button>`
+    + `<button data-hc-acao="proximo" ${dis} aria-label="${tr("pro.hc.proximo")}" title="${tr("pro.hc.proximo")}">▶</button>`
+    + `<span class="hotcues-info" aria-live="polite">${sel ? `${hotcues.sel[letra]+1} · ${VbMxCues.TIPOS[sel.tipo].rotulo} · ${VbMxCues.formatarTempo(sel.t)}${sel.fim ? " → " + VbMxCues.formatarTempo(sel.fim) : ""}` : tr("pro.hc.nenhum")}</span>`
+    + `<button data-hc-acao="tipo" ${sel?"":"disabled"} title="${tr("pro.hc.tipo-t")}">${tr("pro.hc.tipo")}</button>`
     + `<button data-hc-acao="apagar" ${sel?"":"disabled"} title="Apaga o cue selecionado">Apagar</button>`
-    + `<button data-hc-acao="store" ${dis} title="Grava a posição (ou o loop ativo) no próximo slot livre">STORE</button>`
-    + `<button data-hc-acao="map" ${dis} aria-pressed="${hotcues.map[letra]}" class="${hotcues.map[letra]?"ligado":""}" title="Clique o slot de origem, ligue MAP e clique o destino">MAP</button></div>`;
+    + `<button data-hc-acao="store" ${dis} title="${tr("pro.hc.store-t")}">STORE</button>`
+    + `<button data-hc-acao="map" ${dis} aria-pressed="${hotcues.map[letra]}" class="${hotcues.map[letra]?"ligado":""}" title="${tr("pro.hc.map-t")}">MAP</button></div>`;
   el.innerHTML = `<div class="hotcues-cab"><span class="hotcues-titulo">Hotcues ${letra}</span>`
-    + `<label class="hotcues-tipo">novo: <select data-hc-tipo ${pronto?"":"disabled"} aria-label="Tipo dos próximos hotcues do deck ${letra}">${opcoes}</select></label></div>`
+    + `<label class="hotcues-tipo">${tr("pro.hc.novo")} <select data-hc-tipo ${pronto?"":"disabled"} aria-label="${tr("pro.hc.tipo-prox",{letra})}">${opcoes}</select></label></div>`
     + `<div class="hotcues-grade">${celulas}</div>` + lista;
   el.hidden = false;
 }

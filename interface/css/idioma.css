@@ -1,0 +1,11 @@
+/* Seletor de idioma PT | EN | ES | FR (interface/js/i18n.js monta os botões em [data-i18n-seletor]).
+   Traço reto Bauhaus: sem raio, sem sombra; alvo mínimo de 44×44 px; o idioma ativo vem em amarelo. */
+.idioma { display: inline-flex; align-items: stretch; flex: 0 0 auto; border: 1px solid var(--fg-3, #A39C89); }
+.idioma-opcao { font: 600 13px/1 var(--fonte-dados, "IBM Plex Mono", monospace); letter-spacing: .04em; min-width: 44px; min-height: 44px; padding: 0 4px;
+  margin: 0; border: 0; border-radius: 0; background: transparent; color: var(--fg-2, #BDB5A4); cursor: pointer; }
+.idioma-opcao + .idioma-opcao { border-left: 1px solid var(--fg-3, #A39C89); }
+.idioma-opcao:hover { color: var(--fg, #F2EBDD); }
+.idioma-opcao[aria-checked="true"] { background: var(--acento, #F2B90F); color: var(--bg, #141414); }
+.idioma-opcao:focus-visible { outline: 3px solid var(--acento, #F2B90F); outline-offset: 2px; position: relative; z-index: 1; }
+.modos .idioma { align-self: flex-end; }
+.topo .idioma { margin-left: auto; }

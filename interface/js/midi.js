@@ -16,7 +16,7 @@ const controles = {
   perfisRecusados: [],  // ids de perfil cujo mapa o Lucas apagou: não voltam sozinhos quando a porta reaparece
   saidas: new Map(),    // id da porta de saída → {nome, saida, enviado:{chave: vel}}, só as que casam um perfil com `saidas`
   ledsTimer: null,      // amostra dos LEDs (saidas.amostraMs), viva só enquanto há porta de saída
-  statusMidi: "MIDI: não iniciado",
+  statusMidi: () => tr("pro.midi.nao-iniciado"),   // função: o texto acompanha o idioma
   el: null,
 };
 const CONTROLES_CHAVE = "vbmx-mapas";
@@ -64,7 +64,7 @@ const controlesPara01 = (cmd, v) => (v - cmd.faixa[0]) / (cmd.faixa[1] - cmd.fai
 const controlesDe01 = (cmd, v01) => cmd.faixa[0] + v01 * (cmd.faixa[1] - cmd.faixa[0]);
 
 function controlesAgir(nome, ...args) {
-  try { VbMxUI.acao(nome, ...args); } catch (e) { console.warn("controles: ação falhou", nome, e); }
+  try { VbMxUI.acao(nome, ...args); } catch (e) { console.warn("controls: action failed", nome, e); }
 }
 
 // ---------------------------------------------------------------- despacho
@@ -167,10 +167,10 @@ function controlesCarregarPerfis() {
   if (typeof fetch !== "function") return Promise.resolve();
   return Promise.all(CONTROLES_PERFIS.map((arq) => fetch(arq).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); }).then((texto) => {
     const o = JSON.parse(texto);
-    if (!o || typeof o.perfil !== "string" || typeof o.porta !== "string" || !VbMxMapaControle.importar(texto).ok) throw new Error("perfil inválido");
+    if (!o || typeof o.perfil !== "string" || typeof o.porta !== "string" || !VbMxMapaControle.importar(texto).ok) throw new Error("invalid profile");
     controles.perfis.push({ id: o.perfil, nome: o.nome || o.perfil, porta: o.porta, revisao: Number(o.revisao) || 1,
       parametros: o.parametros || {}, saidas: o.saidas || null, texto });
-  }).catch((e) => console.warn("controles: perfil não carregado", arq, e)))).then(() => undefined);
+  }).catch((e) => console.warn("controls: profile not loaded", arq, e)))).then(() => undefined);
 }
 const controlesChaveAtrib = (a) => VbMxMapaControle.chaveFisico(a.fisico) + "|" + a.comando + "|" + (a.alvo || "");
 // Revisão nova do arquivo sobre a cópia local: o que o Lucas fez na cópia vale por cima do arquivo.
@@ -272,7 +272,7 @@ function controlesLedsAtualizar() {
     const atual = controlesLedsDaPorta(s.nome, leitura);
     for (const [k, v] of VbMxLeds.diferencaDosLeds(s.enviado, atual)) {
       const bytes = VbMxLeds.mensagemDoLed(k, v);
-      if (bytes) try { s.saida.send(bytes); } catch (e) { console.warn("controles: LED não enviado", s.nome, e); }
+      if (bytes) try { s.saida.send(bytes); } catch (e) { console.warn("controls: LED not sent", s.nome, e); }
     }
     s.enviado = Object.assign({}, atual);
   }
@@ -312,26 +312,26 @@ function midiLigarPortas(acesso) {
   for (const p of controles.perfis) if (nomes.some((n) => controlesPortaCasa(p.porta, n))) { controlesGarantirPerfil(p); ligados.push(p.nome); }
   controles.entradas = nomes;
   midiLigarSaidas(acesso);   // depois do perfil garantido: o mapa (e as `saidas` dele) já existe
-  controles.statusMidi = nomes.length ? `MIDI: ${nomes.join(", ")}${ligados.length ? " — perfil: " + ligados.join(", ") : ""}` : "MIDI: nenhum controlador conectado";
+  controles.statusMidi = () => nomes.length ? `MIDI: ${nomes.join(", ")}${ligados.length ? " — " + tr("pro.midi.perfil") + ": " + ligados.join(", ") : ""}` : tr("pro.midi.nenhum");
   controlesPintarStatus();
 }
 function midiIniciar() {
-  if (!navigator.requestMIDIAccess) { controles.statusMidi = "MIDI: este navegador não tem Web MIDI (use o Chrome)"; return Promise.resolve(); }
+  if (!navigator.requestMIDIAccess) { controles.statusMidi = () => tr("pro.midi.sem-web"); return Promise.resolve(); }
   return controlesCarregarPerfis().then(() => navigator.requestMIDIAccess({ sysex: false })).then((acesso) => {
     midiLigarPortas(acesso);
     acesso.onstatechange = () => midiLigarPortas(acesso);
-  }).catch((e) => { controles.statusMidi = "MIDI: acesso negado (" + (e && e.name || "erro") + ")"; controlesPintarStatus(); });
+  }).catch((e) => { const nomeErro = (e && e.name) || "erro"; controles.statusMidi = () => tr("pro.midi.negado", { e: nomeErro }); controlesPintarStatus(); });
 }
 
 // ---------------------------------------------------------------- painel Controles (MIDI learn)
 const controlesEsc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function controlesNomeFisico(f) {
-  if (f.tipo === "tecla") return "Tecla " + f.codigo.replace(/^Key|^Digit/, "");
-  return (f.tipo === "nota" ? "Nota " : "CC ") + f.numero + " (canal " + ((f.canal | 0) + 1) + ")";
+  if (f.tipo === "tecla") return tr("pro.midi.tecla") + " " + f.codigo.replace(/^Key|^Digit/, "");
+  return (f.tipo === "nota" ? tr("pro.midi.nota") + " " : "CC ") + f.numero + " (" + tr("pro.midi.canal") + " " + ((f.canal | 0) + 1) + ")";
 }
 function controlesPintarStatus() {
   const s = controles.el && controles.el.querySelector("[data-ctl-status]");
-  if (s) s.textContent = controles.statusMidi;
+  if (s) s.textContent = controles.statusMidi();
 }
 // Rascunho da próxima atribuição a aprender
 const controlesRascunho = { mapaId: null, comando: "play", alvo: "A", tipo: "botao", modo: "hold",
@@ -349,48 +349,48 @@ function controlesDesenhar() {
   if (cmd && !cmd.tipos.includes(r.tipo)) { r.tipo = cmd.tipos[0]; r.modo = M.modoPadrao(r.tipo); }
   const grupos = { deck: [], canal: [], global: [] };
   for (const c of M.COMANDOS) grupos[c.alvo].push(c);
-  const optsCmd = (lista) => lista.map((c) => `<option value="${c.id}"${c.id === r.comando ? " selected" : ""}>${controlesEsc(c.rotulo)}</option>`).join("");
+  const optsCmd = (lista) => lista.map((c) => `<option value="${c.id}"${c.id === r.comando ? " selected" : ""}>${controlesEsc(trm(c.rotulo))}</option>`).join("");
   const modos = r.tipo === "botao" ? M.MODOS_BOTAO : r.tipo === "fader" ? M.MODOS_FADER : [];
-  const rotModo = { hold: "hold (segurar)", toggle: "toggle", invert: "invert (age ao soltar)", direct: "direct (valor fixo)", relative: "relative" };
+  const rotModo = { hold: tr("pro.midi.modo-hold"), toggle: "toggle", invert: tr("pro.midi.modo-invert"), direct: tr("pro.midi.modo-direct"), relative: "relative" };
   const o = r.opcoes;
   const caixa = (k, rot) => `<label class="ctl-check"><input type="checkbox" data-ctl-op="${k}"${o[k] ? " checked" : ""}> ${rot}</label>`;
   const mapasHtml = controles.mapas.map((m) => `<div class="ctl-mapa${m.id === r.mapaId ? " atual" : ""}">
-      <label class="ctl-check"><input type="checkbox" data-ctl-ativo="${m.id}"${m.ativo ? " checked" : ""}> ativo</label>
+      <label class="ctl-check"><input type="checkbox" data-ctl-ativo="${m.id}"${m.ativo ? " checked" : ""}> ${tr("pro.midi.ativo")}</label>
       <button type="button" class="ctl-link" data-ctl-escolher="${m.id}">${controlesEsc(m.nome)}</button>
-      <span class="ctl-mudo">${m.atribuicoes.length} atrib.</span>
-      <button type="button" class="ctl-x" data-ctl-apagar-mapa="${m.id}" title="${m.perfil ? "Apagar (o perfil não volta sozinho; religue aqui)" : "Apagar mapeamento"}" aria-label="Apagar mapeamento ${controlesEsc(m.nome)}">×</button></div>`).join("")
-    + controles.perfis.filter((p) => controles.perfisRecusados.includes(p.id)).map((p) => `<div class="ctl-mapa"><span class="ctl-mudo">perfil ${controlesEsc(p.nome)} apagado</span>
-      <button type="button" class="ctl-link" data-ctl-religar-perfil="${controlesEsc(p.id)}">religar</button></div>`).join("");
+      <span class="ctl-mudo">${tr("pro.midi.atrib", { n: m.atribuicoes.length })}</span>
+      <button type="button" class="ctl-x" data-ctl-apagar-mapa="${m.id}" title="${m.perfil ? tr("pro.midi.apagar-perfil") : tr("pro.midi.apagar-mapa")}" aria-label="${tr("pro.midi.apagar-mapa-aria", { nome: controlesEsc(m.nome) })}">×</button></div>`).join("")
+    + controles.perfis.filter((p) => controles.perfisRecusados.includes(p.id)).map((p) => `<div class="ctl-mapa"><span class="ctl-mudo">${tr("pro.midi.perfil-apagado", { nome: controlesEsc(p.nome) })}</span>
+      <button type="button" class="ctl-link" data-ctl-religar-perfil="${controlesEsc(p.id)}">${tr("pro.midi.religar")}</button></div>`).join("");
   const linhas = mapa ? mapa.atribuicoes.map((a) => {
     const c = M.comandoPorId(a.comando);
-    return `<tr><td>${controlesEsc(controlesNomeFisico(a.fisico))}</td><td>${controlesEsc(c ? c.rotulo : a.comando)}</td><td>${a.alvo || "global"}</td>
+    return `<tr><td>${controlesEsc(controlesNomeFisico(a.fisico))}</td><td>${controlesEsc(c ? trm(c.rotulo) : a.comando)}</td><td>${a.alvo || tr("pro.midi.global")}</td>
       <td>${a.tipo}${a.tipo === "encoder" ? "" : " · " + a.modo}</td>
-      <td><button type="button" class="ctl-x" data-ctl-apagar="${a.id}" aria-label="Apagar atribuição">×</button></td></tr>`;
+      <td><button type="button" class="ctl-x" data-ctl-apagar="${a.id}" aria-label="${tr("pro.midi.apagar-atrib")}">×</button></td></tr>`;
   }).join("") : "";
   el.querySelector("[data-ctl-corpo]").innerHTML = `
-    <div class="ctl-secao"><b>Mapeamentos</b> <span class="ctl-mudo">(todos os ativos valem juntos)</span>${mapasHtml || '<div class="ctl-mudo">nenhum</div>'}
-      <div class="ctl-linha"><button type="button" data-ctl-novo-mapa>+ novo</button><button type="button" data-ctl-exportar>exportar JSON</button>
-      <label class="ctl-arquivo">importar JSON<input type="file" accept="application/json,.json" data-ctl-importar hidden></label></div></div>
-    <div class="ctl-secao"><b>Nova atribuição</b> ${mapa ? "em “" + controlesEsc(mapa.nome) + "”" : ""}
+    <div class="ctl-secao"><b>${tr("pro.midi.mapeamentos")}</b> <span class="ctl-mudo">${tr("pro.midi.todos-ativos")}</span>${mapasHtml || `<div class="ctl-mudo">${tr("pro.midi.nenhum-mapa")}</div>`}
+      <div class="ctl-linha"><button type="button" data-ctl-novo-mapa>${tr("pro.midi.novo")}</button><button type="button" data-ctl-exportar>${tr("pro.midi.exportar")}</button>
+      <label class="ctl-arquivo">${tr("pro.midi.importar")}<input type="file" accept="application/json,.json" data-ctl-importar hidden></label></div></div>
+    <div class="ctl-secao"><b>${tr("pro.midi.nova-atrib")}</b> ${mapa ? tr("pro.midi.em", { nome: controlesEsc(mapa.nome) }) : ""}
       <div class="ctl-grade">
-        <label>Comando <select data-ctl-cmd><optgroup label="Deck">${optsCmd(grupos.deck)}</optgroup><optgroup label="Canal do mixer">${optsCmd(grupos.canal)}</optgroup><optgroup label="Global">${optsCmd(grupos.global)}</optgroup></select></label>
-        <label>Alvo <select data-ctl-alvo${cmd && cmd.alvo === "global" ? " disabled" : ""}><option value="A"${r.alvo === "A" ? " selected" : ""}>deck/canal A</option><option value="B"${r.alvo === "B" ? " selected" : ""}>deck/canal B</option></select></label>
-        <label>Tipo <select data-ctl-tipo>${(cmd ? cmd.tipos : ["botao"]).map((t) => `<option value="${t}"${t === r.tipo ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-        ${modos.length ? `<label>Modo <select data-ctl-modo>${modos.map((m) => `<option value="${m}"${m === r.modo ? " selected" : ""}>${rotModo[m]}</option>`).join("")}</select></label>` : ""}
+        <label>${tr("pro.midi.comando")} <select data-ctl-cmd><optgroup label="Deck">${optsCmd(grupos.deck)}</optgroup><optgroup label="${tr("pro.midi.canal-mixer")}">${optsCmd(grupos.canal)}</optgroup><optgroup label="${tr("pro.midi.global")}">${optsCmd(grupos.global)}</optgroup></select></label>
+        <label>${tr("pro.midi.alvo")} <select data-ctl-alvo${cmd && cmd.alvo === "global" ? " disabled" : ""}><option value="A"${r.alvo === "A" ? " selected" : ""}>${tr("pro.midi.deck-canal")} A</option><option value="B"${r.alvo === "B" ? " selected" : ""}>${tr("pro.midi.deck-canal")} B</option></select></label>
+        <label>${tr("pro.midi.tipo")} <select data-ctl-tipo>${(cmd ? cmd.tipos : ["botao"]).map((t) => `<option value="${t}"${t === r.tipo ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        ${modos.length ? `<label>${tr("pro.midi.modo")} <select data-ctl-modo>${modos.map((m) => `<option value="${m}"${m === r.modo ? " selected" : ""}>${rotModo[m]}</option>`).join("")}</select></label>` : ""}
       </div>
       <div class="ctl-grade">
-        ${caixa("inverter", "inverter")}
-        ${r.tipo === "botao" ? caixa("repetir", "repetir ao segurar") : ""}
-        ${r.tipo === "botao" && r.modo === "direct" ? `<label>Valor <select data-ctl-op-sel="valorFixo"><option value="1"${o.valorFixo ? " selected" : ""}>1</option><option value="0"${!o.valorFixo ? " selected" : ""}>0</option></select></label>` : ""}
-        ${r.tipo !== "botao" ? `<label>Resolução <select data-ctl-op-sel="resolucao"><option value="fina"${o.resolucao === "fina" ? " selected" : ""}>fina</option><option value="grossa"${o.resolucao === "grossa" ? " selected" : ""}>grossa</option></select></label>` : ""}
-        ${r.tipo === "fader" && r.modo === "direct" ? caixa("softTakeover", "soft takeover") : ""}
-        ${r.tipo !== "botao" ? `<label>Sensibilidade <input type="number" step="0.1" min="0.1" max="10" value="${o.sensibilidade}" data-ctl-op-num="sensibilidade"></label>` : ""}
-        ${r.tipo === "encoder" ? `<label>Aceleração <input type="number" step="0.1" min="0" max="1" value="${o.aceleracao}" data-ctl-op-num="aceleracao"></label>
-          <label>Codificação <select data-ctl-op-sel="codificacao"><option value="7f01"${o.codificacao === "7f01" ? " selected" : ""}>7Fh / 01h</option><option value="3f41"${o.codificacao === "3f41" ? " selected" : ""}>3Fh / 41h</option></select></label>` : ""}
+        ${caixa("inverter", tr("pro.midi.inverter"))}
+        ${r.tipo === "botao" ? caixa("repetir", tr("pro.midi.repetir")) : ""}
+        ${r.tipo === "botao" && r.modo === "direct" ? `<label>${tr("pro.midi.valor")} <select data-ctl-op-sel="valorFixo"><option value="1"${o.valorFixo ? " selected" : ""}>1</option><option value="0"${!o.valorFixo ? " selected" : ""}>0</option></select></label>` : ""}
+        ${r.tipo !== "botao" ? `<label>${tr("pro.midi.resolucao")} <select data-ctl-op-sel="resolucao"><option value="fina"${o.resolucao === "fina" ? " selected" : ""}>${tr("pro.midi.fina")}</option><option value="grossa"${o.resolucao === "grossa" ? " selected" : ""}>${tr("pro.midi.grossa")}</option></select></label>` : ""}
+        ${r.tipo === "fader" && r.modo === "direct" ? caixa("softTakeover", tr("pro.midi.soft")) : ""}
+        ${r.tipo !== "botao" ? `<label>${tr("pro.midi.sensibilidade")} <input type="number" step="0.1" min="0.1" max="10" value="${o.sensibilidade}" data-ctl-op-num="sensibilidade"></label>` : ""}
+        ${r.tipo === "encoder" ? `<label>${tr("pro.midi.aceleracao")} <input type="number" step="0.1" min="0" max="1" value="${o.aceleracao}" data-ctl-op-num="aceleracao"></label>
+          <label>${tr("pro.midi.codificacao")} <select data-ctl-op-sel="codificacao"><option value="7f01"${o.codificacao === "7f01" ? " selected" : ""}>7Fh / 01h</option><option value="3f41"${o.codificacao === "3f41" ? " selected" : ""}>3Fh / 41h</option></select></label>` : ""}
       </div>
-      <div class="ctl-linha"><button type="button" class="ctl-aprender${controles.aprendendo ? " ligado" : ""}" data-ctl-aprender${mapa ? "" : " disabled"}>${controles.aprendendo ? "mexa no controle… (clique para cancelar)" : "aprender"}</button>
+      <div class="ctl-linha"><button type="button" class="ctl-aprender${controles.aprendendo ? " ligado" : ""}" data-ctl-aprender${mapa ? "" : " disabled"}>${controles.aprendendo ? tr("pro.midi.mexa") : tr("pro.midi.aprender")}</button>
         <span class="ctl-mudo" data-ctl-msg></span></div></div>
-    <div class="ctl-secao"><b>Atribuições</b>${linhas ? `<div class="ctl-tabela"><table><thead><tr><th>Controle</th><th>Comando</th><th>Alvo</th><th>Tipo · modo</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>` : '<div class="ctl-mudo">nenhuma</div>'}</div>`;
+    <div class="ctl-secao"><b>${tr("pro.midi.atribuicoes")}</b>${linhas ? `<div class="ctl-tabela"><table><thead><tr><th>${tr("pro.midi.th-controle")}</th><th>${tr("pro.midi.comando")}</th><th>${tr("pro.midi.alvo")}</th><th>${tr("pro.midi.tipo")} · ${tr("pro.midi.modo").toLowerCase()}</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>` : `<div class="ctl-mudo">${tr("pro.midi.nenhuma")}</div>`}</div>`;
   controlesPintarStatus();
 }
 function controlesMsg(t) { const m = controles.el && controles.el.querySelector("[data-ctl-msg]"); if (m) m.textContent = t; }
@@ -408,7 +408,7 @@ function controlesAprender() {
     mapa.atribuicoes = mapa.atribuicoes.filter((x) => M.chaveFisico(x.fisico) !== M.chaveFisico(fisico) || x.comando !== a.comando || x.alvo !== a.alvo);
     mapa.atribuicoes.push(a);
     controlesSalvar(); controlesDesenhar();
-    controlesMsg("aprendido: " + controlesNomeFisico(fisico));
+    controlesMsg(tr("pro.midi.aprendido", { f: controlesNomeFisico(fisico) }));
   } };
   controlesDesenhar();
 }
@@ -426,16 +426,16 @@ function controlesImportar(arquivo) {
     if (!r.ok) { controlesMsg(r.erros.join("; ")); return; }
     controles.mapas.push(...r.mapeamentos);
     controlesSalvar(); controlesDesenhar();
-    controlesMsg(`importados ${r.mapeamentos.length} mapeamento(s)` + (r.erros.length ? `; ${r.erros.length} atribuição(ões) descartada(s): ${r.erros[0]}` : ""));
-  }).catch(() => controlesMsg("não consegui ler o arquivo"));
+    controlesMsg(tr("pro.midi.importados", { n: r.mapeamentos.length }) + (r.erros.length ? "; " + tr("pro.midi.descartadas", { n: r.erros.length, e: r.erros[0] }) : ""));
+  }).catch(() => controlesMsg(tr("pro.midi.erro-ler")));
 }
 
 function controlesMontar() {
   const raiz = document.createElement("div");
   raiz.className = "ctl-raiz";
-  raiz.innerHTML = `<button type="button" class="ctl-abrir" data-ctl-abrir aria-expanded="false">Controles</button>
-    <div class="ctl-painel" hidden role="dialog" aria-label="Controles: teclado e MIDI">
-      <div class="ctl-topo"><b>Controles</b><span class="ctl-mudo" data-ctl-status></span><button type="button" class="ctl-x" data-ctl-fechar aria-label="Fechar">×</button></div>
+  raiz.innerHTML = `<button type="button" class="ctl-abrir" data-ctl-abrir aria-expanded="false">${tr("pro.midi.controles")}</button>
+    <div class="ctl-painel" hidden role="dialog" aria-label="${tr("pro.midi.painel-aria")}">
+      <div class="ctl-topo"><b data-ctl-titulo>${tr("pro.midi.controles")}</b><span class="ctl-mudo" data-ctl-status></span><button type="button" class="ctl-x" data-ctl-fechar aria-label="${tr("pro.midi.fechar")}">×</button></div>
       <div data-ctl-corpo></div></div>`;
   document.body.appendChild(raiz);
   controles.el = raiz;
@@ -447,7 +447,7 @@ function controlesMontar() {
   raiz.addEventListener("click", (e) => {
     const a = e.target.closest("button, .ctl-arquivo"); if (!a) return;
     if (a.hasAttribute("data-ctl-aprender")) controlesAprender();
-    else if (a.hasAttribute("data-ctl-novo-mapa")) { const m = VbMxMapaControle.novoMapeamento("Mapeamento " + (controles.mapas.length + 1)); controles.mapas.push(m); r.mapaId = m.id; controlesSalvar(); controlesDesenhar(); }
+    else if (a.hasAttribute("data-ctl-novo-mapa")) { const m = VbMxMapaControle.novoMapeamento(tr("pro.midi.mapeamento") + " " + (controles.mapas.length + 1)); controles.mapas.push(m); r.mapaId = m.id; controlesSalvar(); controlesDesenhar(); }
     else if (a.hasAttribute("data-ctl-exportar")) controlesExportar();
     else if (a.dataset.ctlEscolher) { r.mapaId = a.dataset.ctlEscolher; controlesDesenhar(); }
     else if (a.dataset.ctlApagarMapa) controlesApagarMapa(a.dataset.ctlApagarMapa);
@@ -475,4 +475,12 @@ VbMxUI.aoIniciar(() => {
   if (!controles.mapas.length) { controles.mapas = [controlesMapaPadrao()]; controlesSalvar(); }
   controlesMontar();
   midiIniciar();
+  VbMxUI.aoIdioma(() => {
+    if (!controles.el) return;
+    controles.el.querySelector("[data-ctl-abrir]").textContent = tr("pro.midi.controles");
+    controles.el.querySelector("[data-ctl-titulo]").textContent = tr("pro.midi.controles");
+    controles.el.querySelector(".ctl-painel").setAttribute("aria-label", tr("pro.midi.painel-aria"));
+    controles.el.querySelector("[data-ctl-fechar]").setAttribute("aria-label", tr("pro.midi.fechar"));
+    if (!controles.el.querySelector(".ctl-painel").hidden) controlesDesenhar(); else controlesPintarStatus();
+  });
 });

@@ -7,25 +7,25 @@ function renderDeck(div, faixa, letra){
     <div class="deck-cab">
       <span class="letra">${letra}</span>
       ${faixa ? `<span class="titulo">${esc(faixa.titulo)}</span><span class="artista">${esc(faixa.artista)}</span>`
-              : `<span class="vazio">deck vazio · arraste uma faixa para cá</span>`}
-      <button type="button" class="deck-recolher" data-recolher="mini-${letra}" aria-pressed="false" title="Recolher o deck ${letra} para o mini deck (uma linha); de novo para expandir" aria-label="Recolher ou expandir o deck ${letra} (mini deck)"></button>
+              : `<span class="vazio">${tr("pro.deck.vazio")}</span>`}
+      <button type="button" class="deck-recolher" data-recolher="mini-${letra}" aria-pressed="false" title="${tr("pro.deck.recolher-titulo",{letra})}" aria-label="${tr("pro.deck.recolher-aria",{letra})}"></button>
     </div>
     <div class="ondas">
-      <div class="onda-caixa"><canvas class="onda zoom" data-onda="zoom" aria-label="Onda do deck ${letra}, rolando com a faixa. Clique define o CUE; Shift+clique pula para o ponto"></canvas></div>
-      <canvas class="onda geral" data-onda="geral" aria-label="Faixa inteira do deck ${letra}. Clique define o CUE; Shift+clique pula para o ponto"></canvas>
-      <div class="dica-onda">clique na onda = define o CUE · Shift+clique = pula para ali · arraste = scratch · <span class="cue-info"></span></div>
+      <div class="onda-caixa"><canvas class="onda zoom" data-onda="zoom" aria-label="${tr("pro.deck.onda-zoom",{letra})}"></canvas></div>
+      <canvas class="onda geral" data-onda="geral" aria-label="${tr("pro.deck.onda-geral",{letra})}"></canvas>
+      <div class="dica-onda">${tr("pro.deck.dica-onda")} · <span class="cue-info"></span></div>
     </div>
     <div class="deck-corpo">
       <div class="deck-prato">
-        <div class="prato" aria-hidden="true" title="Prato: segure o centro e gire para fazer scratch · tocando, gire a borda para acelerar/frear (bend) · parado, gire para a busca fina">
+        <div class="prato" aria-hidden="true" title="${tr("pro.deck.prato")}">
           <div class="prato-giro"></div>
           ${faixa ? `<div class="prato-miolo" style="--cor:${corCamelot(faixa.camelot)}">${tomTexto(faixa.camelot)}</div>` : `<div class="prato-miolo vazio">—</div>`}
         </div>
         <div class="deck-info">
-          <div class="dado"><span class="rotulo">BPM</span><span class="valor valor-bpm">${faixa?fmtBpm(efetivo):"—"}</span><span class="orig">${faixa&&d.pitch?`orig. ${fmtBpm(faixa.bpm)}`:""}</span></div>
-          <div class="dado"><span class="rotulo">Tom</span>${faixa?chave(faixa.camelot):`<span class="valor">—</span>`}<span class="tom-res" hidden></span></div>
+          <div class="dado"><span class="rotulo">BPM</span><span class="valor valor-bpm">${faixa?fmtBpm(efetivo):"—"}</span><span class="orig">${faixa&&d.pitch?`${tr("pro.deck.orig")} ${fmtBpm(faixa.bpm)}`:""}</span></div>
+          <div class="dado"><span class="rotulo">${tr("pro.deck.tom")}</span>${faixa?chave(faixa.camelot):`<span class="valor">—</span>`}<span class="tom-res" hidden></span></div>
           <span class="tempo"></span>
-          <div class="transporte"><button class="botao pc-botao pc-botao--cue pc-compacto" data-cue="${letra}" ${d.buffer?"":"disabled"} title="CUE: tocando, volta ao ponto de cue e para · parado fora dele, define o cue aqui · parado no cue, segure para ouvir e solte para voltar" aria-label="Cue do deck ${letra}">CUE</button><button class="botao pc-botao pc-botao--cue pc-compacto" data-cup="${letra}" ${d.buffer?"":"disabled"} title="CUP: segure para saltar ao ponto de cue; ao soltar, toca dali" aria-label="CUP do deck ${letra}">CUP</button><button class="botao pc-botao pc-botao--play pc-compacto ${tocandoDeck(letra)?"tocando":""}" data-play="${letra}" ${faixa?"":"disabled"} title="Tocar / pausar" aria-label="${tocandoDeck(letra)?"Pausar":"Tocar"} o deck ${letra}">${tocandoDeck(letra)?"❚❚":"▶"}</button><button class="botao pc-botao pc-botao--neutro pc-compacto" data-reverso="${letra}" ${d.buffer?"":"disabled"} aria-pressed="false" title="Reverso: toca de trás para frente enquanto estiver apertado; ao soltar, volta ao normal" aria-label="Reverso do deck ${letra}">REV</button><button class="botao sync pc-botao pc-botao--sync pc-compacto" data-sync="${letra}" ${faixa?"":"disabled"} title="Igualar o BPM deste deck ao do outro ajustando o pitch (até ±${L}%)">SYNC</button><button class="botao bend pc-botao pc-botao--neutro pc-compacto" data-bend="${letra}" data-sinal="-1" ${d.buffer?"":"disabled"} title="Tempo bend: segure para frear por um instante (corrige a fase)" aria-label="Bend do deck ${letra}, frear">◀</button><button class="botao bend pc-botao pc-botao--neutro pc-compacto" data-bend="${letra}" data-sinal="1" ${d.buffer?"":"disabled"} title="Tempo bend: segure para acelerar por um instante (corrige a fase)" aria-label="Bend do deck ${letra}, acelerar">▶</button><span class="medidor-fase mono" data-fase title="Fase contra o deck mestre, em batidas" aria-label="Fase do deck ${letra} contra o mestre, em batidas">—</span><button class="botao master pc-botao pc-botao--master pc-compacto" data-master="${letra}" aria-pressed="false" title="MASTER: este deck vira o tempo mestre (só um por vez)" aria-label="Deck ${letra} como tempo mestre">MASTER</button></div>
+          <div class="transporte"><button class="botao pc-botao pc-botao--cue pc-compacto" data-cue="${letra}" ${d.buffer?"":"disabled"} title="${tr("pro.deck.cue-titulo")}" aria-label="${tr("pro.deck.cue-aria",{letra})}">CUE</button><button class="botao pc-botao pc-botao--cue pc-compacto" data-cup="${letra}" ${d.buffer?"":"disabled"} title="${tr("pro.deck.cup-titulo")}" aria-label="${tr("pro.deck.cup-aria",{letra})}">CUP</button><button class="botao pc-botao pc-botao--play pc-compacto ${tocandoDeck(letra)?"tocando":""}" data-play="${letra}" ${faixa?"":"disabled"} title="${tr("pro.deck.play-titulo")}" aria-label="${tr(tocandoDeck(letra)?"pro.deck.pausar":"pro.deck.tocar",{letra})}">${tocandoDeck(letra)?"❚❚":"▶"}</button><button class="botao pc-botao pc-botao--neutro pc-compacto" data-reverso="${letra}" ${d.buffer?"":"disabled"} aria-pressed="false" title="${tr("pro.deck.rev-titulo")}" aria-label="${tr("pro.deck.rev-aria",{letra})}">REV</button><button class="botao sync pc-botao pc-botao--sync pc-compacto" data-sync="${letra}" ${faixa?"":"disabled"} title="${tr("pro.deck.sync-titulo",{L})}">SYNC</button><button class="botao bend pc-botao pc-botao--neutro pc-compacto" data-bend="${letra}" data-sinal="-1" ${d.buffer?"":"disabled"} title="${tr("pro.deck.bend-frear-titulo")}" aria-label="${tr("pro.deck.bend-frear-aria",{letra})}">◀</button><button class="botao bend pc-botao pc-botao--neutro pc-compacto" data-bend="${letra}" data-sinal="1" ${d.buffer?"":"disabled"} title="${tr("pro.deck.bend-acel-titulo")}" aria-label="${tr("pro.deck.bend-acel-aria",{letra})}">▶</button><span class="medidor-fase mono" data-fase title="${tr("pro.deck.fase-titulo")}" aria-label="${tr("pro.deck.fase-aria",{letra})}">—</span><button class="botao master pc-botao pc-botao--master pc-compacto" data-master="${letra}" aria-pressed="false" title="${tr("pro.deck.master-titulo")}" aria-label="${tr("pro.deck.master-aria",{letra})}">MASTER</button></div>
         </div>
       </div>
       <div class="pitch-v">
@@ -33,13 +33,13 @@ function renderDeck(div, faixa, letra){
         <span class="pitch-valor mono">${VbMxPitch.formatarPitch(d.pitch)}</span>
         <div class="pitch-corpo">
           <div class="marcas" aria-hidden="true"><span class="marca-pm">−${L}</span><span class="marca-pm">0</span><span class="marca-pm">+${L}</span></div>
-          <input type="range" id="pitch-${letra}" min="-${L}" max="${L}" step="0.1" value="${d.pitch}" data-pitch="${letra}" aria-orientation="vertical" ${faixa?"":"disabled"} aria-label="Pitch do deck ${letra}, de −${L}% a +${L}%; para baixo aumenta o andamento, para cima diminui">
+          <input type="range" id="pitch-${letra}" min="-${L}" max="${L}" step="0.1" value="${d.pitch}" data-pitch="${letra}" aria-orientation="vertical" ${faixa?"":"disabled"} aria-label="${tr("pro.deck.pitch-aria",{letra,L})}">
         </div>
         <span class="pitch-bpm mono">${faixa?`→ ${fmtBpm(efetivo)} BPM`:""}</span>
-        <button class="zerar" data-zerar="${letra}" ${faixa?"":"disabled"} title="Pitch de volta a 0%">0</button>
-        <button class="zerar keylock" data-keylock="${letra}" aria-pressed="${!!d.keyLock}" title="Key lock: ligado, o pitch muda o andamento sem mudar o tom" aria-label="Key lock do deck ${letra}">KEY LOCK</button>
+        <button class="zerar" data-zerar="${letra}" ${faixa?"":"disabled"} title="${tr("pro.deck.pitch-zerar")}">0</button>
+        <button class="zerar keylock" data-keylock="${letra}" aria-pressed="${!!d.keyLock}" title="${tr("pro.deck.keylock-titulo")}" aria-label="${tr("pro.deck.keylock-aria",{letra})}">KEY LOCK</button>
         <div class="key-ctl" style="display:grid;justify-items:center;gap:2px">
-          <input type="range" id="key-${letra}" min="-12" max="12" step="1" value="${d.semitons||0}" data-key="${letra}" style="writing-mode:horizontal-tb;direction:ltr;width:52px;height:auto" title="KEY: muda o tom em semitons sem mudar o andamento · duplo clique volta a 0" aria-label="KEY do deck ${letra}: tom em semitons, de −12 a +12, sem mudar o andamento; duplo clique volta a 0">
+          <input type="range" id="key-${letra}" min="-12" max="12" step="1" value="${d.semitons||0}" data-key="${letra}" style="writing-mode:horizontal-tb;direction:ltr;width:52px;height:auto" title="${tr("pro.deck.key-titulo")}" aria-label="${tr("pro.deck.key-aria",{letra})}">
           <span class="key-valor mono" style="font-size:10px"></span>
         </div>
       </div>
@@ -85,7 +85,7 @@ function alternarKeyLock(letra){
   VbMxTocador.definirKeyLock(letra, pedido).then(r=>{
     if (r.ok || d.keyLock !== pedido) return;
     d.keyLock = false; VbMxTocador.definirKeyLock(letra, false);
-    d.aviso = `KEY LOCK indisponível: ${r.motivo}`; d.avisoCls = "erro";
+    d.aviso = tr("pro.deck.keylock-indisp",{motivo:trm(r.motivo)}); d.avisoCls = "erro";
     keyLockPintar(letra); atualizarNumerosDoDeck(letra);
   });
   keyLockPintar(letra);
@@ -102,8 +102,7 @@ function keyLockPintar(letra, div){
   el.style.color = ligado ? "var(--acento)" : "";
   el.style.borderColor = ligado ? "var(--acento)" : "";
   el.style.borderStyle = solto ? "dashed" : "";
-  el.title = solto ? "Key lock ligado, mas solto: no modo scratch ele não vale abaixo de −30% nem acima de +50% de velocidade"
-    : "Key lock: ligado, o pitch muda o andamento sem mudar o tom";
+  el.title = tr(solto ? "pro.deck.keylock-solto" : "pro.deck.keylock-titulo");
 }
 
 // ---------------- VB-38: modo do key lock (preferência) e knob KEY ----------------
@@ -111,8 +110,8 @@ function keyLockPintar(letra, div){
 // +50% (motor/tom.js keyLockAtivo; o tocador aplica no worklet). O KEY muda o tom em semitons (±12) sem
 // mudar o andamento (VbMxTocador.definirSemitons); duplo clique volta a 0. O tom exibido e o da sugestão
 // usam os dois (opcoesDoTom).
-VbMxPrefs.declarar("deck.keylock-modo", "normal", { tipo: "opcao", modulo: "deck", rotulo: "Modo do key lock",
-  opcoes: [{ valor: "normal", rotulo: "normal (vale em toda a faixa de tempo)" }, { valor: "scratch", rotulo: "scratch (solta abaixo de −30% e acima de +50%)" }] });
+VbMxPrefs.declarar("deck.keylock-modo", "normal", { tipo: "opcao", modulo: "deck", rotulo: "pro.pref.keylock-modo",
+  opcoes: [{ valor: "normal", rotulo: "pro.pref.keylock-normal" }, { valor: "scratch", rotulo: "pro.pref.keylock-scratch" }] });
 VbMxUI.aoIniciar(()=>{
   VbMxTocador.definirModoKeyLock(VbMxPrefs.ler("deck.keylock-modo"));
   VbMxPrefs.ouvir("deck.keylock-modo", modo=>{
@@ -132,7 +131,7 @@ function mudarKey(letra, valor){
   VbMxTocador.definirSemitons(letra, st).then(r=>{
     if (r.ok || d.semitons !== st || st === 0) return;
     d.semitons = 0; VbMxTocador.definirSemitons(letra, 0);
-    d.aviso = `KEY indisponível: ${r.motivo}`; d.avisoCls = "erro";
+    d.aviso = tr("pro.deck.key-indisp",{motivo:trm(r.motivo)}); d.avisoCls = "erro";
     keyPintar(letra); atualizarNumerosDoDeck(letra);
   });
   keyPintar(letra);

@@ -36,9 +36,9 @@
       filtro: num(e.filtro, 0), fx: e.fx || null, pico: limitar(num(e.pico, 0), 0, 1) };
   }
   function textoFase(x) {
-    if (x.fase === 'separando' && x.carregando) return 'carregando modelo…';
-    if (x.fase === 'separando') { const p = num(x.progresso, 0); return `separando ${Math.round(limitar(p <= 1 ? p * 100 : p, 0, 100))}%`; }
-    if (x.fase === 'erro') return `erro: ${x.erro || 'falhou'}`;
+    if (x.fase === 'separando' && x.carregando) return tr('pro.stems.carregando-modelo');
+    if (x.fase === 'separando') { const p = num(x.progresso, 0); return tr('pro.stems.separando',{p:Math.round(limitar(p <= 1 ? p * 100 : p, 0, 100))}); }
+    if (x.fase === 'erro') return tr('pro.stems.erro',{erro:trm(x.erro) || tr('pro.stems.falhou')});
     return FASES.includes(x.fase) ? x.fase : 'ausente';
   }
   const fmtDb = v => (v <= EQ_MIN ? 'KILL' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}`);
@@ -49,31 +49,31 @@
     const e = estadoDe(letra, nome), rot = ROTULOS[nome] || nome, id = `${letra}-${nome}`;
     const eq = BANDAS.map(([b, r]) => {
       const v = e.eq[b], kill = v <= EQ_MIN;
-      return `<div class="stems-lin" title="${r} ${fmtDb(v)} dB · duplo clique zera">
+      return `<div class="stems-lin" title="${r} ${fmtDb(v)} dB · ${tr('pro.stems.duplo-zera')}">
         <span class="nome">${r}</span>
-        <input type="range" min="${EQ_MIN}" max="${EQ_MAX}" step="0.5" value="${v}" data-ctl="eq" data-canal="${nome}" data-banda="${b}" aria-label="EQ ${r} do stem ${rot}, deck ${letra}, de ${EQ_MIN} a +${EQ_MAX} dB">
-        <button class="kill${kill ? ' ligado' : ''}" data-ctl="kill" data-canal="${nome}" data-banda="${b}" aria-pressed="${kill}" title="Kill ${r}" aria-label="Kill ${r} do stem ${rot}, deck ${letra}">K</button><span class="val mono">${fmtDb(v)}</span></div>`;
+        <input type="range" min="${EQ_MIN}" max="${EQ_MAX}" step="0.5" value="${v}" data-ctl="eq" data-canal="${nome}" data-banda="${b}" aria-label="${tr('pro.stems.eq-aria',{r,rot,letra,min:EQ_MIN,max:EQ_MAX})}">
+        <button class="kill${kill ? ' ligado' : ''}" data-ctl="kill" data-canal="${nome}" data-banda="${b}" aria-pressed="${kill}" title="Kill ${r}" aria-label="${tr('pro.stems.kill-aria',{r,rot,letra})}">K</button><span class="val mono">${fmtDb(v)}</span></div>`;
     }).join('');
     const fx = e.fx;
-    const opcoes = `<option value="">sem fx</option>` + FX.map(([i, r]) => `<option value="${i}"${fx && fx.id === i ? ' selected' : ''}>${r}</option>`).join('');
+    const opcoes = `<option value="">${tr('pro.stems.sem-fx')}</option>` + FX.map(([i, r]) => `<option value="${i}"${fx && fx.id === i ? ' selected' : ''}>${r}</option>`).join('');
     const fxLinhas = fx ? `
-      <div class="stems-lin"><span class="nome">PAR</span><input type="range" min="0" max="1" step="0.01" value="${num(fx.param, 0.5)}" data-ctl="fx-param" data-canal="${nome}" aria-label="Parâmetro do fx do stem ${rot}, deck ${letra}"><span class="val mono">${Math.round(num(fx.param, 0.5) * 100)}</span></div>
-      <div class="stems-lin"><span class="nome">MIX</span><input type="range" min="0" max="1" step="0.01" value="${num(fx.mix, 0.5)}" data-ctl="fx-mix" data-canal="${nome}" aria-label="Mix do fx do stem ${rot}, deck ${letra}"><span class="val mono">${Math.round(num(fx.mix, 0.5) * 100)}</span></div>` : '';
-    return `<div class="stems-canal${e.mudo ? ' mudo' : ''}${e.solo ? ' solo' : ''}" data-canal="${esc(nome)}" id="stems-${id}" role="group" aria-label="Stem ${esc(rot)} do deck ${letra}">
+      <div class="stems-lin"><span class="nome">PAR</span><input type="range" min="0" max="1" step="0.01" value="${num(fx.param, 0.5)}" data-ctl="fx-param" data-canal="${nome}" aria-label="${tr('pro.stems.fx-param',{rot,letra})}"><span class="val mono">${Math.round(num(fx.param, 0.5) * 100)}</span></div>
+      <div class="stems-lin"><span class="nome">MIX</span><input type="range" min="0" max="1" step="0.01" value="${num(fx.mix, 0.5)}" data-ctl="fx-mix" data-canal="${nome}" aria-label="${tr('pro.stems.fx-mix',{rot,letra})}"><span class="val mono">${Math.round(num(fx.mix, 0.5) * 100)}</span></div>` : '';
+    return `<div class="stems-canal${e.mudo ? ' mudo' : ''}${e.solo ? ' solo' : ''}" data-canal="${esc(nome)}" id="stems-${id}" role="group" aria-label="${tr('pro.stems.canal-aria',{rot:esc(rot),letra})}">
       <div class="stems-nome">${esc(rot)}</div>
       <div class="stems-ms">
-        <button class="stems-btn${e.mudo ? ' ligado' : ''}" data-ctl="mudo" data-canal="${nome}" aria-pressed="${e.mudo}" title="Mudo" aria-label="Mudo do stem ${esc(rot)}, deck ${letra}">M</button>
-        <button class="stems-btn${e.solo ? ' ligado' : ''}" data-ctl="solo" data-canal="${nome}" aria-pressed="${e.solo}" title="Solo" aria-label="Solo do stem ${esc(rot)}, deck ${letra}">S</button>
+        <button class="stems-btn${e.mudo ? ' ligado' : ''}" data-ctl="mudo" data-canal="${nome}" aria-pressed="${e.mudo}" title="${tr('pro.stems.mudo')}" aria-label="${tr('pro.stems.mudo-aria',{rot:esc(rot),letra})}">M</button>
+        <button class="stems-btn${e.solo ? ' ligado' : ''}" data-ctl="solo" data-canal="${nome}" aria-pressed="${e.solo}" title="Solo" aria-label="${tr('pro.stems.solo-aria',{rot:esc(rot),letra})}">S</button>
       </div>
       <div class="stems-vol">
-        <input type="range" min="0" max="${VOL_MAX}" step="0.01" value="${e.volume}" data-ctl="volume" data-canal="${nome}" title="Volume · duplo clique volta a 1" aria-label="Volume do stem ${esc(rot)}, deck ${letra}, de 0 a ${VOL_MAX}">
+        <input type="range" min="0" max="${VOL_MAX}" step="0.01" value="${e.volume}" data-ctl="volume" data-canal="${nome}" title="${tr('pro.stems.vol-t')}" aria-label="${tr('pro.stems.vol-aria',{rot:esc(rot),letra,max:VOL_MAX})}">
         <div class="stems-pico" aria-hidden="true"><i data-pico="${nome}" style="transform:scaleY(${e.pico})"></i></div>
       </div>
       <div class="stems-val mono">vol ${Math.round(e.volume * 100)}%</div>
       <div class="stems-eq">${eq}</div>
-      <div class="stems-lin" title="Filtro: passa-baixa ← 0 → passa-alta · duplo clique zera"><span class="nome">FLT</span>
-        <input type="range" min="-1" max="1" step="0.01" value="${e.filtro}" data-ctl="filtro" data-canal="${nome}" aria-label="Filtro do stem ${esc(rot)}, deck ${letra}: passa-baixa à esquerda, passa-alta à direita"><span class="val mono">${fmtFiltro(e.filtro)}</span></div>
-      <select data-ctl="fx" data-canal="${nome}" aria-label="Efeito do stem ${esc(rot)}, deck ${letra}">${opcoes}</select>${fxLinhas}
+      <div class="stems-lin" title="${tr('pro.stems.flt-t')}"><span class="nome">FLT</span>
+        <input type="range" min="-1" max="1" step="0.01" value="${e.filtro}" data-ctl="filtro" data-canal="${nome}" aria-label="${tr('pro.stems.flt-aria',{rot:esc(rot),letra})}"><span class="val mono">${fmtFiltro(e.filtro)}</span></div>
+      <select data-ctl="fx" data-canal="${nome}" aria-label="${tr('pro.stems.fx-aria',{rot:esc(rot),letra})}">${opcoes}</select>${fxLinhas}
     </div>`;
   }
   function html(letra) {
@@ -81,9 +81,9 @@
     const cab = `<div class="stems-cab">
       <span class="stems-titulo">Stems ${letra}</span>
       <span class="stems-estado ${esc(x.fase)}" data-fase="${esc(x.fase)}" role="status" title="${esc(x.fase === 'erro' ? textoFase(x) : '')}">${esc(textoFase(x))}</span>
-      <button class="stems-btn stems-liga${lig ? ' ligado' : ''}" data-ctl="toggle" aria-pressed="${lig}" title="${pronto ? 'Liga/desliga o modo stems do deck' : 'Separa a faixa em stems e liga o modo'}" aria-label="STEMS do deck ${letra}">STEMS</button>
-      <button class="stems-btn stems-recolher" type="button" data-recolher="stems-${letra}" aria-pressed="false" title="Recolher os canais dos stems; de novo para expandir" aria-label="Recolher ou expandir os stems do deck ${letra}"></button>
-      <button class="stems-btn" data-ctl="reset" ${lig ? '' : 'disabled'} title="Volta tudo a volume 1, EQ 0 e sem fx" aria-label="Reset dos stems do deck ${letra}">reset</button>
+      <button class="stems-btn stems-liga${lig ? ' ligado' : ''}" data-ctl="toggle" aria-pressed="${lig}" title="${pronto ? tr('pro.stems.liga-t') : tr('pro.stems.separa-t')}" aria-label="${tr('pro.stems.liga-aria',{letra})}">STEMS</button>
+      <button class="stems-btn stems-recolher" type="button" data-recolher="stems-${letra}" aria-pressed="false" title="${tr('pro.stems.recolher-t')}" aria-label="${tr('pro.stems.recolher-aria',{letra})}"></button>
+      <button class="stems-btn" data-ctl="reset" ${lig ? '' : 'disabled'} title="${tr('pro.stems.reset-t')}" aria-label="${tr('pro.stems.reset-aria',{letra})}">${tr('pro.fx.reset')}</button>
     </div>`;
     return cab + (lig ? `<div class="stems-canais">${nomes().map(n => htmlCanal(letra, n)).join('')}</div>` : '');
   }

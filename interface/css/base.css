@@ -60,3 +60,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 @media (max-width: 900px) {
   body { display: block; height: auto; }
 }
+/* link "Modos" no topo do Profissional e do Friends: volta ao painel de modos (interface/index.html?escolher) */
+.trocar-modo { font-family: var(--fonte-display); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fg); border: 1px solid var(--fg-3); border-radius: 4px; padding: 3px 10px; text-decoration: none; }
+.trocar-modo:hover, .trocar-modo:focus-visible { border-color: var(--acento); color: var(--acento); outline: none; }

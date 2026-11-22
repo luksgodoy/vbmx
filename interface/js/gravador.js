@@ -6,7 +6,7 @@
 // showSaveFilePicker quando existe; sempre sobra um link (o download direto pode ser bloqueado).
 // Contrato: docs/contratos.md.
 VbMxUI.declararEvento("gravador:mudou");
-VbMxPrefs.declarar("gravador.incluir-metronomo", false, { rotulo: "Gravador: incluir o metrônomo na gravação", tipo: "booleano", modulo: "gravador" });
+VbMxPrefs.declarar("gravador.incluir-metronomo", false, { rotulo: "pro.pref.grav-metro", tipo: "booleano", modulo: "gravador" });
 
 const gravador = {
   estado: "parado",          // parado | gravando | pronto
@@ -29,12 +29,12 @@ function gravadorLiberarUrls(){
 
 function gravadorIniciar(){
   if (gravador.estado === "gravando") return;
-  if (!gravadorSuportado()) { gravador.aviso = "este navegador não tem MediaRecorder"; gravadorDesenhar(); return; }
+  if (!gravadorSuportado()) { gravador.aviso = tr("pro.grav.sem-mediarecorder"); gravadorDesenhar(); return; }
   const ctx = garantirAudio();
-  if (!ctx) { gravador.aviso = "sem áudio neste navegador"; gravadorDesenhar(); return; }
+  if (!ctx) { gravador.aviso = tr("pro.grav.sem-audio"); gravadorDesenhar(); return; }
   if (ctx.state !== "running") ctx.resume().catch(() => {});
   const mime = VbMxGravacao.escolherMime(t => MediaRecorder.isTypeSupported(t));
-  if (!mime) { gravador.aviso = "este navegador não grava WebM/Opus"; gravadorDesenhar(); return; }
+  if (!mime) { gravador.aviso = tr("pro.grav.sem-webm"); gravadorDesenhar(); return; }
   gravadorLiberarUrls();
   try {
     gravador.derivacao = VbMxGravacao.derivacaoDoMaster(VbMxPrefs.ler("gravador.incluir-metronomo"));   // fixa na hora de gravar
@@ -44,10 +44,10 @@ function gravadorIniciar(){
     gravador.buffer = new Float32Array(gravador.analisador.fftSize);
     mestre.connect(gravador.dest); mestre.connect(gravador.analisador);
     gravador.rec = new MediaRecorder(gravador.dest.stream, { mimeType: mime, audioBitsPerSecond: VbMxGravacao.BITRATE_BPS });
-  } catch (e) { gravadorDesligarGrafo(); gravador.aviso = `não consegui começar: ${(e && e.message) || e}`; gravadorDesenhar(); return; }
+  } catch (e) { gravadorDesligarGrafo(); gravador.aviso = tr("pro.grav.nao-comecou",{erro:(e && e.message) || e}); gravadorDesenhar(); return; }
   gravador.mime = mime; gravador.pedacos = []; gravador.arquivo = gravador.lista = null; gravador.aviso = ""; gravador.pico = -Infinity;
   gravador.rec.ondataavailable = ev => { if (ev.data && ev.data.size) gravador.pedacos.push(ev.data); };
-  gravador.rec.onerror = ev => { gravador.aviso = `erro na gravação: ${(ev.error && ev.error.message) || "desconhecido"}`; gravadorParar(); };
+  gravador.rec.onerror = ev => { gravador.aviso = tr("pro.grav.erro",{erro:(ev.error && ev.error.message) || tr("pro.grav.desconhecido")}); gravadorParar(); };
   gravador.rec.onstop = gravadorFinalizar;
   gravador.iniMs = Date.now(); gravador.t0 = gravadorAgora(); gravador.estado = "gravando";
   gravador.rec.start(1000);   // pedaços de 1 s: o tamanho real aparece e uma queda perde pouco
@@ -92,15 +92,15 @@ async function gravadorSalvar(qual){
   const blob = qual === "lista" ? gravador.lista : gravador.arquivo;
   const nome = qual === "lista" ? VbMxGravacao.nomeLista(gravador.iniMs) : VbMxGravacao.nomeArquivo(gravador.iniMs, gravador.mime);
   if (!blob) return;
-  if (typeof window.showSaveFilePicker !== "function") { gravador.aviso = "este navegador não abre o seletor de arquivo; use o link abaixo"; gravadorDesenhar(); return; }
+  if (typeof window.showSaveFilePicker !== "function") { gravador.aviso = tr("pro.grav.sem-seletor"); gravadorDesenhar(); return; }
   try {
     const tipo = qual === "lista" ? { description: "Texto", accept: { "text/plain": [".txt"] } }
-      : { description: "Áudio WebM/Opus", accept: { [gravador.mime.split(";")[0]]: ["." + VbMxGravacao.extensaoDoMime(gravador.mime)] } };
+      : { description: tr("pro.grav.audio-webm"), accept: { [gravador.mime.split(";")[0]]: ["." + VbMxGravacao.extensaoDoMime(gravador.mime)] } };
     const alca = await window.showSaveFilePicker({ suggestedName: nome, types: [tipo] });
     const w = await alca.createWritable(); await w.write(blob); await w.close();
     gravador.aviso = `salvo: ${alca.name}`;
   } catch (e) {
-    gravador.aviso = e && e.name === "AbortError" ? "" : `não consegui salvar (${(e && e.message) || e}); use o link abaixo`;
+    gravador.aviso = e && e.name === "AbortError" ? "" : tr("pro.grav.nao-salvou",{erro:(e && e.message) || e});
   }
   gravadorDesenhar();
 }
@@ -118,26 +118,26 @@ function gravadorDesenhar(){
   const g = gravador;
   slot.hidden = false; slot.className = "hist grav"; slot.style.gridColumn = "1 / -1"; slot.style.order = "6";
   const links = g.estado === "pronto" ? `<div class="prep-barra">
-      <button type="button" data-grav="salvar-arquivo">Salvar gravação</button>
-      <button type="button" data-grav="salvar-lista">Salvar lista (.txt)</button>
+      <button type="button" data-grav="salvar-arquivo">${tr("pro.grav.salvar")}</button>
+      <button type="button" data-grav="salvar-lista">${tr("pro.grav.salvar-lista")}</button>
     </div>
     <div class="prep-barra grav-links">
-      <a href="${g.urlArquivo}" download="${VbMxGravacao.nomeArquivo(g.iniMs, g.mime)}">link: ${VbMxGravacao.nomeArquivo(g.iniMs, g.mime)}</a>
-      <a href="${g.urlLista}" download="${VbMxGravacao.nomeLista(g.iniMs)}">link: ${VbMxGravacao.nomeLista(g.iniMs)}</a>
+      <a href="${g.urlArquivo}" download="${VbMxGravacao.nomeArquivo(g.iniMs, g.mime)}">${tr("pro.grav.link")} ${VbMxGravacao.nomeArquivo(g.iniMs, g.mime)}</a>
+      <a href="${g.urlLista}" download="${VbMxGravacao.nomeLista(g.iniMs)}">${tr("pro.grav.link")} ${VbMxGravacao.nomeLista(g.iniMs)}</a>
     </div>` : "";
   slot.innerHTML = `<div class="prep-cab hist-cab">
-      <h3>Gravador</h3>
-      <span class="hist-taxa">${g.estado === "gravando" ? "gravando a mixagem do master" : g.estado === "pronto" ? "pronta" : "parado"}</span>
+      <h3>${tr("pro.aba.gravador")}</h3>
+      <span class="hist-taxa">${g.estado === "gravando" ? tr("pro.grav.gravando") : g.estado === "pronto" ? tr("pro.grav.pronta") : tr("pro.grav.parado")}</span>
     </div>
     <div class="prep-barra">
-      <button type="button" data-grav="${g.estado === "gravando" ? "parar" : "gravar"}" class="${g.estado === "gravando" ? "tocando" : ""}" aria-pressed="${g.estado === "gravando"}">${g.estado === "gravando" ? "Parar" : "Gravar"}</button>
-      <span class="mono" title="Tempo gravado" data-grav-tempo>0:00</span>
-      <span class="mono hist-taxa" title="Tamanho do arquivo (com ~ é estimativa: ${VbMxGravacao.BITRATE_BPS / 1000} kbps)" data-grav-tam>~0 B</span>
-      <span class="grav-medidor" title="Nível de pico do master" style="flex:1;min-width:80px;height:8px;background:var(--bg-3);border-radius:4px;overflow:hidden;align-self:center"><i data-grav-nivel style="display:block;height:100%;width:0;background:var(--acento)"></i></span>
+      <button type="button" data-grav="${g.estado === "gravando" ? "parar" : "gravar"}" class="${g.estado === "gravando" ? "tocando" : ""}" aria-pressed="${g.estado === "gravando"}">${g.estado === "gravando" ? tr("pro.grav.parar") : tr("pro.grav.gravar")}</button>
+      <span class="mono" title="${tr("pro.grav.tempo-t")}" data-grav-tempo>0:00</span>
+      <span class="mono hist-taxa" title="${tr("pro.grav.tam-t",{kbps:VbMxGravacao.BITRATE_BPS / 1000})}" data-grav-tam>~0 B</span>
+      <span class="grav-medidor" title="${tr("pro.grav.pico-t")}" style="flex:1;min-width:80px;height:8px;background:var(--bg-3);border-radius:4px;overflow:hidden;align-self:center"><i data-grav-nivel style="display:block;height:100%;width:0;background:var(--acento)"></i></span>
     </div>
     ${g.aviso ? `<div class="prep-aviso" role="status">${esc(g.aviso)}</div>` : ""}
     ${links}
-    <label class="prep-vazio"><input type="checkbox" data-grav-metro ${VbMxPrefs.ler("gravador.incluir-metronomo") ? "checked" : ""} ${g.estado === "gravando" ? "disabled" : ""}> Incluir o metrônomo na gravação</label>`;
+    <label class="prep-vazio"><input type="checkbox" data-grav-metro ${VbMxPrefs.ler("gravador.incluir-metronomo") ? "checked" : ""} ${g.estado === "gravando" ? "disabled" : ""}> ${tr("pro.grav.incluir-metro")}</label>`;
   gravadorPintar();
 }
 
@@ -164,3 +164,4 @@ VbMxUI.aoIniciar(() => {
   gravadorDesenhar();
   window.addEventListener("pagehide", () => { if (gravador.estado === "gravando") gravadorParar(); });
 });
+if (typeof VbMxUI !== "undefined") VbMxUI.aoIdioma(() => { if (typeof gravadorDesenhar === "function") gravadorDesenhar(); });

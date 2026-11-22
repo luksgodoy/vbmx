@@ -130,7 +130,7 @@
     const f = gradeFaixaDoDeck(letra), g = gradeBase(letra);
     if (!f || f.gradeTravada || !g) return;
     const campo = document.createElement('input');
-    campo.type = 'text'; campo.inputMode = 'decimal'; campo.value = String(g.bpm); campo.setAttribute('aria-label', 'BPM da grade'); campo.style.width = '7ch';
+    campo.type = 'text'; campo.inputMode = 'decimal'; campo.value = String(g.bpm); campo.setAttribute('aria-label', tr('pro.grade.bpm-aria')); campo.style.width = '7ch';
     info.replaceWith(campo); campo.focus(); campo.select();
     let feito = false;
     const fim = (aplicar) => {
@@ -153,12 +153,12 @@
     el.hidden = false;
     el.style.cssText = 'grid-column:' + (letra === 'A' ? 1 : 3) + ';font-size:12px;padding:6px 8px;border:1px solid var(--linha);border-radius:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
     el.innerHTML = `<span class="rotulo">GRADE ${letra}</span>`
-      + `<span class="mono" data-grade-info="${letra}" title="${analisada ? 'grade da análise (ou ajustada por você)' : 'estimada pelo BPM, com a 1ª batida em 0: a faixa não tem grade analisada'}">${g.bpm.toFixed(2)} BPM · 1ª batida ${g.primeira.toFixed(3)} s${analisada ? '' : ' · estimada'}</span>`
-      + (manual ? `<span class="mono" data-grade-manual="${letra}" title="o tempo 1 foi escolhido por você e vale mais que o detectado e que o .nml; 'voltar ao automático' desfaz">★ tempo 1 manual · ${manual.tempo1.toFixed(3)} s</span>` : '')
-      + ['menos|◀ 10 ms|mover a grade 10 ms para trás', 'mais|10 ms ▶|mover a grade 10 ms para frente', 'dobro|×2|dobrar o BPM da grade', 'metade|÷2|metade do BPM da grade', 'cue|⚓ CUE|ancorar a 1ª batida no CUE do deck', 'bpm-|−0,01|diminuir o BPM da grade em 0,01', 'bpm+|+0,01|aumentar o BPM da grade em 0,01', 'tap|TAP|bata no ritmo: o BPM vale após a 4ª batida', 'reset|RESET|recalcular: volta à grade da análise', 'auto|AUTO|AUTO grid: marcador perto da posição atual (só faixa analisada)', 'definir|definir marcador|definir o marcador de grade na posição atual', 'apagar|apagar marcador|apagar o marcador de grade', 'tempo1-aqui|1 aqui|tempo 1 na batida mais próxima da posição atual: a grade se realinha a partir dele', 'tempo1-cue|1 no CUE|tempo 1 na batida mais próxima do CUE do deck', 'tempo1-auto|voltar ao automático|apagar a escolha do tempo 1 e voltar ao detectado']
-        .map((s) => { const [a, r, t] = s.split('|'); const sem = ((a === 'reset' || a === 'auto') && !f.gradeAnalise) || (a === 'tempo1-auto' && !manual); return `<button type="button" class="botao" data-grade-acao="${a}"${off || (sem ? ' disabled' : '')} title="${t}">${r}</button>`; }).join('')
-      + `<button type="button" class="botao${typeof tickLigado === 'function' && tickLigado(letra) ? ' tocando' : ''}" data-grade-acao="tick" aria-pressed="${typeof tickLigado === 'function' && tickLigado(letra)}" title="tick: ouvir as batidas da grade para conferir o alinhamento (por enquanto soa no master: o fone é o VB-23)">TICK</button>`
-      + `<button type="button" class="botao${trava ? ' tocando' : ''}" data-grade-acao="travar" aria-pressed="${trava}" title="travar: protege a grade de ajustes sem querer">${trava ? 'travada' : 'travar'}</button>`;
+      + `<span class="mono" data-grade-info="${letra}" title="${analisada ? tr('pro.grade.info-analisada') : tr('pro.grade.info-estimada')}">${tr('pro.grade.info', { bpm: g.bpm.toFixed(2), t: g.primeira.toFixed(3) })}${analisada ? '' : ' · ' + tr('pro.grade.estimada')}</span>`
+      + (manual ? `<span class="mono" data-grade-manual="${letra}" title="${tr('pro.grade.manual-tit')}">★ ${tr('pro.grade.manual')} · ${manual.tempo1.toFixed(3)} s</span>` : '')
+      + ["menos", "mais", "dobro", "metade", "cue", "bpm-", "bpm+", "tap", "reset", "auto", "definir", "apagar", "tempo1-aqui", "tempo1-cue", "tempo1-auto"]
+        .map((a) => { const r = tr('pro.grade.' + a + '-r'), t = tr('pro.grade.' + a + '-t'); const sem = ((a === 'reset' || a === 'auto') && !f.gradeAnalise) || (a === 'tempo1-auto' && !manual); return `<button type="button" class="botao" data-grade-acao="${a}"${off || (sem ? ' disabled' : '')} title="${t}">${r}</button>`; }).join('')
+      + `<button type="button" class="botao${typeof tickLigado === 'function' && tickLigado(letra) ? ' tocando' : ''}" data-grade-acao="tick" aria-pressed="${typeof tickLigado === 'function' && tickLigado(letra)}" title="${tr('pro.grade.tick-t')}">TICK</button>`
+      + `<button type="button" class="botao${trava ? ' tocando' : ''}" data-grade-acao="travar" aria-pressed="${trava}" title="${tr('pro.grade.travar-t')}">${trava ? tr('pro.grade.travada') : tr('pro.grade.travar')}</button>`;
     const info = el.querySelector('[data-grade-info]');
     if (info && !trava) info.addEventListener('dblclick', () => gradeDigitarBpm(letra, info)); // BPM digitado
     el.querySelectorAll('[data-grade-acao]').forEach((b) => b.addEventListener('click', () => gradeAcao(letra, b.dataset.gradeAcao)));
@@ -203,5 +203,6 @@
     VbMxUI.ouvir('deck:carregado', (e) => { gradeAplicar(e.faixa); gradeDesenharSlot(e.letra); gradeCueInicial(e.letra, e.faixa, 0); });
     VbMxUI.ouvir('deck:descarregado', (e) => gradeDesenharSlot(e.letra));
     VbMxUI.ouvir('biblioteca:mudou', () => { for (const l of ['A', 'B']) gradeDesenharSlot(l); });
+    VbMxUI.aoIdioma(() => { for (const l of ['A', 'B']) gradeDesenharSlot(l); });
   });
 })();

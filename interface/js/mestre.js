@@ -16,9 +16,9 @@
 //     bend (segure), passos de 0,1 BPM e metrônomo audível (clique na soma do master, não só no fone).
 // Evento: `mestre:mudou` {quem, bpm, auto} — o mestre trocou ou o tempo do relógio mudou.
 
-VbMxPrefs.declarar("mestre.auto", true, { rotulo: "Tempo mestre automático (o deck em sync vira mestre quando o mestre para)", tipo: "booleano", modulo: "mestre" });
-VbMxPrefs.declarar("global.quant", true, { rotulo: "QUANT: saltos de cue, hotcue e loop mantêm a batida; loops e beatjump caem na grade", tipo: "booleano", modulo: "mestre" });
-VbMxPrefs.declarar("global.snap", false, { rotulo: "SNAP: cues, hotcues e loops guardados caem na batida mais próxima", tipo: "booleano", modulo: "mestre" });
+VbMxPrefs.declarar("mestre.auto", true, { rotulo: "pro.pref.mestre-auto", tipo: "booleano", modulo: "mestre" });
+VbMxPrefs.declarar("global.quant", true, { rotulo: "pro.pref.quant", tipo: "booleano", modulo: "mestre" });
+VbMxPrefs.declarar("global.snap", false, { rotulo: "pro.pref.snap", tipo: "booleano", modulo: "mestre" });
 VbMxUI.declararEvento("mestre:mudou");
 
 let mestreEst = VbMxFase.mestreInicial({ auto: VbMxPrefs.ler("mestre.auto") });
@@ -32,7 +32,7 @@ function mestreEhDeck(q){ return q === "A" || q === "B"; }
 function mestreBpm(){
   return mestreEhDeck(mestreEst.quem) ? syncBpmEfetivo(mestreEst.quem) : VbMxFase.bpmDoRelogio(mestreEst);
 }
-function mestreNome(){ return mestreEst.quem === "relogio" ? "relógio" : `deck ${mestreEst.quem}`; }
+function mestreNome(){ return mestreEst.quem === "relogio" ? tr("pro.mestre.relogio") : `${tr("pro.mestre.deck")} ${mestreEst.quem}`; }
 
 // Troca o estado inteiro e dá conta dos efeitos (um só lugar: botões, painel, sync, evento).
 function mestreAplicar(novo){
@@ -159,19 +159,19 @@ function mestreMontarPainel(){
   const p = document.createElement("div");
   p.id = "mestre-painel"; p.className = "mestre-painel"; p.setAttribute("role", "group"); p.setAttribute("aria-label", "Tempo mestre");
   p.innerHTML = `
-    <button class="botao mestre-btn" data-mestre-master aria-pressed="false" title="MASTER: o relógio interno vira o tempo mestre">MASTER</button>
+    <button class="botao mestre-btn" data-mestre-master aria-pressed="false" title="${tr('pro.mestre.master-t')}">MASTER</button>
     <span class="mestre-quem" data-mestre-quem></span>
-    <span class="mestre-bpm mono" data-mestre-bpm tabindex="0" title="Tempo mestre (BPM). Duplo clique para digitar" aria-label="BPM do tempo mestre">—</span>
-    <span class="mestre-desloc mono" data-mestre-desloc title="Deslocamento do bend do relógio"></span>
-    <button class="botao mestre-btn" data-mestre-menos title="Desce o tempo do relógio em 0,1 BPM" aria-label="Descer o tempo mestre em 0,1 BPM">−</button>
-    <button class="botao mestre-btn" data-mestre-mais title="Sobe o tempo do relógio em 0,1 BPM" aria-label="Subir o tempo mestre em 0,1 BPM">+</button>
-    <button class="botao mestre-btn" data-mestre-bend-menos title="Bend: segure para atrasar o relógio" aria-label="Bend do relógio, atrasar">◀</button>
-    <button class="botao mestre-btn" data-mestre-bend-mais title="Bend: segure para adiantar o relógio" aria-label="Bend do relógio, adiantar">▶</button>
-    <button class="botao mestre-btn" data-mestre-tap title="TAP: bata no ritmo; vale após a 4ª batida" aria-label="Tap do tempo mestre">TAP</button>
-    <button class="botao mestre-btn" data-mestre-metro aria-pressed="false" title="Metrônomo audível">TICK</button>
-    <button class="botao mestre-btn" data-mestre-quant aria-pressed="false" title="QUANT: com ele ligado, saltos de cue e loop mantêm a batida (e loops e beatjump caem na grade)">QUANT</button>
-    <button class="botao mestre-btn" data-mestre-snap aria-pressed="false" title="SNAP: com ele ligado, cues, hotcues e loops guardados caem na batida mais próxima">SNAP</button>
-    <button class="botao mestre-btn" data-mestre-auto aria-pressed="false" title="AUTO: quando o mestre para, o deck em sync vira mestre (senão, o relógio)">AUTO</button>`;
+    <span class="mestre-bpm mono" data-mestre-bpm tabindex="0" title="${tr('pro.mestre.bpm-t')}" aria-label="${tr('pro.mestre.bpm-a')}">—</span>
+    <span class="mestre-desloc mono" data-mestre-desloc title="${tr('pro.mestre.desloc-t')}"></span>
+    <button class="botao mestre-btn" data-mestre-menos title="${tr('pro.mestre.menos-t')}" aria-label="${tr('pro.mestre.menos-a')}">−</button>
+    <button class="botao mestre-btn" data-mestre-mais title="${tr('pro.mestre.mais-t')}" aria-label="${tr('pro.mestre.mais-a')}">+</button>
+    <button class="botao mestre-btn" data-mestre-bend-menos title="${tr('pro.mestre.bendm-t')}" aria-label="${tr('pro.mestre.bendm-a')}">◀</button>
+    <button class="botao mestre-btn" data-mestre-bend-mais title="${tr('pro.mestre.bendp-t')}" aria-label="${tr('pro.mestre.bendp-a')}">▶</button>
+    <button class="botao mestre-btn" data-mestre-tap title="${tr('pro.mestre.tap-t')}" aria-label="${tr('pro.mestre.tap-a')}">TAP</button>
+    <button class="botao mestre-btn" data-mestre-metro aria-pressed="false" title="${tr('pro.mestre.metro-t')}">TICK</button>
+    <button class="botao mestre-btn" data-mestre-quant aria-pressed="false" title="${tr('pro.mestre.quantt-t')}">QUANT</button>
+    <button class="botao mestre-btn" data-mestre-snap aria-pressed="false" title="${tr('pro.mestre.snapt-t')}">SNAP</button>
+    <button class="botao mestre-btn" data-mestre-auto aria-pressed="false" title="${tr('pro.mestre.autot-t')}">AUTO</button>`;
   topo.insertBefore(p, topo.querySelector(".estado-global"));
   const q = s => p.querySelector(s);
   q("[data-mestre-master]").addEventListener("click", () => mestreAplicar({ ...VbMxFase.declararMestre(mestreEst, "relogio"), relogioExplicito: true }));

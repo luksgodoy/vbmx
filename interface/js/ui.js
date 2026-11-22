@@ -105,6 +105,17 @@
     }
   }
 
+  // texto pelo idioma (interface/js/i18n.js): no navegador é o VbMxI18n da página; no Node, o módulo (cai em pt-BR);
+  // sem nenhum dos dois, a própria chave. Os módulos de js/ chamam VbMxUI.t(chave, params).
+  let i18nNode = null;
+  function t(chave, params) {
+    let i = raiz.VbMxI18n;
+    if (!i && i18nNode === null) { try { i18nNode = typeof require === 'function' ? require('./i18n.js') : false; } catch (e) { i18nNode = false; } }
+    if (!i) i = i18nNode;
+    return i ? i.t(chave, params) : String(chave);
+  }
+  // troca de idioma ao vivo: o módulo que desenha texto próprio pede aoIdioma(redesenhar). Fora do navegador não faz nada.
+  function aoIdioma(fn) { if (typeof fn === 'function' && raiz.VbMxI18n) raiz.VbMxI18n.aoMudar(fn); }
   function slot(nome) {
     const doc = raiz.document;
     return doc ? doc.querySelector(`[data-slot="${nome}"]`) : null;
@@ -120,5 +131,5 @@
   }
 
   return { eventos: () => [...EVENTOS], declararEvento, ouvir, emitir, registrar, registrados, acao,
-    motivoParaNaoCarregar, desenharCamadas, slot, aoIniciar, iniciar };
+    motivoParaNaoCarregar, desenharCamadas, slot, aoIniciar, iniciar, t, aoIdioma };
 });

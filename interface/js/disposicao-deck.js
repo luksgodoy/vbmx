@@ -8,7 +8,7 @@
 // Nada aqui cria nem apaga slot: os elementos `deck-X-*` que testar-classico exige continuam onde estão; só a linha da grade muda.
 // Lógica pura (ordemNormalizar, ordemMover, ordemLinhas) testada em Node por interface/testar-disposicao-deck.js.
 const DECK_BLOCOS = ["fx", "deck", "stems", "hotcues", "loops", "grade"];
-const DECK_BLOCO_ROTULO = { fx: "FX", deck: "deck (ondas, prato e transporte)", stems: "stems", hotcues: "hot cues", loops: "loops", grade: "grade" };
+const DECK_BLOCO_ROTULO = { fx: "FX", deck: "pro.dd.bloco-deck", stems: "stems", hotcues: "hot cues", loops: "loops", grade: "pro.dd.bloco-grade" };
 const DECK_LINHA_AVISOS = DECK_BLOCOS.length + 1;   // 7
 
 // "fx,deck,…" | array → ordem completa e válida: ids desconhecidos ou repetidos caem, os que faltam entram na ordem padrão.
@@ -49,7 +49,7 @@ function ordemLinhas(ordemA, ordemB) {
 function ordemChave(letra) { return `layout.deck-ordem-${letra.toLowerCase()}`; }
 
 if (typeof VbMxPrefs !== "undefined") for (const l of ["a", "b"]) {
-  VbMxPrefs.declarar(ordemChave(l), "", { tipo: "texto", modulo: "layout", rotulo: `Ordem dos blocos do deck ${l.toUpperCase()} (${DECK_BLOCOS.join(",")}; vazio = padrão)` });
+  VbMxPrefs.declarar(ordemChave(l), "", { tipo: "texto", modulo: "layout", rotulo: `pro.pref.ordem-deck-${l}` });
 }
 
 // ---------- DOM ----------
@@ -82,8 +82,8 @@ function deckAlcaGarantir(el, letra, id) {
   if (!el.querySelector(":scope > .disp-alca")) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "disp-alca"; b.textContent = "⠿";
-    b.title = `Arrastar o bloco ${DECK_BLOCO_ROTULO[id]} do deck ${letra} para outra posição (↑/↓ pelo teclado)`;
-    b.setAttribute("aria-label", `Mover o bloco ${DECK_BLOCO_ROTULO[id]} do deck ${letra}; setas para cima e para baixo reordenam`);
+    b.title = tr("pro.dd.arrastar",{bloco:tr(DECK_BLOCO_ROTULO[id]),letra});
+    b.setAttribute("aria-label", tr("pro.dd.mover",{bloco:tr(DECK_BLOCO_ROTULO[id]),letra}));
     b.addEventListener("pointerdown", e => deckArrastoIniciar(e, el, letra, id));
     b.addEventListener("keydown", e => {
       const d = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0; if (!d) return;
@@ -146,8 +146,8 @@ if (typeof VbMxUI !== "undefined") VbMxUI.aoIniciar(() => {
   const botoes = document.querySelector(".disp-botoes");
   if (botoes && !botoes.querySelector("[data-disp-ordem]")) {
     const b = document.createElement("button");
-    b.type = "button"; b.className = "disp-bt"; b.setAttribute("data-disp-ordem", ""); b.textContent = "Disposição padrão";
-    b.title = "Volta os blocos dos dois decks (FX, deck, stems, hot cues, loops, grade) à ordem padrão"; b.hidden = true;
+    b.type = "button"; b.className = "disp-bt"; b.setAttribute("data-disp-ordem", ""); b.textContent = tr("pro.dd.padrao");
+    b.title = tr("pro.dd.padrao-t"); b.hidden = true;
     b.addEventListener("click", deckOrdemRestaurar);
     botoes.appendChild(b);
   }

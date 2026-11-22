@@ -23,6 +23,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (raiz) {
   'use strict';
   const PREFIXO = 'vbmx-pref:';
+  // texto pelo idioma: VbMxUI.t no navegador; no Node, o ui.js ao lado (cai em pt-BR)
+  const _t = (c) => { try { const u = raiz.VbMxUI || (typeof require === 'function' ? require('./ui.js') : null); return u ? u.t(c) : c; } catch (_) { return c; } };
   const TIPOS = new Set(['booleano', 'numero', 'texto', 'opcao']);
   const decl = new Map(), ouvintes = new Map(), cache = new Map();
   let armazem;   // undefined = ainda não procurou; null = sem armazenamento
@@ -93,12 +95,12 @@
   function importar(obj) {
     const r = { aplicadas: [], ignoradas: [] };
     const mapa = obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj.prefs && typeof obj.prefs === 'object' && !Array.isArray(obj.prefs) ? obj.prefs : obj) : null;
-    if (!mapa) { r.ignoradas.push({ chave: '(raiz)', motivo: 'não é um objeto' }); return r; }
+    if (!mapa) { r.ignoradas.push({ chave: '(raiz)', motivo: _t('pro.prefs.nao-objeto') }); return r; }
     for (const chave of Object.keys(mapa)) {
       if (chave === 'versao' && mapa === obj) continue;
       const d = decl.get(chave);
-      if (!d) { r.ignoradas.push({ chave, motivo: 'preferência desconhecida' }); continue; }
-      if (!valido(d, mapa[chave])) { r.ignoradas.push({ chave, motivo: 'valor inválido' }); continue; }
+      if (!d) { r.ignoradas.push({ chave, motivo: _t('pro.prefs.desconhecida') }); continue; }
+      if (!valido(d, mapa[chave])) { r.ignoradas.push({ chave, motivo: _t('pro.prefs.invalido') }); continue; }
       gravar(chave, mapa[chave]);
       r.aplicadas.push(chave);
     }

@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>VbMx Clássico</title>
+<title data-i18n="pro.pagina.titulo">VbMx Clássico</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <!-- Esqueleto da página (VB-10, decisão P1 de 2026-10-25): CSS e JS moram em css/ e js/, um
@@ -25,18 +25,21 @@
 <link rel="stylesheet" href="css/movimento.css">
 <link rel="stylesheet" href="css/controles.css">
 <link rel="stylesheet" href="css/pecas-controle.css">
+<link rel="stylesheet" href="css/automix.css">
 <link rel="stylesheet" href="css/tela-cheia.css">
+<link rel="stylesheet" href="css/idioma.css">
 
 <header class="topo">
-  <div class="marca">VbMx <small id="marca-origem">modelo clássico · <span class="tag-exemplo">faixas de exemplo (fictícias)</span> · faixas de exemplo não tocam</small></div>
-  <div class="estado-global">Tocando: <b id="estado-tocando">—</b></div>
+  <div class="marca">VbMx <small id="marca-origem" data-i18n-js>modelo clássico · <span class="tag-exemplo">faixas de exemplo (fictícias)</span> · faixas de exemplo não tocam</small></div>
+  <div class="idioma" data-i18n-seletor></div>
+  <div class="estado-global"><span data-i18n="pro.topo.tocando">Tocando:</span> <b id="estado-tocando">—</b></div>
 </header>
-<section class="pastas" id="pastas" aria-label="Pastas da biblioteca"></section>
+<section class="pastas" id="pastas" aria-label="Pastas da biblioteca" data-i18n-aria="pro.pastas.aria"></section>
 
 <main class="tela">
   <div class="decks">
     <div class="deck tocando moldura" data-deck="A"></div>
-    <div class="mixer moldura" id="mixer" aria-label="Mixer"></div>
+    <div class="mixer moldura" id="mixer" aria-label="Mixer" data-i18n-aria="pro.mixer.aria"></div>
     <div class="deck moldura" data-deck="B"></div>
     <!-- SLOTS dos módulos futuros (VbMxUI.slot(nome), VB-11). Ficam `hidden` e fora dos decks e
          do mixer porque renderDeck/renderMixer reescrevem o innerHTML deles; o módulo que ocupa
@@ -58,9 +61,9 @@
     <div data-slot="fx-2" hidden></div>
   </div>
   <!-- browser (proposta A): biblioteca + sugestões; embaixo ou à esquerda, por preferência (js/disposicao.js) -->
-  <section class="browser" aria-label="Biblioteca e sugestões">
+  <section class="browser" aria-label="Biblioteca e sugestões" data-i18n-aria="pro.browser.aria">
     <div class="biblio" id="biblio"></div>
-    <aside class="sugestao" id="sugestao" aria-label="Próximas possíveis"></aside>
+    <aside class="sugestao" id="sugestao" aria-label="Próximas possíveis" data-i18n-aria="pro.sugestao.aria"></aside>
   </section>
   <div data-slot="preparacao" hidden></div>
   <div data-slot="historico" hidden></div>
@@ -88,6 +91,7 @@
 <script src="../motor/leds.js"></script>
 <script src="../motor/scratch.js"></script>
 <script src="../motor/stems.js"></script>
+<script src="../motor/automix.js"></script>
 <script src="../analise/camelot.js"></script>
 <script src="../biblioteca/bpm.js"></script>
 <script src="../biblioteca/biblioteca.js"></script>
@@ -104,6 +108,13 @@
      ui.js (barramento) é o PRIMEIRO; preferencias.js, cadeia.js e tocador.js vêm antes de quem os usa.
      Contrato das APIs comuns e dono de cada arquivo: docs/contratos.md (VB-11). -->
 <script src="js/ui.js"></script>
+<!-- idiomas (interface/js/i18n.js + um dicionário por idioma): vêm logo depois de ui.js, antes de quem pergunta o texto -->
+<script src="js/i18n.js"></script>
+<script src="js/i18n/pt.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/es.js"></script>
+<script src="js/i18n/fr.js"></script>
+<script src="js/msg-motor.js"></script>
 <script src="js/pecas-controle.js"></script>
 <script src="js/preferencias.js"></script>
 <script src="js/notacao.js"></script>
@@ -149,4 +160,5 @@
 <script src="js/disposicao.js"></script>
 <script src="js/disposicao-deck.js"></script>
 <script src="js/importar.js"></script>
+<script src="js/automix.js"></script>
 <script src="js/principal.js"></script>

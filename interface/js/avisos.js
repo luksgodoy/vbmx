@@ -6,11 +6,11 @@
 
 // Preferências (P9: trava ligada por padrão, desligável; o VB-26 desenha a tela).
 VbMxPrefs.declarar("avisos.trava-carga", true, { tipo: "booleano", modulo: "avisos",
-  rotulo: "Não carregar faixa em deck que está tocando" });
+  rotulo: "pro.pref.avisos-trava" });
 VbMxPrefs.declarar("avisos.fim-ativo", true, { tipo: "booleano", modulo: "avisos",
-  rotulo: "Avisar o fim da faixa no deck e na onda" });
+  rotulo: "pro.pref.avisos-fim" });
 VbMxPrefs.declarar("avisos.fim-segundos", 30, { tipo: "numero", modulo: "avisos", min: 5, max: 120,
-  rotulo: "Avisar quando faltarem (s)" });
+  rotulo: "pro.pref.avisos-fim-segundos" });
 
 // ---- Lógica pura (testada em Node: interface/testar-avisos.js) ----
 // Nível do aviso de fim: "" (nada), "aviso" (dentro do limite) ou "critico" (último terço, máx. 10 s).
@@ -22,7 +22,7 @@ function avisosNivelFim(restante, limite, tocando){
 // Motivo de recusa da carga, ou null. Pura: recebe a preferência e se o deck toca.
 function avisosMotivoTrava(travaLigada, tocando, letra){
   if (!travaLigada || !tocando) return null;
-  return `Deck ${letra} está tocando: pause antes de carregar outra faixa (trava de segurança, desligável nas preferências)`;
+  return tr("pro.avisos.trava",{letra});
 }
 function avisosTravaAtiva(letra){
   const toca = typeof tocandoDeck === "function" && tocandoDeck(letra);
@@ -49,7 +49,7 @@ function avisosAtualizarDeck(letra, posicao, duracao, tocando){
   const nivel = lig ? avisosNivelFim(restante, VbMxPrefs.ler("avisos.fim-segundos"), tocando) : "";
   div.classList.toggle("fim-aviso", nivel === "aviso");
   div.classList.toggle("fim-critico", nivel === "critico");
-  if (nivel) div.setAttribute("data-fim", `FIM EM ${VbMxReproducao.formatarTempo(restante)}`);
+  if (nivel) div.setAttribute("data-fim", tr("pro.avisos.fim-em",{t:VbMxReproducao.formatarTempo(restante)}));
   else div.removeAttribute("data-fim");
 }
 VbMxUI.ouvir("deck:posicao", e => avisosAtualizarDeck(e.letra, e.posicao, e.duracao, e.tocando));

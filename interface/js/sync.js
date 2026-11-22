@@ -32,8 +32,8 @@
 //   SNAP   cue, hotcue e loops gravados caem na batida mais próxima. Os dois valem também para os loops (loops.js).
 
 VbMxPrefs.declarar("bend.sensibilidade", 100, { rotulo: "Tempo bend: sensibilidade (%)", tipo: "numero", min: 0, max: 200, modulo: "sync" });
-VbMxPrefs.declarar("bend.progressivo", false, { rotulo: "Tempo bend progressivo (quanto mais tempo apertado, maior a correção)", tipo: "booleano", modulo: "sync" });
-VbMxPrefs.declarar("sync.fase-continua", true, { rotulo: "SYNC mantém a fase (realinha depois de hotcue, busca ou salto do outro deck)", tipo: "booleano", modulo: "sync" });
+VbMxPrefs.declarar("bend.progressivo", false, { rotulo: "pro.pref.bend-prog", tipo: "booleano", modulo: "sync" });
+VbMxPrefs.declarar("sync.fase-continua", true, { rotulo: "pro.pref.sync-fase", tipo: "booleano", modulo: "sync" });
 const SYNC_TOLERANCIA_S = 0.010, SYNC_INTERVALO_S = 0.25;
 const syncUltimaChecagem = { A: -Infinity, B: -Infinity };
 const syncCorrecao = { A: 0, B: 0 };   // fração de bend que o SYNC está aplicando para segurar a fase
@@ -79,7 +79,7 @@ function syncSoltar(l, motivo){
 }
 function syncReaplicar(l){
   const r = syncAplicar(l);
-  if (!r.ok) { syncSoltar(l, r.motivo); return; }
+  if (!r.ok) { syncSoltar(l, trm(r.motivo)); return; }
   atualizarNumerosDoDeck(l);
 }
 
@@ -188,7 +188,7 @@ function syncMedidor(l){
   }
   el.textContent = m ? `${m.texto} · cmp ${m.textoCompasso}` : "—";
   el.dataset.estado = m ? m.estado : "";
-  el.title = m ? `Fase contra o mestre (${m.estado}): ${m.texto} batida; desvio de compasso (batida 1 contra batida 1): ${m.textoCompasso} batidas` : "Fase contra o tempo mestre, em batidas e em compasso (precisa do deck em reprodução)";
+  el.title = m ? tr("pro.sync.fase-t",{estado:m.estado,texto:m.texto,compasso:m.textoCompasso}) : tr("pro.sync.fase-sem");
 }
 
 // Ajuste fino de ouvido: BPM da grade do deck l ± delta, com a batida mais perto da cabeça parada.

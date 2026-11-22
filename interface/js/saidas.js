@@ -33,7 +33,7 @@
     const md = navegador && navegador.mediaDevices;
     if (!md || typeof md.enumerateDevices !== 'function') return [];
     const todos = await md.enumerateDevices();
-    return todos.filter(d => d.kind === 'audiooutput').map((d, i) => ({ id: d.deviceId, rotulo: d.label || `Saída ${i + 1}` }));
+    return todos.filter(d => d.kind === 'audiooutput').map((d, i) => ({ id: d.deviceId, rotulo: d.label || tr('pro.saidas.saida-n',{n:i + 1}) }));
   }
   async function escolherSaida(ctx, id) {
     if (!ctx || typeof ctx.setSinkId !== 'function') throw new Error('VbMxSaidas: este navegador não deixa escolher a saída (setSinkId)');
@@ -45,11 +45,11 @@
   const UI = raiz.VbMxUI, Prefs = raiz.VbMxPrefs;
   if (!UI || !Prefs || !raiz.document) return api;
 
-  Prefs.declarar('saidas.fone-modo', 'auto', { rotulo: 'Saída do fone', tipo: 'opcao', modulo: 'saidas',
-    opcoes: [{ valor: 'auto', rotulo: 'Saídas 3/4 (precisa de interface com 4+ canais)' }, { valor: 'dividido', rotulo: 'Fone à esquerda, master à direita' }] });
+  Prefs.declarar('saidas.fone-modo', 'auto', { rotulo: 'pro.pref.fone-modo', tipo: 'opcao', modulo: 'saidas',
+    opcoes: [{ valor: 'auto', rotulo: 'pro.pref.fone-auto' }, { valor: 'dividido', rotulo: 'pro.pref.fone-dividido' }] });
   Prefs.declarar('saidas.fone-vol', estado.vol, { rotulo: 'Volume do fone', tipo: 'numero', min: 0, max: 100, modulo: 'saidas' });
   Prefs.declarar('saidas.fone-mix', estado.mix, { rotulo: 'Mix do fone (−100 cue … +100 principal)', tipo: 'numero', min: -100, max: 100, modulo: 'saidas' });
-  Prefs.declarar('saidas.destino', '', { rotulo: 'Dispositivo de saída (id; vazio = padrão do sistema)', tipo: 'texto', modulo: 'saidas' });
+  Prefs.declarar('saidas.destino', '', { rotulo: 'pro.pref.saida-destino', tipo: 'texto', modulo: 'saidas' });
   UI.declararEvento('fone:mudou');   // {fone, plano}
   estado.saida = Prefs.ler('saidas.fone-modo'); estado.vol = Prefs.ler('saidas.fone-vol'); estado.mix = Prefs.ler('saidas.fone-mix');
 
@@ -64,7 +64,7 @@
       const on = !!estado.cue[bt.dataset.cue];
       bt.setAttribute('aria-pressed', String(on)); bt.classList.toggle('ligado', on);
       bt.setAttribute('aria-disabled', String(!!plano && !habilitado()));
-      bt.title = plano && !habilitado() ? plano.motivo : 'Cue: ouve este canal no fone (antes do fader)';
+      bt.title = plano && !habilitado() ? trm(plano.motivo) : tr('pro.saidas.cue-t');
     }
     if (!s) return;
     const poe = (id, v) => { const el = s.querySelector('#' + id); if (el && String(el.value) !== String(v)) el.value = v; if (el && el._peca) el._peca.definir(v, { silencioso: true }); const t = s.querySelector('#' + id + '-v'); if (t) t.textContent = v; };
@@ -72,7 +72,7 @@
     const div = s.querySelector('#fone-dividido'); if (div) div.checked = estado.saida === 'dividido';
     const msg = s.querySelector('#fone-estado');
     if (msg) {
-      msg.textContent = plano ? plano.motivo : 'A saída é detectada quando o áudio ligar (ao carregar ou tocar uma faixa).';
+      msg.textContent = plano ? trm(plano.motivo) : tr('pro.saidas.detecta');
       msg.classList.toggle('aviso', !!plano && !habilitado());
     }
     s.classList.toggle('desabilitado', !!plano && !habilitado());
@@ -112,7 +112,7 @@
     if (!sel) return;
     try { dispositivos = await listarSaidas(raiz.navigator); } catch (_) { dispositivos = []; }
     const atual = Prefs.ler('saidas.destino');
-    sel.innerHTML = '<option value="">Padrão do sistema</option>' + dispositivos.filter(d => d.id && d.id !== 'default')
+    sel.innerHTML = '<option value="">' + tr('pro.saidas.padrao') + '</option>' + dispositivos.filter(d => d.id && d.id !== 'default')
       .map(d => `<option value="${String(d.id).replace(/"/g, '&quot;')}">${d.rotulo.replace(/[<&]/g, '')}</option>`).join('');
     sel.value = atual;
   }
@@ -130,17 +130,17 @@
     const s = tela(), mix = document.getElementById('mixer');
     if (s) {
       s.classList.add('fone');
-      s.setAttribute('aria-label', 'Fone (cue)');
+      s.setAttribute('aria-label', tr('pro.saidas.fone-aria'));
       s.innerHTML = `<span class="nome">FONE</span>
         <div class="linha-mx"><label class="nome" for="fone-vol">VOL</label>
-          <input type="range" id="fone-vol" min="0" max="100" step="1" value="${estado.vol}" aria-label="Volume do fone, de 0 a 100">
+          <input type="range" id="fone-vol" min="0" max="100" step="1" value="${estado.vol}" aria-label="${tr('pro.saidas.vol-aria')}">
           <span class="val mono" id="fone-vol-v">${estado.vol}</span></div>
         <div class="linha-mx"><label class="nome" for="fone-mix">MIX</label>
-          <input type="range" id="fone-mix" min="-100" max="100" step="1" value="${estado.mix}" aria-label="Mix do fone: à esquerda a faixa em cue, à direita a mixagem principal; duplo clique centraliza">
+          <input type="range" id="fone-mix" min="-100" max="100" step="1" value="${estado.mix}" aria-label="${tr('pro.saidas.mix-aria')}">
           <span class="val mono" id="fone-mix-v">${estado.mix}</span></div>
-        <div class="fone-rotulos"><span>cue</span><span>principal</span></div>
-        <label class="check"><input type="checkbox" id="fone-dividido"> fone à esquerda, master à direita (mono)</label>
-        <select id="fone-destino" aria-label="Saída de áudio" hidden></select>
+        <div class="fone-rotulos"><span>${tr('pro.saidas.cue')}</span><span>${tr('pro.saidas.principal')}</span></div>
+        <label class="check"><input type="checkbox" id="fone-dividido"> ${tr('pro.saidas.dividido')}</label>
+        <select id="fone-destino" aria-label="${tr('pro.saidas.audio')}" hidden></select>
         <p id="fone-estado" role="status"></p>`;
       s.querySelector('#fone-vol').addEventListener('input', e => definirVol(e.target.value));
       s.querySelector('#fone-mix').addEventListener('input', e => definirMix(e.target.value));

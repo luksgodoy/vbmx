@@ -15,10 +15,10 @@
 // Eventos: loop:mudou {letra, loop, ativo, flux}. Ações: deck<L>.loopIn/loopOut/loopAuto/loopMetade/loopDobro/
 // loopMais/loopMenos/beatjumpMais/beatjumpMenos/flux (teclado e MIDI do VB-25 usam só isso).
 VbMxUI.declararEvento("loop:mudou");
-VbMxPrefs.declarar("loops.auto-detectar", VbMxLoops.LIMITE_AUTO_LOOP_PADRAO, { rotulo: "Faixa mais curta que (s) vira loop ao carregar; 0 desliga", tipo: "numero", min: 0, max: 600, modulo: "loops" });
+VbMxPrefs.declarar("loops.auto-detectar", VbMxLoops.LIMITE_AUTO_LOOP_PADRAO, { rotulo: "pro.pref.loops-auto", tipo: "numero", min: 0, max: 600, modulo: "loops" });
 
 const LOOPS_PASSOS = [...VbMxLoops.TAMANHOS, 64];          // tamanhos do salto e do passo de mover (batidas)
-const LOOPS_MODOS = [["salto", "Salto"], ["loop", "Loop"], ["in", "In"], ["out", "Out"]];
+const LOOPS_MODOS = [["salto", "pro.lp.modo-salto"], ["loop", "pro.lp.modo-loop"], ["in", "In"], ["out", "Out"]];
 const loopsEstado = {};
 function loopsDeck(l){
   return loopsEstado[l] || (loopsEstado[l] = { loop: null, ativo: false, tamanho: 4, flux: false, fluxEst: null,
@@ -140,24 +140,24 @@ function loopsDesenhar(l){
   const el = VbMxUI.slot(`deck-${l}-loops`);
   if (!el) return;
   const s = loopsDeck(l), g = loopsGrade(l), livre = !decks[l].faixa || !VbMxTocador.temBuffer(l);
-  const b = (acao, rot, titulo, extra = "") => `<button class="loops-bt pc-botao pc-botao--loop pc-compacto ${extra}" data-lp="${acao}" ${livre ? "disabled" : ""} title="${titulo}" aria-label="${titulo}, deck ${l}">${rot}</button>`;
+  const b = (acao, rot, titulo, extra = "") => `<button class="loops-bt pc-botao pc-botao--loop pc-compacto ${extra}" data-lp="${acao}" ${livre ? "disabled" : ""} title="${tr(titulo)}" aria-label="${tr("pro.lp.aria-deck",{t:tr(titulo),l})}">${rot}</button>`;
   const info = s.loop ? `${s.loop.inicio.toFixed(2)} → ${s.loop.fim.toFixed(2)} s${g ? ` · ${loopsFmt(Math.round(VbMxLoops.batidasDoLoop(g, s.loop) * 1000) / 1000)} b` : ""}`
-    : s.pendente !== null ? `IN em ${s.pendente.toFixed(2)} s · falta o OUT` : "sem loop";
+    : s.pendente !== null ? tr("pro.lp.falta-out",{s:s.pendente.toFixed(2)}) : tr("pro.lp.sem-loop");
   el.hidden = false;
   el.className = "loops-caixa";
   el.innerHTML = `
     <div class="loops-linha">
       <span class="rotulo">Loop ${l}</span>
-      ${b("in", "IN", "Marca o ponto de entrada do loop")}${b("out", "OUT", "Fecha o loop e liga")}
-      ${b("menos", "◂", "Loop menor (metade do tamanho da lista)")}<span class="loops-tam mono" title="Tamanho do auto-loop em batidas">${loopsFmt(s.tamanho)}</span>${b("mais", "▸", "Loop maior")}
-      ${b("auto", "LOOP", "Liga e solta o loop (auto-loop do tamanho ao lado)", "loops-liga" + (s.ativo ? " ligado" : ""))}
-      ${b("metade", "½", "Metade do loop, mantém o IN")}${b("dobro", "×2", "Dobra o loop, mantém o IN")}
-      ${b("flux", "FLUX", "Flux: ao soltar o loop, a cabeça volta onde a faixa estaria", "loops-flux" + (s.flux ? " ligado" : ""))}
+      ${b("in", "IN", "pro.lp.in-t")}${b("out", "OUT", "pro.lp.out-t")}
+      ${b("menos", "◂", "pro.lp.menos-t")}<span class="loops-tam mono" title="${tr("pro.lp.tamanho-t")}">${loopsFmt(s.tamanho)}</span>${b("mais", "▸", "pro.lp.mais-t")}
+      ${b("auto", "LOOP", "pro.lp.auto-t", "loops-liga" + (s.ativo ? " ligado" : ""))}
+      ${b("metade", "½", "pro.lp.metade-t")}${b("dobro", "×2", "pro.lp.dobro-t")}
+      ${b("flux", "FLUX", "pro.lp.flux-t", "loops-flux" + (s.flux ? " ligado" : ""))}
     </div>
     <div class="loops-linha">
-      <span class="rotulo">Mover</span>
-      ${LOOPS_MODOS.map(([m, r]) => `<button class="loops-bt pc-botao pc-botao--loop pc-compacto ${s.modo === m ? "ligado" : ""}" data-lp-modo="${m}" aria-pressed="${s.modo === m}" title="◂ ▸ movem: ${r}">${r}</button>`).join("")}
-      ${b("recuar", "◂◂", "Recua o passo ao lado")}<select class="loops-passo mono" data-lp-passo aria-label="Passo em batidas, deck ${l}">${LOOPS_PASSOS.map(p => `<option value="${p}" ${p === s.passo ? "selected" : ""}>${loopsFmt(p)}</option>`).join("")}<option value="loop" ${s.passo === "loop" ? "selected" : ""}>Loop</option><option value="fino" ${s.passo === "fino" ? "selected" : ""}>Fino</option></select>${b("avancar", "▸▸", "Avança o passo ao lado")}
+      <span class="rotulo">${tr("pro.lp.mover")}</span>
+      ${LOOPS_MODOS.map(([m, r]) => `<button class="loops-bt pc-botao pc-botao--loop pc-compacto ${s.modo === m ? "ligado" : ""}" data-lp-modo="${m}" aria-pressed="${s.modo === m}" title="${tr("pro.lp.movem",{r:tr(r)})}">${tr(r)}</button>`).join("")}
+      ${b("recuar", "◂◂", "pro.lp.recuar-t")}<select class="loops-passo mono" data-lp-passo aria-label="${tr("pro.lp.passo",{l})}">${LOOPS_PASSOS.map(p => `<option value="${p}" ${p === s.passo ? "selected" : ""}>${loopsFmt(p)}</option>`).join("")}<option value="loop" ${s.passo === "loop" ? "selected" : ""}>${tr("pro.lp.modo-loop")}</option><option value="fino" ${s.passo === "fino" ? "selected" : ""}>${tr("pro.lp.fino")}</option></select>${b("avancar", "▸▸", "pro.lp.avancar-t")}
     </div>
     <div class="loops-info mono" role="status">${info}${s.flux ? " · flux" : ""}</div>`;
 }

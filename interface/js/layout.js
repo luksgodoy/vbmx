@@ -11,26 +11,26 @@
 //     preferência), agrupa por módulo, e exporta/importa tudo em JSON.
 
 const LAYOUT_PAINEIS = [
-  { id: "fx", rotulo: "FX" },
-  { id: "mestre", rotulo: "Tempo mestre" },
-  { id: "biblioteca", rotulo: "Biblioteca" },
-  { id: "avancado", rotulo: "Avançado do mixer" },
+  { id: "fx", rotulo: "FX", mostrar: "pro.pref.lay-mostrar-fx" },
+  { id: "mestre", rotulo: "pro.lay.painel-mestre", mostrar: "pro.pref.lay-mostrar-mestre" },
+  { id: "biblioteca", rotulo: "pro.lay.painel-biblioteca", mostrar: "pro.pref.lay-mostrar-biblioteca" },
+  { id: "avancado", rotulo: "pro.lay.painel-avancado", mostrar: "pro.pref.lay-mostrar-avancado" },
 ];
 const LAYOUT_PREDEFINIDOS = {
-  completo:    { rotulo: "Completo",    paineis: { fx: true,  mestre: true,  biblioteca: true,  avancado: false } },
-  performance: { rotulo: "Performance", paineis: { fx: true,  mestre: true,  biblioteca: false, avancado: true } },
-  compacto:    { rotulo: "Compacto",    paineis: { fx: false, mestre: false, biblioteca: true,  avancado: false } },
+  completo:    { rotulo: "pro.lay.completo",    paineis: { fx: true,  mestre: true,  biblioteca: true,  avancado: false } },
+  performance: { rotulo: "pro.lay.performance", paineis: { fx: true,  mestre: true,  biblioteca: false, avancado: true } },
+  compacto:    { rotulo: "pro.lay.compacto",    paineis: { fx: false, mestre: false, biblioteca: true,  avancado: false } },
 };
-const LAYOUT_TITULOS = { mixer: "Mixer", mestre: "Tempo mestre", onda: "Onda", avisos: "Avisos e carga", sync: "SYNC", pitch: "Faixa do pitch" };
+const LAYOUT_TITULOS = { mixer: "Mixer", mestre: "pro.lay.painel-mestre", onda: "pro.lay.onda", avisos: "pro.lay.avisos", sync: "SYNC", pitch: "pro.pref.lay-pitch" };
 const LAYOUT_OPCOES_PITCH = [{ valor: 8, rotulo: "±8%" }, { valor: 15, rotulo: "±15%" }, { valor: 50, rotulo: "±50%" }];
 
-VbMxPrefs.declarar("pitch.faixa-a", 15, { tipo: "opcao", modulo: "pitch", rotulo: "Faixa do pitch do deck A", opcoes: LAYOUT_OPCOES_PITCH });
-VbMxPrefs.declarar("pitch.faixa-b", 15, { tipo: "opcao", modulo: "pitch", rotulo: "Faixa do pitch do deck B", opcoes: LAYOUT_OPCOES_PITCH });
-VbMxPrefs.declarar("layout.atual", "completo", { tipo: "opcao", modulo: "layout", rotulo: "Layout da tela",
-  opcoes: [...Object.entries(LAYOUT_PREDEFINIDOS).map(([valor, l]) => ({ valor, rotulo: l.rotulo })), { valor: "personalizado", rotulo: "Personalizado" }] });
+VbMxPrefs.declarar("pitch.faixa-a", 15, { tipo: "opcao", modulo: "pitch", rotulo: "pro.pref.pitch-a", opcoes: LAYOUT_OPCOES_PITCH });
+VbMxPrefs.declarar("pitch.faixa-b", 15, { tipo: "opcao", modulo: "pitch", rotulo: "pro.pref.pitch-b", opcoes: LAYOUT_OPCOES_PITCH });
+VbMxPrefs.declarar("layout.atual", "completo", { tipo: "opcao", modulo: "layout", rotulo: "pro.pref.layout-tela",
+  opcoes: [...Object.entries(LAYOUT_PREDEFINIDOS).map(([valor, l]) => ({ valor, rotulo: l.rotulo })), { valor: "personalizado", rotulo: "pro.lay.personalizado" }] });
 for (const p of LAYOUT_PAINEIS) {
   VbMxPrefs.declarar(`layout.pers-${p.id}`, LAYOUT_PREDEFINIDOS.completo.paineis[p.id], { tipo: "booleano", modulo: "layout",
-    rotulo: `Layout personalizado: mostrar ${p.rotulo}` });
+    rotulo: p.mostrar });
 }
 
 // ---- Lógica pura (testada em Node: interface/testar-layout.js) ----
@@ -82,12 +82,12 @@ VbMxPrefs.ouvir("layout.atual", () => { if (layoutPronto()) { layoutAplicar(); l
 // ---- Painel de preferências ----
 let layoutPainel = null;
 function layoutEsc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-function layoutRotuloOpcao(o) { return typeof o === "object" ? (o.rotulo ?? o.valor) : o; }
+function layoutRotuloOpcao(o) { return tr(typeof o === "object" ? (o.rotulo ?? o.valor) : o); }
 function layoutValorOpcao(o) { return typeof o === "object" ? o.valor : o; }
 
 function layoutControle(d) {
   const id = `pref-${d.chave.replace(/\./g, "-")}`, c = layoutEsc(d.chave);
-  if (d.tipo === "booleano") return `<label class="lay-linha" for="${id}"><input type="checkbox" id="${id}" data-pref="${c}" ${d.valor ? "checked" : ""}> <span>${layoutEsc(d.rotulo)}</span></label>`;
+  if (d.tipo === "booleano") return `<label class="lay-linha" for="${id}"><input type="checkbox" id="${id}" data-pref="${c}" ${d.valor ? "checked" : ""}> <span>${layoutEsc(tr(d.rotulo))}</span></label>`;
   let campo;
   if (d.tipo === "opcao") {
     campo = `<select id="${id}" data-pref="${c}">${d.opcoes.map((o, i) => `<option value="${i}" ${layoutValorOpcao(o) === d.valor ? "selected" : ""}>${layoutEsc(layoutRotuloOpcao(o))}</option>`).join("")}</select>`;
@@ -96,15 +96,15 @@ function layoutControle(d) {
   } else {
     campo = `<input type="text" id="${id}" data-pref="${c}" value="${layoutEsc(d.valor)}">`;
   }
-  return `<label class="lay-linha" for="${id}"><span>${layoutEsc(d.rotulo)}</span>${campo}</label>`;
+  return `<label class="lay-linha" for="${id}"><span>${layoutEsc(tr(d.rotulo))}</span>${campo}</label>`;
 }
 
 function layoutHtmlLayout() {
   const atual = VbMxPrefs.ler("layout.atual"), vis = layoutPaineisAtuais();
-  const botoes = [...Object.entries(LAYOUT_PREDEFINIDOS).map(([v, l]) => [v, l.rotulo]), ["personalizado", "Personalizado"]]
+  const botoes = [...Object.entries(LAYOUT_PREDEFINIDOS).map(([v, l]) => [v, tr(l.rotulo)]), ["personalizado", tr("pro.lay.personalizado")]]
     .map(([v, r]) => `<button type="button" class="botao lay-btn" data-layout="${v}" aria-pressed="${v === atual}">${r}</button>`).join("");
-  const chaves = LAYOUT_PAINEIS.map(p => `<label class="lay-linha"><input type="checkbox" data-painel="${p.id}" ${vis[p.id] ? "checked" : ""}> <span>${p.rotulo}</span></label>`).join("");
-  return `<section class="lay-sec"><h3 class="rotulo">Layout</h3><div class="lay-botoes">${botoes}</div><div class="lay-paineis">${chaves}</div></section>`;
+  const chaves = LAYOUT_PAINEIS.map(p => `<label class="lay-linha"><input type="checkbox" data-painel="${p.id}" ${vis[p.id] ? "checked" : ""}> <span>${tr(p.rotulo)}</span></label>`).join("");
+  return `<section class="lay-sec"><h3 class="rotulo">${tr("pro.lay.layout")}</h3><div class="lay-botoes">${botoes}</div><div class="lay-paineis">${chaves}</div></section>`;
 }
 
 // Lê a lista de preferências declaradas (nada por nome); "layout" tem seção própria acima.
@@ -116,9 +116,18 @@ function layoutHtmlPrefs() {
     grupos.get(d.modulo).push(d);
   }
   return [...grupos].map(([m, lista]) =>
-    `<section class="lay-sec"><h3 class="rotulo">${layoutEsc(LAYOUT_TITULOS[m] || m)}</h3>${lista.map(layoutControle).join("")}</section>`).join("");
+    `<section class="lay-sec"><h3 class="rotulo">${layoutEsc(tr(LAYOUT_TITULOS[m] || m))}</h3>${lista.map(layoutControle).join("")}</section>`).join("");
 }
 
+// textos fixos do painel: data-lt (texto), data-lt-aria, data-lt-ph (placeholder) guardam a chave; refeito na troca de idioma
+function layoutTraduzirChrome() {
+  for (const el of [document.getElementById("layout-abrir"), layoutPainel, ...(layoutPainel ? layoutPainel.querySelectorAll("[data-lt],[data-lt-aria],[data-lt-ph]") : [])]) {
+    if (!el) continue;
+    if (el.dataset.lt) el.textContent = tr(el.dataset.lt);
+    if (el.dataset.ltAria) el.setAttribute("aria-label", tr(el.dataset.ltAria));
+    if (el.dataset.ltPh) el.setAttribute("placeholder", tr(el.dataset.ltPh));
+  }
+}
 function layoutRedesenhar() {
   if (!layoutPainel) return;
   const area = layoutPainel.querySelector("[data-lay-area]");
@@ -158,7 +167,7 @@ function layoutAoMudar(ev) {
   else v = el.value;
   try { VbMxPrefs.gravar(chave, v); layoutMensagem(""); }
   catch (_) {
-    layoutMensagem(`Valor inválido para "${d.rotulo}"${d.min != null || d.max != null ? ` (entre ${d.min ?? "−∞"} e ${d.max ?? "∞"})` : ""}.`, true);
+    layoutMensagem(tr("pro.lay.valor-invalido",{rotulo:tr(d.rotulo)}) + (d.min != null || d.max != null ? " " + tr("pro.lay.entre",{min:d.min ?? "−∞",max:d.max ?? "∞"}) : ""), true);
     layoutRedesenhar();
   }
 }
@@ -173,11 +182,11 @@ function layoutExportar() {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   } catch (_) { /* o texto fica na caixa para copiar */ }
-  layoutMensagem("Preferências exportadas (arquivo baixado e texto na caixa).");
+  layoutMensagem(tr("pro.lay.exportadas"));
 }
 function layoutImportarTexto(txt) {
   let obj;
-  try { obj = JSON.parse(txt); } catch (_) { layoutMensagem("JSON inválido: nada foi importado.", true); return; }
+  try { obj = JSON.parse(txt); } catch (_) { layoutMensagem(tr("pro.lay.json-invalido"), true); return; }
   const r = VbMxPrefs.importar(obj);
   layoutAplicar(); layoutRedesenhar();
   const nomes = r.ignoradas.slice(0, 3).map(i => i.chave).join(", ") + (r.ignoradas.length > 3 ? "…" : "");
@@ -199,21 +208,21 @@ function layoutMontar() {
   layoutPainel = slot;
   const b = document.createElement("button");
   b.id = "layout-abrir"; b.type = "button"; b.className = "botao lay-abrir";
-  b.textContent = "Preferências"; b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", "layout-painel");
+  b.setAttribute("data-lt", "pro.lay.preferencias"); b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", "layout-painel");
   topo.appendChild(b);
   layoutPainel.id = "layout-painel"; layoutPainel.className = "lay-painel";
-  layoutPainel.setAttribute("role", "dialog"); layoutPainel.setAttribute("aria-label", "Preferências");
+  layoutPainel.setAttribute("role", "dialog"); layoutPainel.setAttribute("data-lt-aria", "pro.lay.preferencias");
   layoutPainel.innerHTML = `
-    <div class="lay-cab"><h2>Preferências</h2><button type="button" class="botao" data-lay-fechar aria-label="Fechar as preferências">Fechar</button></div>
+    <div class="lay-cab"><h2 data-lt="pro.lay.preferencias"></h2><button type="button" class="botao" data-lay-fechar data-lt="pro.lay.fechar" data-lt-aria="pro.lay.fechar-aria"></button></div>
     <div data-lay-area></div>
-    <section class="lay-sec"><h3 class="rotulo">Exportar e importar</h3>
+    <section class="lay-sec"><h3 class="rotulo" data-lt="pro.lay.exp-imp"></h3>
       <div class="lay-botoes">
-        <button type="button" class="botao lay-btn" data-lay-exportar>Exportar JSON</button>
-        <button type="button" class="botao lay-btn" data-lay-importar>Importar da caixa</button>
-        <label class="botao lay-btn lay-arquivo">Importar arquivo<input type="file" accept="application/json,.json" data-lay-arquivo hidden></label>
-        <button type="button" class="botao lay-btn" data-lay-padroes>Restaurar padrões</button>
+        <button type="button" class="botao lay-btn" data-lay-exportar data-lt="pro.lay.exportar"></button>
+        <button type="button" class="botao lay-btn" data-lay-importar data-lt="pro.lay.importar-caixa"></button>
+        <label class="botao lay-btn lay-arquivo"><span data-lt="pro.lay.importar-arquivo"></span><input type="file" accept="application/json,.json" data-lay-arquivo hidden></label>
+        <button type="button" class="botao lay-btn" data-lay-padroes data-lt="pro.lay.padroes"></button>
       </div>
-      <textarea data-lay-json rows="6" spellcheck="false" aria-label="Preferências em JSON" placeholder="Cole aqui o JSON exportado"></textarea>
+      <textarea data-lay-json rows="6" spellcheck="false" data-lt-aria="pro.lay.json-aria" data-lt-ph="pro.lay.json-ph"></textarea>
     </section>
     <p class="lay-msg" data-lay-msg role="status"></p>`;
   b.addEventListener("click", () => layoutAlternarPainel());
@@ -224,7 +233,7 @@ function layoutMontar() {
     else if (t.hasAttribute("data-lay-fechar")) { layoutAlternarPainel(false); b.focus(); }
     else if (t.hasAttribute("data-lay-exportar")) layoutExportar();
     else if (t.hasAttribute("data-lay-importar")) layoutImportarTexto(layoutPainel.querySelector("[data-lay-json]").value);
-    else if (t.hasAttribute("data-lay-padroes")) { VbMxPrefs.restaurarPadroes(); layoutAplicar(); layoutRedesenhar(); layoutMensagem("Padrões restaurados."); }
+    else if (t.hasAttribute("data-lay-padroes")) { VbMxPrefs.restaurarPadroes(); layoutAplicar(); layoutRedesenhar(); layoutMensagem(tr("pro.lay.restaurados")); }
   });
   layoutPainel.querySelector("[data-lay-arquivo]").addEventListener("change", ev => {
     const f = ev.target.files && ev.target.files[0]; if (!f) return;
@@ -232,6 +241,8 @@ function layoutMontar() {
     ev.target.value = "";
   });
   document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !layoutPainel.hidden) { layoutAlternarPainel(false); b.focus(); } });
+  layoutTraduzirChrome();
+  VbMxUI.aoIdioma(() => { layoutTraduzirChrome(); layoutRedesenhar(); });
   layoutAplicar();
 }
 if (typeof document !== "undefined") VbMxUI.aoIniciar(layoutMontar);
