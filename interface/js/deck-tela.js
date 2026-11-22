@@ -44,7 +44,7 @@ function renderDeck(div, faixa, letra){
         </div>
       </div>
     </div>
-    <div class="carga-deck ${d.cargaCls}" role="status">${esc(d.carga)}</div>
+    <div class="carga-deck ${d.cargaCls}" role="status">${esc(d.carga)}${d.prog?`<i class="carga-barra" data-fase="${d.prog.fase}" style="--p:${d.prog.f}" aria-hidden="true"></i>`:""}</div>
     <div class="aviso-sync ${d.avisoCls}" role="status">${esc(d.aviso)}</div>`;
     div.querySelector("input[data-pitch]").addEventListener("input", e=>mudarPitch(letra, e.target.value));
   if (typeof VbMxPecas !== "undefined") VbMxPecas.vestir(div.querySelector("input[data-pitch]"), { fabrica: "fader", tipo: "pitch", orientacao: "vertical", invertido: true, padrao: 0, comprimento: 150, marcas: 9 });   // proposta B: pele por cima, o input fica por baixo

@@ -165,16 +165,13 @@ kbd { display: inline-block; font: 500 .82em/1 var(--mono); padding: .2em .42em;
 .where { display: grid; gap: .4rem; justify-items: center; min-inline-size: 0; }
 .where output { font: 500 var(--t-xs)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-2); }
 .dots { display: flex; gap: 4px; inline-size: min(100%, 28rem); }
-.dots i { flex: 1; block-size: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
-.dots i.done { background: #6b5415; }
-.dots i.here { background: var(--accent); }
+.dots i { flex: 1; block-size: 4px; border-radius: 2px; --p: 0; background: linear-gradient(90deg, var(--accent) calc(var(--p) * 100%), var(--line) calc(var(--p) * 100%)); }
 @media (min-width: 40rem) { .arrow span { display: inline; } }
 
 @media (prefers-reduced-motion: reduce) {
   .video.playing .bar-t i { animation: none; }
   .bar-t { display: none; }
   .stage { scroll-behavior: auto; }
-  .dots i { transition: none; }
 }
 @media (max-width: 25.99rem) { header.bar { gap: .4rem; } }
 </style>
@@ -507,20 +504,20 @@ kbd { display: inline-block; font: 500 .82em/1 var(--mono); padding: .2em .42em;
   }, { passive: false });
 
 
-  /* Tutorial auto-advance: steps 1 to 8 only, loops back to step 1. Test knobs: ?dwell=ms (cap per step) and ?idle=ms (resume delay). */
+  /* Tutorial auto-advance: steps 1 to 8 only, then straight back to step 1. A step advances when DWELL seconds (default 15) have
+     passed since it became active; its video loops meanwhile and never shortens the step. The fill of the active
+     item in the bottom bar is elapsed/DWELL. Test knobs: ?dwell=seconds (default 15) and ?idle=ms (resume delay, default 8000).
+     Not hover-based: the stage fills the screen, so a resting mouse would block the advance forever. */
   var qs = new URLSearchParams(location.search);
-  var DWELL = +qs.get('dwell') || 12000, IDLE = +qs.get('idle') || 8000;
+  var DWELL = (+qs.get('dwell') || 15) * 1000, IDLE = +qs.get('idle') || 8000;
   var autoBtn = document.getElementById('auto');
   var steps = panels.filter(function (x) { return x.classList.contains('step-box'); });
-  var userPaused = false, lastTouch = 0, hovering = false, inView = true, elapsed = 0, cycled = false, lastTick = Date.now(), lastIdx = -1;
+  var userPaused = false, lastTouch = 0, inView = true, elapsed = 0, lastTick = performance.now(), lastIdx = -1;
   function touched() { lastTouch = Date.now(); }
   ['pointerdown', 'touchstart', 'wheel', 'keydown', 'click'].forEach(function (t) {
     document.addEventListener(t, function (e) { if (e.target !== autoBtn) touched(); }, { passive: true, capture: true });
   });
-  stage.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'touch') { hovering = true; touched(); } });
-  stage.addEventListener('pointerleave', function () { hovering = false; touched(); });
   stage.addEventListener('focusin', touched);
-  stage.addEventListener('focusout', touched);
   if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { inView = en[0].isIntersecting; }, { threshold: .3 }).observe(stage);
   function paintAuto() {
     autoBtn.hidden = calm.matches;
@@ -528,21 +525,33 @@ kbd { display: inline-block; font: 500 .82em/1 var(--mono); padding: .2em .42em;
     autoBtn.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
     autoBtn.setAttribute('aria-label', userPaused ? 'Resume automatic tutorial advance' : 'Pause automatic tutorial advance');
   }
-  autoBtn.addEventListener('click', function () { userPaused = !userPaused; elapsed = 0; paintAuto(); });
+  autoBtn.addEventListener('click', function () { userPaused = !userPaused; paintAuto(); });
   if (calm.addEventListener) calm.addEventListener('change', paintAuto);
-  steps.forEach(function (sp) {
-    var v = sp.querySelector('video'), last = 0;
-    v.addEventListener('ended', function () { cycled = true; });
-    v.addEventListener('timeupdate', function () { if (v.currentTime + .5 < last) cycled = true; last = v.currentTime; });
-  });
-  setInterval(function () {
-    var now = Date.now(), dt = now - lastTick; lastTick = now;
-    var k = steps.indexOf(panels[current]);
-    if (k !== lastIdx) { lastIdx = k; elapsed = 0; cycled = false; }
-    if (k < 0 || calm.matches || document.hidden || !inView || userPaused || hovering || now - lastTouch < IDLE) return;
-    elapsed += dt;
-    if (cycled || elapsed >= DWELL) { cycled = false; elapsed = 0; go(panels.indexOf(steps[(k + 1) % steps.length])); }
-  }, 250);
+  var fills = [].slice.call(dots.children);
+  function fill(i, v) { v = Math.max(0, Math.min(1, v)); if (fills[i]._p !== v) { fills[i]._p = v; fills[i].style.setProperty('--p', v); } }
+  function frame(t) {
+    var dt = Math.min(t - lastTick, 250); lastTick = t;
+    var k = steps.indexOf(panels[current]), p = 0;
+    if (k !== lastIdx) {
+      lastIdx = k; elapsed = 0;
+      if (k >= 0) { var v0 = steps[k].querySelector('video'); try { v0.currentTime = 0; } catch (x) {} }
+    }
+    if (k >= 0) {
+      var v = steps[k].querySelector('video');
+      var idle = calm.matches || document.hidden || !inView || userPaused || Date.now() - lastTouch < IDLE;
+      if (!idle) elapsed += dt;
+      p = elapsed / DWELL;
+      if (idle && p >= 1) p = .999;
+      if (!idle && p >= 1) {
+        p = 1; elapsed = 0; lastIdx = -1;
+        var n = (k + 1) % steps.length;
+        go(panels.indexOf(steps[n]), n === 0);
+      }
+    }
+    fills.forEach(function (_, i) { fill(i, i < current ? 1 : i === current ? p : 0); });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
   paintAuto();
 
   function redo() { fit(); stage.scrollTo({ left: current * stage.clientWidth, behavior: 'instant' }); }

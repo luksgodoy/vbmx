@@ -140,7 +140,7 @@ function amxVisao() {
   const outra = amxOutra(base.letra), d = decks[outra], e = VbMxTocador.estado(base.letra);
   return { mixando,
     base: { letra: base.letra, id: base.faixa.id, posicao: e.posicao, taxa: e.taxa > 0 ? e.taxa : 1 },
-    outra: { id: d.faixa ? d.faixa.id : null, pronto: !!d.buffer, tocando: tocandoDeck(outra), carregando: amx.carregando || d.carga === "carregando…",
+    outra: { id: d.faixa ? d.faixa.id : null, pronto: !!d.buffer, tocando: tocandoDeck(outra), carregando: amx.carregando || !!d.prog,
       erro: d.cargaCls === "erro", foraDoXfade: mixer[outra].lado === "off" },
     baseForaDoXfade: mixer[base.letra].lado === "off",
     plano: amx.plano, planoVale: !!d.faixa && amx.planoPara === `${base.faixa.id}>${d.faixa.id}`,

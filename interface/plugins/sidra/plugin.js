@@ -1,6 +1,6 @@
 // Plugin Sidra: o separador de stems do Sidra (htdemucs em ONNX, WebGPU com queda para WASM) dentro do VbMx.
 // Roda no navegador, num Web Worker (trabalhador.js + dsp.js, copiados de ~/separador-stems-web), sem servidor e sem upload.
-// Contrato: VbMxSidra.disponivel() → Promise<bool> · VbMxSidra.separar(arquivo, onProgresso) → Promise<{vocals,drums,bass,instrumental}>
+// Contrato: VbMxSidra.disponivel() → Promise<bool> · VbMxSidra.estado() → 'ok'|'sem-worker'|'sem-modelo' · VbMxSidra.separar(arquivo, onProgresso) → Promise<{vocals,drums,bass,instrumental}>
 // (AudioBuffers a 44,1 kHz; instrumental = só o `other` do modelo, o resíduo sem voz, bateria nem baixo). onProgresso({etapa:'modelo'|'sessao'|'separar', fracao}).
 // Só os pesos do htdemucs (MIT) entram aqui; BS-Roformer e DrumSep (uso pessoal) não podem.
 (function (raiz) {
@@ -13,10 +13,13 @@
 
   function base() { const p = new URLSearchParams(location.search).get('modelo'); return p ? (p.endsWith('/') ? p : p + '/') : BASE; }
 
-  async function disponivel() {
-    try { return typeof Worker !== 'undefined' && (await fetch(new URL('manifesto.json', base()), { method: 'HEAD' })).ok; }
-    catch (_) { return false; }
+  // 'ok' | 'sem-worker' (o navegador não tem Web Worker) | 'sem-modelo' (manifesto.json não respondeu: o modelo não está no servidor)
+  async function estado() {
+    if (typeof Worker === 'undefined') return 'sem-worker';
+    try { return (await fetch(new URL('manifesto.json', base()), { method: 'HEAD' })).ok ? 'ok' : 'sem-modelo'; }
+    catch (_) { return 'sem-modelo'; }
   }
+  async function disponivel() { return (await estado()) === 'ok'; }
 
   function worker() {
     if (!trab) trab = new Worker(new URL('trabalhador.js', AQUI), { type: 'module' });

@@ -19,32 +19,47 @@ async function carregarNoDeck(letra, id){
   VbMxTocador.carregar(letra, null);
   const d = decks[letra], meu = ++d.token;
   Object.assign(d, { faixa: nova, pitch: 0, sync: false, aviso: "", avisoCls: "", buffer: null, cupApertado: false, reverso: false,
-    picos: null, cue: cuesPorFaixa.get(chaveCue(nova)) || 0, previa: false, cacheGeral: null });
+    picos: null, cue: cuesPorFaixa.get(chaveCue(nova)) || 0, previa: false, cacheGeral: null, prog: null });
   syncSoltar(letra==="A" ? "B" : "A", tr("pro.deck.trocou-faixa",{letra}));   // o seguidor não muda de andamento sozinho
   if (atual!==nova) { atual = nova; VbMxUI.emitir("selecao:mudou", { faixa: atual }); }
   if (typeof nova.obter !== "function") {
     d.carga = ehExemplo ? tr("pro.deck.sem-audio-exemplo") : tr("pro.deck.sem-acesso") + (MODULO_VELHO ? " — " + AVISO_MODULO() : " " + tr("pro.deck.recarregue-pasta"));
     d.cargaCls = "erro"; renderTudo(); return;
   }
-  d.carga = "carregando…"; d.cargaCls = "";
+  d.carga = tr("pro.deck.lendo"); d.cargaCls = ""; d.prog = { fase: "lendo", f: 0 };
   renderTudo();
   try {
     const ctx = garantirAudio();
     if (!ctx) throw new Error(tr("pro.deck.sem-webaudio"));
     const arq = await nova.obter();
-    const buf = await ctx.decodeAudioData(await arq.arrayBuffer());
+    const bruto = await VbMxLeitura.lerComProgresso(arq, f=>{ if (meu===d.token) { d.prog = { fase: "lendo", f }; pintarProgresso(letra); } }, ()=>meu!==d.token);
+    if (meu!==d.token || !bruto) return;
+    d.prog = { fase: "decodificando", f: 1 }; d.carga = tr("pro.deck.decodificando"); pintarProgresso(letra);
+    const buf = await ctx.decodeAudioData(bruto);
     if (meu!==d.token) return;
     d.buffer = buf; d.picos = VbMxWaveform.picosDoBuffer(buf);   // picos uma vez só, na carga; o quadro só lê
     d.cue = VbMxWaveform.travarCue(d.cue, buf.duration); d.cacheGeral = null;
     VbMxTocador.carregar(letra, buf); VbMxTocador.buscar(letra, d.cue);   // a cabeça nasce no cue
     d.carga = `pronto · ${VbMxReproducao.formatarTempo(buf.duration)}`; d.cargaCls = "ok";
+    d.prog = null;
   } catch(e){
     if (meu!==d.token) return;
+    d.prog = null;
     d.carga = tr("pro.deck.erro-carregar",{msg:(e && e.message) || e}); d.cargaCls = "erro";
   }
   atualizarNumerosDoDeck(letra);   // aplica a taxa e já mostra o BPM da grade (o que o SYNC usa)
   atualizarTransporte(letra);
   if (d.buffer) VbMxUI.emitir("deck:carregado", { letra, faixa: nova, duracao: d.buffer.duration });
+}
+// Barra de carregamento (só leitura + decodificação do arquivo): atualiza o texto e a fração sem refazer o deck inteiro.
+function pintarProgresso(letra){
+  if (typeof document === "undefined") return;
+  const d = decks[letra], caixa = document.querySelector(`[data-deck="${letra}"] .carga-deck`);
+  if (!caixa) return;
+  const barra = caixa.querySelector(".carga-barra");
+  if (caixa.firstChild) caixa.firstChild.nodeValue = d.carga;
+  if (barra && d.prog) { barra.dataset.fase = d.prog.fase; barra.style.setProperty("--p", d.prog.f); }
+  else if (barra) barra.remove();
 }
 function tocarPausar(letra){
   const d = decks[letra];

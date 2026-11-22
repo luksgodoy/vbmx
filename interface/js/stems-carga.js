@@ -20,7 +20,7 @@
 
   // deps: fetch(url, init) · ctx() → AudioContext|null · stems (VbMxStems) · tela (VbMxStemsTela) · preferencia() → bool
   //       arquivoDe(letra) → Promise<File|Blob+name> · bufferDe(letra) → AudioBuffer|null · esperar(ms) → Promise
-  //       navegador (plugin Sidra: disponivel(), separar(arquivo, onProgresso)) · reamostrar(buffer, taxa) → Promise<AudioBuffer> (opcional) · intervaloMs (padrão 1000)
+  //       navegador (plugin Sidra: disponivel(), estado() → 'ok'|'sem-worker'|'sem-modelo' (opcional), separar(arquivo, onProgresso)) · servidorLocal (bool: há servidor de stems, tenta-o antes do plugin) · reamostrar(buffer, taxa) → Promise<AudioBuffer> (opcional) · intervaloMs (padrão 1000)
   function criar(deps) {
     const tok = {};                         // letra → número do processo vigente
     const andando = {};                     // letra → true enquanto há processo
@@ -63,8 +63,17 @@
         const arq = await deps.arquivoDe(letra);
         if (!vale()) return 'descartado';
         if (!arq) throw new Error(tr('pro.stems.sem-arquivo'));
-        // Plugin Sidra (opcional): separa no próprio navegador, sem servidor. Sem ele (ou sem o modelo), segue pelo servidor.
-        if (deps.navegador && await deps.navegador.disponivel()) {
+        // Plugin Sidra (opcional): separa no próprio navegador, sem servidor. Em hospedagem estática (deps.servidorLocal falso) vai
+        // direto; em localhost tenta o servidor primeiro e cai no plugin se não houver /stems (404/405/501) ou se ele estiver fora.
+        let estNav = null;
+        const nav = async () => {
+          if (estNav) return estNav;
+          const n = deps.navegador;
+          if (!n) return (estNav = 'sem-plugin');
+          try { estNav = typeof n.estado === 'function' ? await n.estado() : ((await n.disponivel()) ? 'ok' : 'sem-modelo'); } catch (_) { estNav = 'sem-modelo'; }
+          return estNav;
+        };
+        const viaNavegador = async () => {
           if (!vale()) return 'descartado';
           mostrar(letra, { fase: 'separando', progresso: 0 });
           const stems = await deps.navegador.separar(arq, (p) => { if (vale()) mostrar(letra, { fase: 'separando', carregando: p.etapa === 'modelo', progresso: p.etapa === 'separar' ? p.fracao : p.etapa === 'modelo' ? p.fracao * 0.05 : 0 }); });
@@ -78,13 +87,25 @@
           if (!res || !res.ok) throw new Error(tr('pro.stems.ligar',{motivo:trm(res && res.motivo) || tr('pro.stems.recusado')}));
           mostrar(letra, { fase: 'pronto', progresso: 1 });
           return 'pronto';
-        }
+        };
+        // sem servidor e sem plugin utilizável: diz qual dos dois buracos é (navegador sem suporte, modelo que não carregou, ou só falta servidor)
+        const semSeparador = async () => {
+          const e = await nav();
+          return new Error(tr(e === 'sem-worker' ? 'pro.stems.sem-suporte' : e === 'sem-modelo' ? 'pro.stems.modelo-falhou' : 'pro.stems.separador-indisp'));
+        };
+        if (deps.navegador && !deps.servidorLocal && await nav() === 'ok') return await viaNavegador();
         let r;
         try { r = await deps.fetch(`/stems/enviar?nome=${encodeURIComponent(arq.name || 'faixa')}`, { method: 'POST', body: arq }); }
-        catch (_) { throw new Error(tr('pro.stems.servidor-fora')); }
+        catch (_) {
+          if (deps.navegador && await nav() === 'ok') return await viaNavegador();   // localhost sem o servidor de pé: o plugin separa
+          throw new Error(tr('pro.stems.servidor-fora'));
+        }
         if (!vale()) return 'descartado';
         // hospedagem estática (GitHub Pages) não tem /stems: 404/405 = sem servidor, não falha de separação
-        if (r.status === 404 || r.status === 405 || r.status === 501) throw new Error(tr('pro.stems.separador-indisp'));
+        if (r.status === 404 || r.status === 405 || r.status === 501) {
+          if (deps.navegador && await nav() === 'ok') return await viaNavegador();
+          throw await semSeparador();
+        }
         const env = await lerJson(r);
         if (!r.ok || !env.id) throw new Error(env.erro || `o servidor recusou o envio (${r.status})`);
         const id = env.id;
@@ -141,8 +162,9 @@
     r.VbMxPrefs.declarar(PREF, true, { tipo: 'booleano', modulo: 'stems', rotulo: 'Separar stems ao carregar' });
     const c = criar({
       fetch: (u, i) => r.fetch(u, i),
-      // localhost usa o servidor (servir.py), como sempre; o plugin Sidra só entra em hospedagem estática (GitHub Pages)
-      navegador: (r.VbMxSidra && !(r.VbMxBiblioteca && r.VbMxBiblioteca.stemsDisponiveis && r.location && r.VbMxBiblioteca.stemsDisponiveis(r.location))) ? r.VbMxSidra : null,
+      // localhost tenta o servidor (servir.py) e cai no plugin Sidra se não houver /stems; hospedagem estática (GitHub Pages) vai direto ao plugin
+      navegador: r.VbMxSidra || null,
+      servidorLocal: !!(r.VbMxBiblioteca && r.VbMxBiblioteca.stemsDisponiveis && r.location && r.VbMxBiblioteca.stemsDisponiveis(r.location)),
       ctx: () => (typeof ctxAudio !== 'undefined' ? ctxAudio : null),
       get stems() { return r.VbMxStems; },
       get tela() { return r.VbMxStemsTela; },

@@ -46,7 +46,7 @@
 .deck-info { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; align-items: center; }
 .transporte { margin-left: 0; }
 .tempo { font-family: var(--fonte-dados); font-size: 11px; color: var(--fg-2); }
-.carga-deck { font-family: var(--fonte-dados); font-size: 11px; min-height: 14px; color: var(--fg-3); }
+.carga-deck { position: relative; font-family: var(--fonte-dados); font-size: 11px; min-height: 14px; color: var(--fg-3); }
 .carga-deck.ok { color: var(--ok); }
 .carga-deck.erro { color: var(--aviso); }
 .deck.alvo-soltar { outline: 2px dashed var(--acento); outline-offset: -3px; background: color-mix(in srgb, var(--acento) 8%, var(--bg-2)); }
@@ -68,3 +68,9 @@
 .para-grupo { display: flex; gap: 4px; }
 .para-deck { font-family: var(--fonte-display); font-weight: 700; font-size: 11px; width: 24px; height: 24px; border: 1px solid var(--linha); border-radius: 4px; color: var(--fg-3); display: grid; place-items: center; cursor: pointer; }
 .para-deck:hover { color: var(--fg); border-color: var(--fg-3); background: var(--bg-3); }
+/* Barra de carregamento: posição absoluta no pé da linha de estado (não muda a altura do deck). Leitura enche com a fração real; decodificação é indeterminada. */
+.carga-barra { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; overflow: hidden; background: color-mix(in srgb, var(--acento) 18%, transparent); pointer-events: none; }
+.carga-barra::before { content: ""; position: absolute; inset: 0; background: var(--acento); transform-origin: left center; transform: scaleX(var(--p, 0)); transition: transform .12s linear; }
+.carga-barra[data-fase="decodificando"]::before { transform: none; width: 35%; animation: carga-indet 1.1s ease-in-out infinite; }
+@keyframes carga-indet { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+@media (prefers-reduced-motion: reduce) { .carga-barra[data-fase="decodificando"]::before { animation: none; width: 100%; opacity: .6; } }
