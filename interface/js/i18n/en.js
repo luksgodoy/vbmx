@@ -1182,4 +1182,13 @@
   'msg.sp.sessao': 'could not create the session: {1}',
   'msg.sp.backend': 'Backend {1} failed ({2}); trying the next one.',
   'pro.saidas.fone': 'PHONES',
+  'pro.movel.biblioteca': 'Library',
+  'pro.movel.abas-aria': 'Deck panel',
+  'pro.movel.aba-pads': 'Pads',
+  'pro.movel.aba-loop': 'Loop',
+  'pro.movel.aba-eq': 'EQ',
+  'pro.movel.aba-stems': 'Stems',
+  'pro.movel.menu': 'Menu',
+  'pro.movel.desktop': 'Desktop version',
+  'pro.movel.gire': 'Rotate your phone to landscape',
 });

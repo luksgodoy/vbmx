@@ -1189,4 +1189,13 @@
   'msg.sp.sessao': 'nao foi possivel criar a sessao: {1}',
   'msg.sp.backend': 'Backend {1} falhou ({2}); tentando o proximo.',
   'pro.saidas.fone': 'FONE',
+  'pro.movel.biblioteca': 'Biblioteca',
+  'pro.movel.abas-aria': 'Painel do deck',
+  'pro.movel.aba-pads': 'Pads',
+  'pro.movel.aba-loop': 'Loop',
+  'pro.movel.aba-eq': 'EQ',
+  'pro.movel.aba-stems': 'Stems',
+  'pro.movel.menu': 'Menu',
+  'pro.movel.desktop': 'Versão desktop',
+  'pro.movel.gire': 'Gire o celular para a horizontal',
 });

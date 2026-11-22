@@ -1,0 +1,186 @@
+/* movel.css — versão móbile do Profissional (celular DEITADO). Dono: js/movel.js, que liga `html.movel` (toque + lado curto ≤ 540 px,
+   ou ?mobile=1) e desliga css/tela-cheia.css. Tudo aqui vale só sob `html.movel`: no desktop este arquivo não muda nada.
+   DISPOSIÇÃO (decisão desta tarefa): deck A | mixer | deck B numa tela só, sem rolar — o polegar de cada mão cai no transporte e nos
+   pads do seu deck, e os dois volumes + crossfader ficam no meio, ao alcance dos dois. O que não cabe em ~330 px de altura vira ABA
+   do painel de baixo do deck (pads · loop · EQ · stems, uma por vez, html[data-movel-aba]); a biblioteca é uma gaveta de tela cheia.
+   Alvos de toque: 44 px (--alvo). Sem pele nova: cores, fontes, hairline de 1 px e as peças (.pc-*) são as do desktop.
+   Retrato: só o aviso "gire o celular". Portão: node interface/testar-movel.js. */
+.movel-barra, .movel-gire { display: none; }
+
+html.movel { --alvo: 44px; --topo-h: 44px; --painel-h: 104px; --vao: 4px; --mx-l: 148px; }
+html.movel, html.movel body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html.movel body { display: grid; grid-template-rows: var(--topo-h) minmax(0, 1fr); min-height: 0; height: 100dvh; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+
+/* ---------- topo: uma linha de 44 px ---------- */
+html.movel .topo { position: relative; top: 0; height: var(--topo-h); flex-wrap: nowrap; align-items: center; gap: 6px; padding-block: 0; overflow: hidden; }
+html.movel .topo > :not(.marca):not(.movel-barra):not(.idioma) { display: none; }
+html.movel .marca { font-size: 18px; flex: none; }
+html.movel .marca small, html.movel .topo > .idioma { display: none; }
+html.movel .movel-barra { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; gap: 6px; }
+html.movel .movel-abas { display: flex; gap: 0; margin-inline: auto; }
+html.movel .movel-bt { display: inline-flex; align-items: center; justify-content: center; height: var(--alvo); min-width: var(--alvo); padding: 0 10px;
+  font-family: var(--fonte-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
+  color: var(--fg-2); background: var(--bg-3); border: 1px solid var(--linha); border-radius: 4px; background-clip: padding-box; }
+html.movel .movel-abas .movel-bt { border-radius: 0; margin-left: -1px; min-width: 56px; }
+html.movel .movel-abas .movel-bt:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+html.movel .movel-abas .movel-bt:last-child { border-radius: 0 4px 4px 0; }
+html.movel .movel-bt[aria-pressed="true"] { color: var(--acento); border-color: var(--acento); position: relative; z-index: 1; }
+html.movel .movel-desktop { display: none; }
+/* menu (⋯): o topo abre por cima da mesa com o idioma e o atalho para a versão desktop */
+html.movel.movel-menu .topo { height: auto; overflow: visible; flex-wrap: wrap; padding-bottom: 6px; z-index: 40; grid-row: 1; align-self: start; box-shadow: 0 1px 0 var(--linha); }
+html.movel.movel-menu .topo > .idioma { display: flex; order: 9; }
+html.movel.movel-menu .movel-desktop { display: inline-flex; }
+html.movel.movel-menu .movel-barra { flex-wrap: wrap; }
+html.movel.movel-menu .tela { grid-row: 2; }
+html.movel.movel-menu body { grid-template-rows: var(--topo-h) minmax(0, 1fr); }
+html.movel.movel-menu .topo { position: absolute; left: 0; right: 0; }
+html.movel .pastas, html.movel .ctl-abrir { display: none !important; }   /* mapa de teclado/MIDI: só na versão desktop */
+
+/* ---------- a mesa: deck A | mixer | deck B ---------- */
+html.movel .tela { display: block; position: relative; height: 100%; min-height: 0; padding-block: var(--vao); overflow: hidden;
+  padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); }
+html.movel .tela > :not(.decks):not(.browser) { display: none !important; }
+html.movel .decks { position: relative; display: grid; height: 100%; min-height: 0; gap: 0 var(--vao); align-content: stretch; align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) var(--mx-l) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+html.movel .decks > * { margin: 0 !important; order: 0; }
+html.movel .decks > [data-deck="A"] { grid-column: 1 !important; grid-row: 1; }
+html.movel .decks > [data-deck="B"] { grid-column: 3 !important; grid-row: 1; }
+html.movel .decks > .mixer { grid-column: 2 !important; grid-row: 1; }
+html.movel .decks > [data-slot] { display: none !important; }
+html.movel .disp-alca, html.movel .deck-recolher, html.movel .stems-recolher { display: none !important; }
+
+/* ---------- deck ---------- */
+html.movel .deck { position: relative; display: grid; min-height: 0; min-width: 0; padding: 4px 6px calc(var(--painel-h) + 10px); gap: 4px 8px; overflow: hidden;
+  grid-template-columns: minmax(0, 1fr) auto auto auto; grid-template-rows: 22px minmax(0, 1fr) var(--alvo);
+  grid-template-areas: "cab bpm tom tempo" "ondas ondas ondas ondas" "transporte transporte transporte transporte"; }
+html.movel .deck > *, html.movel .deck-info > *, html.movel .deck-corpo > * { min-width: 0; }
+html.movel :is(.deck-corpo, .deck-prato, .deck-info) { display: contents; }
+html.movel .prato { display: none; }
+html.movel .deck-cab { grid-area: cab; display: flex; align-items: baseline; gap: 6px; padding: 0; overflow: hidden; white-space: nowrap; }
+html.movel .deck-cab .letra { font-size: 18px; line-height: 22px; }
+html.movel .deck-cab :is(.titulo, .artista, .vazio) { overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+html.movel .deck-cab .artista { flex: 0 1 auto; }
+html.movel .deck-info > .dado { align-self: center; display: flex; align-items: baseline; gap: 3px; padding: 0; }
+html.movel .deck-info > .dado:nth-of-type(1) { grid-area: bpm; }
+html.movel .deck-info > .dado:nth-of-type(2) { grid-area: tom; }
+html.movel .deck-info > .dado .rotulo, html.movel .deck-info > .dado .orig { display: none; }
+html.movel .deck-info .valor-bpm { font-size: 16px; line-height: 22px; }
+html.movel .deck-info .chave { font-size: 12px; line-height: 18px; padding: 0 4px; }
+html.movel .deck-info > .tempo { grid-area: tempo; align-self: center; font-size: 11px; white-space: nowrap; }
+html.movel .deck > .ondas { grid-area: ondas; position: relative; display: grid; grid-template-rows: minmax(0, 1fr) 18px; gap: 3px; min-height: 0; }
+html.movel .deck > .ondas .onda-caixa { position: relative; min-height: 0; }
+html.movel .deck > .ondas .onda.zoom { position: absolute; inset: 0; width: 100%; height: 100%; }
+html.movel .onda.geral { height: 18px; width: 100%; }
+html.movel .dica-onda { position: absolute; right: 4px; bottom: 22px; font-size: 0; pointer-events: none; }
+html.movel .dica-onda .cue-info { font-size: 10px; background: rgba(13, 15, 18, .7); padding: 0 3px; border-radius: 2px; }
+html.movel .deck > .carga-deck { position: absolute; left: 10px; top: 30px; right: 10px; min-height: 0; font-size: 10px; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.movel .deck > .aviso-sync { position: absolute; left: 10px; right: 10px; top: 44px; min-height: 0; font-size: 10px; pointer-events: none; }
+html.movel .deck > .aviso-sync:empty { display: none; }
+/* transporte: CUE · play · SYNC (+ bend onde couber), 44 px; o pitch fica em pé à direita, do transporte até a base */
+html.movel .transporte { grid-area: transporte; display: flex; flex-wrap: nowrap; justify-content: flex-start; gap: 4px; margin: 0 calc(var(--alvo) + 6px) 0 0; overflow: hidden; }
+html.movel .transporte > * { display: none; }
+html.movel .transporte > :is([data-cue], [data-play], [data-sync], [data-bend]) { display: inline-flex; flex: 1 1 var(--alvo); }
+html.movel .transporte button.pc-botao { height: var(--alvo); min-width: var(--alvo); padding: 0 4px; font-size: 12px; }
+html.movel .transporte button.pc-botao svg { width: 14px; height: 14px; }
+@container deck (max-width: 285px) { html.movel .transporte > [data-bend] { display: none; } }
+html.movel .pitch-v { position: absolute; right: 6px; bottom: 6px; width: var(--alvo); height: calc(var(--painel-h) + var(--alvo) + 4px); display: grid; grid-template-rows: 12px minmax(0, 1fr); gap: 2px; justify-items: center; padding: 0; }
+html.movel .pitch-v > * { display: none !important; }
+html.movel .pitch-v > .pitch-valor { display: block !important; font-size: 9px; line-height: 12px; white-space: nowrap; }
+html.movel .pitch-v > .pitch-corpo { display: grid !important; place-items: start center; grid-template-columns: var(--alvo); height: 100%; min-height: 0; width: var(--alvo); padding: 0; margin: 0; }
+html.movel .pitch-corpo .marcas { display: none; }
+html.movel .pitch-v .pc-fader { --comp: calc(var(--painel-h) + var(--alvo) - 10px) !important; --larg: var(--alvo) !important; }
+
+/* ---------- painel de baixo do deck: uma aba por vez ---------- */
+html.movel .decks > :is([data-slot$="-hotcues"], [data-slot$="-loops"], [data-slot$="-stems"]) { grid-row: 1; align-self: end; z-index: 2; height: var(--painel-h); min-height: 0;
+  margin: 0 calc(var(--alvo) + 12px) 6px 6px !important; padding: 0; border: 0; background: none; overflow: hidden; }
+html.movel .decks > [data-slot^="deck-A-"] { grid-column: 1 !important; }
+html.movel .decks > [data-slot^="deck-B-"] { grid-column: 3 !important; }
+html.movel[data-movel-aba="pads"] .decks > [data-slot$="-hotcues"]:not([hidden]) { display: grid !important; }
+html.movel[data-movel-aba="loop"] .decks > [data-slot$="-loops"]:not([hidden]) { display: grid !important; }
+html.movel[data-movel-aba="stems"] .decks > [data-slot$="-stems"]:not([hidden]) { display: grid !important; }
+/* pads: 4 × 2, cada pad com a altura que sobra (≥ 44 px) */
+html.movel .hotcues { grid-template: minmax(0, 1fr) / minmax(0, 1fr); container-type: normal; }
+html.movel .hotcues > :not(.hotcues-grade) { display: none; }
+html.movel .hotcues-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(var(--alvo), 1fr)); gap: 4px; height: 100%; }
+html.movel .hotcues-celula { display: grid; min-height: 0; }
+html.movel .hotcues .pc-hotcue { width: 100%; height: 100%; min-height: var(--alvo) !important; }
+/* loop: tamanho (◂ n ▸), entrada/saída e liga numa grade de 44 px; o deslocamento fino fica na versão desktop */
+html.movel .loops-caixa { align-content: stretch; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+html.movel .loops-caixa > :not(.loops-linha:first-of-type) { display: none; }
+html.movel .loops-linha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(var(--alvo), 1fr); gap: 4px; height: 100%; align-items: stretch; }
+html.movel .loops-linha > :is(.rotulo, [data-lp="metade"], [data-lp="dobro"], [data-lp="flux"]) { display: none; }   /* ◂ ▸ já dobram e dividem; FLUX fica no desktop */
+html.movel .loops-linha button.pc-botao { height: auto; min-height: var(--alvo); min-width: 0; width: 100%; font-size: 12px; }
+html.movel .loops-linha > [data-lp="in"] { order: 1; } html.movel .loops-linha > [data-lp="out"] { order: 2; } html.movel .loops-linha > [data-lp="auto"] { order: 3; }
+html.movel .loops-linha > [data-lp="menos"] { order: 4; } html.movel .loops-linha > .loops-tam { order: 5; } html.movel .loops-linha > [data-lp="mais"] { order: 6; }
+html.movel .loops-linha .loops-tam { display: grid; place-items: center; font-size: 13px; }
+/* stems: STEMS (liga/separa) + estado em cima; embaixo, um botão de mudo por stem */
+html.movel .stems { grid-template-rows: var(--alvo) minmax(0, 1fr); gap: 4px; container-type: normal; }
+html.movel .stems-cab { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: 0; }
+html.movel .stems-cab .stems-titulo, html.movel .stems-cab [data-ctl="reset"] { display: none; }
+html.movel .stems-cab .stems-liga { order: -1; height: var(--alvo); min-width: 64px; padding: 0 10px; font-size: 12px; flex: none; }
+html.movel .stems-cab .stems-estado { flex: 1 1 0; min-width: 0; font-size: 10px; white-space: normal; line-height: 1.2; max-height: var(--alvo); overflow: hidden; }
+html.movel .stems-canais { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 4px; min-height: 0; }
+html.movel .stems.recolhido .stems-canais { display: none !important; }
+html.movel .stems-canal { display: grid; grid-template: 10px minmax(0, 1fr) / minmax(0, 1fr); gap: 1px; padding: 0; border: 0; background: none; min-width: 0; }
+html.movel .stems-canal > * { display: none; }
+html.movel .stems-canal > .stems-nome { display: block; font-size: 9px; line-height: 10px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.movel .stems-canal > .stems-ms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+html.movel .stems-canal > .stems-ms [data-ctl="solo"] { display: none; }
+html.movel .stems-canal > .stems-ms .stems-btn { height: 100%; min-height: var(--alvo); width: 100%; min-width: 0; font-size: 13px; }
+
+/* ---------- mixer: volumes em pé, filtro por canal em cima, crossfader embaixo ---------- */
+html.movel .mixer { position: static; display: grid; grid-template-rows: minmax(0, 1fr) var(--alvo); gap: 4px; padding: 4px; min-height: 0; overflow: visible; }
+html.movel .mixer > :not(.canais):not(.xfade) { display: none !important; }
+html.movel .mixer .canais { display: grid; grid-template-columns: var(--alvo) minmax(0, 1fr) var(--alvo); justify-content: center; gap: 0 4px; min-height: 0; }
+html.movel .canal { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 4px; justify-items: center; align-content: stretch; min-height: 0; width: var(--alvo); }
+html.movel .canal[data-canal="A"] { grid-column: 1; }
+html.movel .canal[data-canal="B"] { grid-column: 3; }
+html.movel .canal > *, html.movel .canal > .linha-mx { display: none; }
+html.movel .canal > .so-filtro, html.movel .canal[data-fx]:not([data-fx="filtro"]) > .so-fx { display: block; grid-row: 1; width: var(--alvo); }
+html.movel .canal > :is(.so-filtro, .so-fx) > .linha-mx { display: grid; grid-template-columns: var(--alvo); justify-items: center; gap: 1px; width: var(--alvo); }
+html.movel .canal .linha-mx .nome { font-size: 8px; line-height: 10px; }
+html.movel .canal .linha-mx .val { display: none; }
+html.movel .canal .pc-knob { --tam: var(--alvo) !important; }
+html.movel .canal > .faders { display: block; grid-row: 2; min-height: 0; position: static; }
+html.movel .faders > .fader-v.volume { display: grid; grid-template-rows: minmax(0, 1fr); margin: 0; height: 100%; }
+html.movel .faders > .fader-v.volume > :is(.nome, .val) { display: none; }
+html.movel .fader-v.volume .pc-fader { --larg: var(--alvo) !important; --comp: calc(100dvh - var(--topo-h) - var(--alvo) * 2 - 46px) !important; }
+html.movel .mixer .canais > [data-slot="mixer-medidores"] { display: none !important; }
+html.movel .xfade { display: block; min-width: 0; }
+html.movel .xfade > :not(.pc-fader):not(input) { display: none; }
+html.movel .xfade .pc-fader { --larg: var(--alvo) !important; --comp: calc(var(--mx-l) - 10px) !important; }
+/* EQ (aba): as três bandas de cada canal saem do mixer e ocupam o painel de baixo do deck daquele lado (posição absoluta na grade) */
+html.movel .faders > .fader-v:not(.volume) { display: none; position: absolute; z-index: 2; bottom: 6px; height: var(--painel-h); width: var(--alvo);
+  grid-template-rows: 10px minmax(0, 1fr); gap: 2px; justify-items: center; }
+html.movel[data-movel-aba="eq"] .faders > .fader-v:not(.volume) { display: grid; }
+html.movel .faders > .fader-v:not(.volume) > :is(.val, .kill) { display: none; }
+html.movel .faders > .fader-v:not(.volume) .nome { font-size: 9px; line-height: 10px; }
+html.movel .faders > .fader-v:not(.volume) .pc-fader { --larg: var(--alvo) !important; --comp: calc(var(--painel-h) - 12px) !important; }
+html.movel .canal[data-canal="A"] .fader-v:nth-child(1) { left: 8px; }
+html.movel .canal[data-canal="A"] .fader-v:nth-child(2) { left: calc(8px + (var(--alvo) + 6px)); }
+html.movel .canal[data-canal="A"] .fader-v:nth-child(3) { left: calc(8px + (var(--alvo) + 6px) * 2); }
+html.movel .canal[data-canal="B"] .fader-v:nth-child(1) { left: calc(50% + var(--mx-l) / 2 + var(--vao) + 8px); }
+html.movel .canal[data-canal="B"] .fader-v:nth-child(2) { left: calc(50% + var(--mx-l) / 2 + var(--vao) + 8px + (var(--alvo) + 6px)); }
+html.movel .canal[data-canal="B"] .fader-v:nth-child(3) { left: calc(50% + var(--mx-l) / 2 + var(--vao) + 8px + (var(--alvo) + 6px) * 2); }
+
+/* ---------- biblioteca: gaveta de tela cheia ---------- */
+html.movel .tela > .browser { display: none; }
+html.movel.movel-biblio .tela > .browser { display: grid; position: absolute; inset: 0; z-index: 10; height: auto; min-height: 0; background: var(--bg); grid-template-rows: minmax(0, 1fr);
+  padding: 4px max(6px, env(safe-area-inset-right, 0px)) 4px max(6px, env(safe-area-inset-left, 0px)); }
+html.movel .browser > .biblio { max-height: none; height: 100%; min-height: 0; }
+html.movel .biblio :is(.biblio-listas, .biblio-filtros, .cont, #bib-vista) { display: none; }
+html.movel .biblio #busca { height: var(--alvo); font-size: 16px; }
+html.movel .biblio .lista .linha { min-height: 48px; }
+html.movel .biblio .c-deck [data-carregar] { display: inline-grid; place-items: center; min-width: var(--alvo); min-height: var(--alvo); font-size: 14px; }
+/* na gaveta só se procura e se carrega: nota, cor, comentário, preparar e ordenar pelo cabeçalho ficam na versão desktop */
+html.movel .browser > :not(.biblio) { display: none !important; }
+html.movel .biblio :is(.c-nota, .c-cor, .c-toc, .c-comp, .lista-cab) { display: none !important; }
+html.movel .biblio .c-deck > :not(.para-grupo), html.movel .biblio .c-deck .para-grupo > :not([data-carregar]) { display: none !important; }
+
+/* ---------- retrato: só o aviso ---------- */
+@media (orientation: portrait) {
+  html.movel .tela, html.movel .movel-barra { display: none; }
+  html.movel .movel-gire { display: flex; grid-row: 2; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center;
+    font-family: var(--fonte-display); font-weight: 600; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+  html.movel .movel-gire-icone { font-size: 28px; color: var(--acento); line-height: 1; }
+}

@@ -159,7 +159,8 @@
   // ---- ligação na página (navegador) ----
   function ligarNaPagina(r) {
     if (!r.VbMxUI || !r.VbMxPrefs) return;
-    r.VbMxPrefs.declarar(PREF, true, { tipo: 'booleano', modulo: 'stems', rotulo: 'Separar stems ao carregar' });
+    // versão móbile (js/movel.js): nasce desligada — o modelo (~86 MB) só baixa quando o usuário toca em STEMS
+    r.VbMxPrefs.declarar(PREF, !(r.VbMxMovel && r.VbMxMovel.ativo), { tipo: 'booleano', modulo: 'stems', rotulo: 'Separar stems ao carregar' });
     const c = criar({
       fetch: (u, i) => r.fetch(u, i),
       // localhost tenta o servidor (servir.py) e cai no plugin Sidra se não houver /stems; hospedagem estática (GitHub Pages) vai direto ao plugin

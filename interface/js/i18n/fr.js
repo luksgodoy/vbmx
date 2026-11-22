@@ -1182,4 +1182,13 @@
   'msg.sp.sessao': 'impossible de créer la session : {1}',
   'msg.sp.backend': 'Le backend {1} a échoué ({2}) ; essai du suivant.',
   'pro.saidas.fone': 'CASQUE',
+  'pro.movel.biblioteca': 'Bibliothèque',
+  'pro.movel.abas-aria': 'Panneau du deck',
+  'pro.movel.aba-pads': 'Pads',
+  'pro.movel.aba-loop': 'Loop',
+  'pro.movel.aba-eq': 'EQ',
+  'pro.movel.aba-stems': 'Stems',
+  'pro.movel.menu': 'Menu',
+  'pro.movel.desktop': 'Version bureau',
+  'pro.movel.gire': 'Tournez le téléphone en paysage',
 });

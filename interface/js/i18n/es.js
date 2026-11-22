@@ -1182,4 +1182,13 @@
   'msg.sp.sessao': 'no se pudo crear la sesión: {1}',
   'msg.sp.backend': 'El backend {1} falló ({2}); probando el siguiente.',
   'pro.saidas.fone': 'AURIC.',
+  'pro.movel.biblioteca': 'Biblioteca',
+  'pro.movel.abas-aria': 'Panel del deck',
+  'pro.movel.aba-pads': 'Pads',
+  'pro.movel.aba-loop': 'Loop',
+  'pro.movel.aba-eq': 'EQ',
+  'pro.movel.aba-stems': 'Stems',
+  'pro.movel.menu': 'Menú',
+  'pro.movel.desktop': 'Versión de escritorio',
+  'pro.movel.gire': 'Gira el móvil a horizontal',
 });
