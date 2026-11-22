@@ -108,10 +108,10 @@ function fxHtml(u) {
   const n = u.n, c = fxM.CANAIS;
   const cab = `<div class="fx-cab">
     <span class="fx-titulo">FX ${n}</span>
-    <span class="fx-canais" role="group" aria-label="Atribuir a canais">${c.map(l => `<button type="button" class="fx-bt fx-canal" data-fx-canal="${l}" aria-pressed="${u.atribuicao[l]}" title="Unidade ${n} no canal ${l}">${l}</button>`).join("")}</span>
-    <button type="button" class="fx-bt fx-rota" data-fx-rota aria-label="${tr("pro.fx.rota-aria",{r:trm(fxM.ROTULOS_ROTA[u.rota])})}" title="${tr("pro.fx.rota-titulo")}">${fxM.ROTULOS_ROTA[u.rota]}</button>${u.rota === "envio" ? fxKnob("nivel", "envio", { min: 0, max: 1, padrao: fxM.NIVEL_ENVIO_PADRAO }, u.nivelEnvio, "", -1) : ""}
+    <span class="fx-canais" role="group" aria-label="${tr("pro.fx.canais-aria")}">${c.map(l => `<button type="button" class="fx-bt fx-canal" data-fx-canal="${l}" aria-pressed="${u.atribuicao[l]}" title="${tr("pro.fx.canal-t",{n,l})}">${l}</button>`).join("")}</span>
+    <button type="button" class="fx-bt fx-rota" data-fx-rota aria-label="${tr("pro.fx.rota-aria",{r:trm(fxM.ROTULOS_ROTA[u.rota])})}" title="${tr("pro.fx.rota-titulo")}">${trm(fxM.ROTULOS_ROTA[u.rota])}</button>${u.rota === "envio" ? fxKnob("nivel", "envio", { min: 0, max: 1, padrao: fxM.NIVEL_ENVIO_PADRAO }, u.nivelEnvio, "", -1) : ""}
     <button type="button" class="fx-bt fx-modo" data-fx-modo aria-label="${u.modo === "unico" ? tr("pro.fx.modo-unico-a") : tr("pro.fx.modo-grupo-a")}" title="${u.modo === "unico" ? tr("pro.fx.modo-unico-t") : tr("pro.fx.modo-grupo-t")}">${u.modo === "unico" ? "●" : "●●●"}</button>
-    <button type="button" class="fx-bt fx-liga" data-fx-liga aria-pressed="${u.ligada}" title="Liga a unidade">ON</button></div>`;
+    <button type="button" class="fx-bt fx-liga" data-fx-liga aria-pressed="${u.ligada}" title="${tr("pro.fx.liga-t")}">ON</button></div>`;
   let corpo;
   if (u.modo === "unico") {
     const e = u.unico, def = fxM.DEFS[e.tipo];

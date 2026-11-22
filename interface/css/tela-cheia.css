@@ -37,10 +37,10 @@
   body.browser-baixo .tela > .decks { grid-row: 1; }
   body.browser-baixo .tela > .browser { grid-row: 2; height: auto; min-height: var(--tabela-h); contain: size; }   /* contain: a lista não empurra a linha; ela só cresce com a sobra da janela */
   /* à esquerda: os decks ficam na primeira tela (altura fixa de 100vh − topo); a coluna do browser pode passar disso — 10 linhas de
-     61 px + cabeçalho/filtros + faixa de sugestões — e a página rola até o fim dela */
+     61 px + cabeçalho/filtros — e a página rola até o fim dela */
   body.browser-esq .tela { grid-template-rows: auto; align-items: start; }
   body.browser-esq .tela > .decks { height: auto; }
-  body.browser-esq .tela > .browser { grid-row: 1; position: static; height: auto; align-self: stretch; min-height: max(var(--tabela-h), 1160px); grid-template-rows: auto minmax(0, 1fr) 260px; }
+  body.browser-esq .tela > .browser { grid-row: 1; position: static; height: auto; align-self: stretch; min-height: max(var(--tabela-h), 1160px); grid-template-rows: auto minmax(0, 1fr); }
 
   /* ---- D5: deck elástico com piso; a onda de zoom cresce ---- */
   .decks > .deck:not(.mini) { min-height: var(--deck-h); }
@@ -194,7 +194,7 @@
   .browser-painel { grid-column: 1 / -1; grid-row: 2 / -1; min-height: 0; overflow: auto; display: grid; gap: 8px; align-content: start; }
   .browser-painel[hidden] { display: none; }
   .browser-painel > * { grid-column: auto !important; grid-row: auto !important; margin: 0; }
-  .browser:not([data-aba="biblioteca"]) > :is(.biblio, .sugestao) { display: none; }
+  .browser:not([data-aba="biblioteca"]) > .biblio { display: none; }
   .browser-painel > [hidden] { display: none; }
 
   /* ---- browser embaixo em janela baixa (≤860 px): gaveta que sobe do rodapé, aba fixa de 30 px (D4) ---- */

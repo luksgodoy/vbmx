@@ -1,5 +1,5 @@
 /* disposicao.css — a disposição da tela (proposta A, aprovada em 2026-11-07), dono: js/disposicao.js.
-   Decks A e B nas pontas, mixer ao centro, e o browser (biblioteca + sugestões) ESCOLHIDO pelo usuário:
+   Decks A e B nas pontas, mixer ao centro, e o browser (biblioteca: tabela ou árvore) ESCOLHIDO pelo usuário:
    embaixo (padrão) ou à esquerda — classe `browser-baixo`/`browser-esq` no <body>, preferência layout.browser.
    Sem buraco: o mixer ocupa todas as linhas da grade dos decks e a linha do DECK (2) é a única elástica,
    então a sobra de altura vai para a ONDA DE ZOOM (que cresce); a faixa de stems fica colada embaixo do deck. */
@@ -34,20 +34,19 @@
 .hotcues { container-type: inline-size; }
 @container (min-width: 420px) { .hotcues-grade { grid-template-columns: repeat(8, minmax(0, 1fr)); } .hotcues-slot { min-height: 34px; } }
 
-/* ---- browser: biblioteca + sugestões ---- */
+/* ---- browser: biblioteca (tabela/árvore) ---- */
 .browser { display: grid; gap: 10px; min-width: 0; min-height: 0; }
-.browser > .biblio, .browser > .sugestao { min-height: 0; max-height: none; }
-.browser > .sugestao { overflow: hidden; }
+.browser > .biblio { min-height: 0; max-height: none; }
 
-/* embaixo: tabela larga + sugestões como coluna direita do browser */
+/* embaixo: a tabela ocupa a largura toda do browser */
 body.browser-baixo .tela { grid-template-columns: minmax(0, 1fr); }
-body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 340px; height: max(340px, 38vh); }
+body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr); height: max(340px, 38vh); }
 
-/* à esquerda: browser em coluna de altura da janela (sticky), decks à direita; sugestões em faixa sob a tabela */
+/* à esquerda: browser em coluna de altura da janela (sticky), decks à direita */
 body.browser-esq .tela { grid-template-columns: clamp(300px, 24vw, 440px) minmax(0, 1fr); align-items: start; }
 body.browser-esq .tela > .decks { grid-column: 2; grid-row: 1; }
 body.browser-esq .tela > .browser { grid-column: 1; grid-row: 1; position: sticky; top: calc(var(--topo-h, 48px) + 10px);
-  height: calc(100vh - var(--topo-h, 48px) - 24px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 42%); }
+  height: calc(100vh - var(--topo-h, 48px) - 24px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 
 /* ---- topo: alternador do browser e recolhedores ---- */
 .disp-botoes { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 6px; align-items: center; }
@@ -87,8 +86,6 @@ body.mixer-compacto .mixer :is(.mixer-opcoes, .fone, [data-slot="mixer-fone"], .
 body:not(.grade-visivel) .decks > [data-slot$="-grade"] { display: none !important; }
 
 /* ---- larguras (proposta A § 4): em 1440 o mixer encolhe, em 1280 mais ainda ---- */
-@media (max-width: 1500px) { body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 330px; } }
-@media (max-width: 1320px) { body.browser-baixo .browser { grid-template-columns: minmax(0, 1fr) 300px; } }
 @media (max-width: 1100px) { body.browser-esq .tela { grid-template-columns: minmax(0, 1fr); } body.browser-esq .tela > .browser { position: static; height: 70vh; grid-column: 1; grid-row: 2; } body.browser-esq .tela > .decks { grid-column: 1; } }
 @media (max-width: 900px) {
   .decks { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
@@ -96,7 +93,7 @@ body:not(.grade-visivel) .decks > [data-slot$="-grade"] { display: none !importa
   .decks > [data-deck="A"], .decks > [data-slot^="deck-A-"], .decks > [data-slot="fx-1"] { grid-column: 1; grid-row: auto; }
   .decks > [data-deck="B"], .decks > [data-slot^="deck-B-"], .decks > [data-slot="fx-2"] { grid-column: 2; grid-row: auto; }
   body.browser-baixo .browser { grid-template-columns: 1fr; height: auto; }
-  .browser > .biblio { max-height: 420px; } .browser > .sugestao { max-height: 560px; }
+  .browser > .biblio { max-height: 420px; }
 }
 @media (max-width: 560px) { .decks { grid-template-columns: 1fr; } .decks > :is([data-deck], [data-slot], .mixer) { grid-column: 1 !important; } }
 .stems-recolher { min-width: 24px; padding: 0; }
@@ -110,7 +107,7 @@ body.browser-esq .tela > .browser { grid-row: 1 / span 3; }
 .deck > .ondas { flex: 1 0 auto; }
 .disp-botoes { margin-left: 4px; }
 /* browser nunca vaza para os decks; a tabela rola por dentro */
-.browser, .browser > .biblio, .browser > .sugestao { overflow: hidden; }
+.browser, .browser > .biblio { overflow: hidden; }
 .browser > .biblio .lista { overflow: auto; }
 /* deck estreito (browser à esquerda em 1280): o prato sai, o transporte quebra linha; o mini deck resolve de vez */
 .deck { container-type: inline-size; container-name: deck; }

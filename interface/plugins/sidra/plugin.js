@@ -1,7 +1,7 @@
 // Plugin Sidra: o separador de stems do Sidra (htdemucs em ONNX, WebGPU com queda para WASM) dentro do VbMx.
 // Roda no navegador, num Web Worker (trabalhador.js + dsp.js, copiados de ~/separador-stems-web), sem servidor e sem upload.
 // Contrato: VbMxSidra.disponivel() → Promise<bool> · VbMxSidra.separar(arquivo, onProgresso) → Promise<{vocals,drums,bass,instrumental}>
-// (AudioBuffers a 44,1 kHz; instrumental = drums + bass + other). onProgresso({etapa:'modelo'|'sessao'|'separar', fracao}).
+// (AudioBuffers a 44,1 kHz; instrumental = só o `other` do modelo, o resíduo sem voz, bateria nem baixo). onProgresso({etapa:'modelo'|'sessao'|'separar', fracao}).
 // Só os pesos do htdemucs (MIT) entram aqui; BS-Roformer e DrumSep (uso pessoal) não podem.
 (function (raiz) {
   'use strict';
@@ -49,6 +49,12 @@
     const b = ctx.createBuffer(2, e.length, TAXA); b.copyToChannel(e, 0); b.copyToChannel(d, 1); return b;
   }
 
+  // Mapa saída do modelo → stem do deck. instrumental = SÓ o `other` (o resíduo): drums e bass já são canais
+  // próprios, somá-los aqui os faria soar em dobro no canal "outros".
+  function mapear(por, f) {
+    return { vocals: f(por.vocals), drums: f(por.drums), bass: f(por.bass), instrumental: f(por.other) };
+  }
+
   // Um job por vez (o modelo ocupa a GPU inteira): chamadas seguintes esperam a anterior.
   function separar(arquivo, onProgresso) {
     const job = ocupado.then(async () => {
@@ -56,15 +62,11 @@
       const lista = await rodar(esq, dir, onProgresso);
       const por = {}; lista.forEach((x) => { por[x.nome] = x; });
       const ctx = new OfflineAudioContext(2, 1, TAXA);
-      const soma = (c) => { const o = new Float32Array(por.drums[c].length); for (const n of ['drums', 'bass', 'other']) { const s = por[n][c]; for (let i = 0; i < o.length; i++) o[i] += s[i]; } return o; };
-      return {
-        vocals: aBuffer(ctx, por.vocals.esq, por.vocals.dir), drums: aBuffer(ctx, por.drums.esq, por.drums.dir),
-        bass: aBuffer(ctx, por.bass.esq, por.bass.dir), instrumental: aBuffer(ctx, soma('esq'), soma('dir')),
-      };
+      return mapear(por, (x) => aBuffer(ctx, x.esq, x.dir));
     });
     ocupado = job.catch(() => {});
     return job;
   }
 
-  raiz.VbMxSidra = { TAXA, disponivel, separar };
+  raiz.VbMxSidra = { TAXA, disponivel, separar, _mapear: mapear };
 })(typeof window !== 'undefined' ? window : globalThis);

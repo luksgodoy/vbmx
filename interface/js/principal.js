@@ -10,7 +10,6 @@ function renderTudo(){
     renderDeck(document.querySelector(`[data-deck="${l}"]`), decks[l].faixa, l);
   }
   renderBiblio();
-  renderSugestao();
   atualizarEstadoGlobal();
 }
 
@@ -60,7 +59,6 @@ function mudouBiblioteca(faixas){
   pintarMarcaOrigem();
   const aindaExiste = atual && BIBLIOTECA.find(f=>f.id===atual.id && f.caminho===atual.caminho);
   if (!aindaExiste) atual = BIBLIOTECA.find(f=>f.analisavel!==false && (ehExemplo ? f.titulo==="Maré Baixa" : true)) || null;
-  filtroCasa = null;
   renderTudo();
   VbMxUI.emitir("biblioteca:mudou", { faixas: BIBLIOTECA, ehExemplo });
 }
@@ -69,7 +67,6 @@ VbMxPainel.iniciar({ montarEm: document.getElementById("pastas"), aoMudar: mudou
   preferencia: { ler: () => VbMxPrefs.ler("biblio.pasta-filtro"), gravar: v => VbMxPrefs.gravar("biblio.pasta-filtro", v) } });
 
 VbMxUI.aoIdioma(()=>{ pintarMarcaOrigem(); renderTudo(); });   // troca de idioma ao vivo: o que é desenhado por t() refaz; os módulos com tela própria ouvem VbMxUI.aoIdioma
-try { rodaAberta = localStorage.getItem("vbmx-roda")==="1"; } catch(_){ rodaAberta = false; }
 pintarMarcaOrigem();
 renderTudo();
 VbMxUI.iniciar();   // os módulos que pediram VbMxUI.aoIniciar(fn) mexem no DOM agora (docs/contratos.md)

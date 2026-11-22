@@ -8,7 +8,7 @@
 // Ouve `preparacao:mudou` {lista} (de preparacao.js) para guardar a lista junto do set.
 //
 // "Veio da sugestão" (VB-18b): a faixa foi carregada a partir de um card do painel (clique no A/B ou arrasto);
-// a marca é de sugestao.js (sugestaoConsumirOrigem). Escolher na biblioteca não conta, mesmo se for compatível.
+// a marca vinha do painel de sugestões (retirado em 22/11/2026); sem ele a guarda typeof devolve false. Escolher na biblioteca não conta, mesmo se for compatível.
 VbMxUI.declararEvento("historico:mudou");
 
 const HISTORICO_SALVAR_A_CADA = 5;     // s entre gravações enquanto a faixa soma tempo

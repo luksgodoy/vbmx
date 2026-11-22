@@ -25,6 +25,14 @@
     [/estilo marcado: pesa na ordem \(nunca tira\); (\d+) de (\d+) com estilo conhecido/g, "msg.am.estilo-marcado", null],
     [/shuffle entre as (\d+) melhores de (\d+) compatível\(is\) ainda não tocada\(s\)/g, "msg.am.shuffle", null],
     [/nenhuma faixa analisada \(com BPM e tom\) para tocar: adicione uma pasta/g, "msg.am.sem-analisada", null],
+    [/^falha ao baixar (.+): HTTP (\d+)$/g, "msg.sp.baixar", null],
+    [/^(.+) maior que o esperado$/g, "msg.sp.maior", null],
+    [/^(.+) chegou corrompido \(sha256 diferente\)$/g, "msg.sp.corrompido", null],
+    [/^WebGPU indisponivel neste navegador; escolha WASM\.$/g, "msg.sp.webgpu", null],
+    [/^nada separado ainda$/g, "msg.sp.nada", null],
+    [/^o Worker do Sidra não carregou: (.+)$/g, "msg.sp.worker", null],
+    [/^nao foi possivel criar a sessao: (.+)$/g, "msg.sp.sessao", null],
+    [/^Backend (.+) falhou \((.+)\); tentando o proximo\.$/g, "msg.sp.backend", null],
     [/a pasta sumiu \(disco externo desmontado ou pasta apagada\/renomeada\)/g, "msg.bi.sumiu", null],
     [/gravado: (\d+) grade\(s\), (\d+) tom\(ns\), (\d+) faixa\(s\) com cues/g, "msg.nm.gravado", null],
     [/^passa-baixa à esquerda, passa-alta à direita \(o botão do canal\)$/g, "msg.fxd.filtro", null],
@@ -218,7 +226,7 @@
   ];
 
   const i18n = () => raiz.VbMxI18n;
-  const pt = () => { const I = i18n(); return !I || I.idioma() === I.PADRAO; };
+  const pt = () => { const I = i18n(); return !I || I.idioma() === 'pt-BR'; };
   const chave = (k, fallback) => { const I = i18n(); const v = I.t(k); return v === k ? fallback : v; };
 
   function lista(txt) {

@@ -10,8 +10,6 @@ for (let i=1;i<=12;i++) for (const l of ["A","B"]) CASAS.push(i+l);
 
 // ===================== ESTADO =====================
 let atual = BIBLIOTECA.find(f=>f.titulo==="Maré Baixa");
-let filtroCasa = null;     // casa Camelot escolhida na roda, ou null
-let rodaAberta = false;
 
 // Decks: cada um recebe a faixa ARRASTADA para ele (ou pelos botões A/B da faixa). `atual` é a
 // faixa de REFERÊNCIA do motor: o que o clique seleciona, ou a última carregada/tocada num deck.

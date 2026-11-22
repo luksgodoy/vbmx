@@ -1,0 +1,7 @@
+# VbMx — robots.txt (copiado para a raiz do site publicado por publicar-pages.sh)
+# Atenção: o Google só lê /robots.txt na RAIZ do host. Em luksgodoy.github.io/vbmx/ (site de projeto)
+# este arquivo NÃO vale; ver docs/seo-search-console.md § robots.txt.
+User-agent: *
+Allow: /
+
+Sitemap: https://luksgodoy.github.io/vbmx/sitemap.xml

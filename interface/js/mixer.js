@@ -77,14 +77,14 @@ function renderMixer(){
     <div class="canais">
       ${["A","B"].map(l=>`<div class="canal" data-canal="${l}">
         <span class="rotulo">${tr("pro.mx.canal",{l})}</span>
-        ${mixerLinha(l, "trim", "TRIM", -EQ_LIM, EQ_LIM, 0.5, `Ganho de entrada (trim) do canal ${l}, de −${EQ_LIM} a +${EQ_LIM} dB; duplo clique zera`)}
+        ${mixerLinha(l, "trim", "TRIM", -EQ_LIM, EQ_LIM, 0.5, tr("pro.mx.trim-aria",{l,lim:EQ_LIM}))}
         <div class="faders">
           ${BANDAS.map(([b,n])=>faderV(l,b,n,false)).join("")}
           ${faderV(l,"vol","VOL",true)}
         </div>
         <div class="linha-mx"><label class="nome" for="mx-${l}-fx">FX</label><select id="mx-${l}-fx" data-fxsel="${l}" aria-label="${tr('pro.mx.fx-aria',{l})}"></select><span></span></div>
-        <div class="so-filtro">${mixerLinha(l, "filtro", "FILTRO", -100, 100, 1, tr("pro.mx.filtro-aria",{l}))}</div>
-        <div class="so-fx">${mixerLinha(l, "fxQtd", "QTD", 0, 100, 1, `Quantidade do efeito do canal ${l}, de 0 (som intacto) a 100; duplo clique zera`)}</div>
+        <div class="so-filtro">${mixerLinha(l, "filtro", tr("pro.mx.filtro-rotulo"), -100, 100, 1, tr("pro.mx.filtro-aria",{l}))}</div>
+        <div class="so-fx">${mixerLinha(l, "fxQtd", "QTD", 0, 100, 1, tr("pro.mx.qtd-aria",{l}))}</div>
         <div class="so-avancado">${mixerLinha(l, "pan", "PAN", -100, 100, 1, tr("pro.mx.pan-aria",{l}))}</div>
         <div class="atribuicao" role="group" aria-label="${tr('pro.mx.lado-grupo',{l})}">
           ${[["A","A"],["off","–"],["B","B"]].map(([v,r])=>`<button type="button" class="pc-botao pc-botao--sync pc-compacto" data-lado="${v}" data-canal="${l}" aria-pressed="false" aria-label="${tr('pro.mx.lado-aria',{l,v:v === "off" ? tr('pro.mx.nenhum') : v})}">${r}</button>`).join("")}
@@ -110,13 +110,13 @@ function renderMixer(){
       <label>Fader <select id="mx-curva-fader" aria-label="${tr('pro.pref.mx-curva-fader')}"><option value="linear">${tr('pro.mx.linear')}</option><option value="quadratica">${tr('pro.mx.quadratica')}</option><option value="db">dB</option></select></label>
       <label>Fade <input type="number" id="mx-fade-tempo" min="0.1" max="30" step="0.1" value="${mixer.fadeTempo}" aria-label="${tr('pro.mx.fade-seg')}"> s</label>
       <label class="check"><input type="checkbox" id="mx-avancado"> ${tr("pro.mx.avancado")}</label>
-      <label class="check"><input type="checkbox" id="mx-reverso"> reverso</label>
+      <label class="check"><input type="checkbox" id="mx-reverso"> ${tr("pro.mx.reverso")}</label>
     </div>
     <div class="mixer-master">
       <label class="nome" for="mx-master-vol">MASTER</label>
       <input type="range" id="mx-master-vol" min="0" max="100" step="1" value="${mixer.master.vol}" aria-label="${tr('pro.mx.master-aria')}">
       <span class="val mono" id="mx-master-vol-v">${mixer.master.vol}</span>
-      <label class="check"><input type="checkbox" id="mx-limiter"> limitador</label>
+      <label class="check"><input type="checkbox" id="mx-limiter"> ${tr("pro.mx.limitador")}</label>
     </div>`;
   if (medidores) { const b = div.querySelector('.canais > .canal[data-canal="B"]'); b ? b.before(medidores) : div.appendChild(medidores); }   // D3: LEDs entre os canais
   if (fone) div.appendChild(fone);
@@ -180,7 +180,7 @@ function mixerSincronizarTela(){
   for (const l of ["A","B"]) {
     for (const bt of div.querySelectorAll(`button[data-lado][data-canal="${l}"]`)) { const on = mixer[l].lado === bt.dataset.lado; bt.setAttribute("aria-pressed", String(on)); bt.classList.toggle("ligado", on); }
     const ag = div.querySelector(`button[data-auto="${l}"]`);
-    if (ag) { ag.setAttribute("aria-pressed", String(mixer[l].auto)); ag.classList.toggle("ligado", mixer[l].auto); ag.title = "Auto gain: " + (mixer[l].auto ? "ligado, aplicando " + fmtDb(Math.round(mixer[l].autoDb * 10) / 10) + " dB" : "desligado"); }
+    if (ag) { ag.setAttribute("aria-pressed", String(mixer[l].auto)); ag.classList.toggle("ligado", mixer[l].auto); ag.title = mixer[l].auto ? tr("pro.mx.auto-ligado",{db:fmtDb(Math.round(mixer[l].autoDb * 10) / 10)}) : tr("pro.mx.auto-desligado"); }
     const sel = div.querySelector(`select[data-fxsel="${l}"]`), disp = VbMxMixer.fxDisponiveis(mixer.fxLista);
     if (sel) {   // seletor: o filtro + os 4 efeitos da preferência; refaz as opções só se a lista mudou
       if (sel.dataset.lista !== disp.join()) { sel.innerHTML = disp.map(id=>`<option value="${id}" title="${trm(VbMxMixer.descricaoDoFx(id))}">${trm(VbMxMixer.nomeDoFx(id))}</option>`).join(""); sel.dataset.lista = disp.join(); }

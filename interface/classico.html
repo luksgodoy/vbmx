@@ -1,5 +1,47 @@
+<html lang="en">
 <meta charset="utf-8">
-<title data-i18n="pro.pagina.titulo">VbMx Clássico</title>
+<title data-i18n="pro.pagina.titulo">VbMx Pro – Two-deck DJ mixer in your browser</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="VbMx Pro: a two-deck DJ mixer in your browser with sync, hotcues, loops, FX, stem separation and MIDI controller support. Your music stays on your device.">
+<link rel="canonical" href="https://luksgodoy.github.io/vbmx/interface/classico.html">
+<link rel="alternate" hreflang="en" href="https://luksgodoy.github.io/vbmx/interface/classico.html">
+<link rel="alternate" hreflang="x-default" href="https://luksgodoy.github.io/vbmx/interface/classico.html">
+<!-- hreflang pt PRONTO, desligado: ativar só quando existir a rota /pt/ (docs/seo-search-console.md § Idioma)
+<link rel="alternate" hreflang="pt" href="https://luksgodoy.github.io/vbmx/pt/interface/classico.html">
+-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="VbMx">
+<meta property="og:title" content="VbMx Pro – Two-deck DJ mixer in your browser">
+<meta property="og:description" content="VbMx Pro: a two-deck DJ mixer in your browser with sync, hotcues, loops, FX, stem separation and MIDI controller support. Your music stays on your device.">
+<meta property="og:url" content="https://luksgodoy.github.io/vbmx/interface/classico.html">
+<meta property="og:locale" content="en">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="VbMx Pro – Two-deck DJ mixer in your browser">
+<meta name="twitter:description" content="VbMx Pro: a two-deck DJ mixer in your browser with sync, hotcues, loops, FX, stem separation and MIDI controller support. Your music stays on your device.">
+<!-- PENDENTE (Lucas): meta de verificação do Google Search Console. Cole aqui o código real; ver docs/seo-search-console.md
+<meta name="google-site-verification" content="COLE-AQUI-O-CODIGO-DO-GOOGLE">
+-->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "SoftwareApplication",
+ "name": "VbMx Pro",
+ "description": "VbMx Pro: a two-deck DJ mixer in your browser with sync, hotcues, loops, FX, stem separation and MIDI controller support. Your music stays on your device.",
+ "url": "https://luksgodoy.github.io/vbmx/interface/classico.html",
+ "applicationCategory": "MultimediaApplication",
+ "operatingSystem": "Any (web browser)",
+ "browserRequirements": "Requires JavaScript and the Web Audio API",
+ "inLanguage": [
+  "en",
+  "pt-BR",
+  "es",
+  "fr"
+ ],
+ "isPartOf": {
+  "@id": "https://luksgodoy.github.io/vbmx/#site"
+ }
+}
+</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <!-- Esqueleto da página (VB-10, decisão P1 de 2026-10-25): CSS e JS moram em css/ e js/, um
@@ -60,10 +102,9 @@
     <div data-slot="fx-1" hidden></div>
     <div data-slot="fx-2" hidden></div>
   </div>
-  <!-- browser (proposta A): biblioteca + sugestões; embaixo ou à esquerda, por preferência (js/disposicao.js) -->
-  <section class="browser" aria-label="Biblioteca e sugestões" data-i18n-aria="pro.browser.aria">
+  <!-- browser (proposta A): biblioteca (tabela/árvore); embaixo ou à esquerda, por preferência (js/disposicao.js) -->
+  <section class="browser" aria-label="Biblioteca" data-i18n-aria="pro.browser.aria">
     <div class="biblio" id="biblio"></div>
-    <aside class="sugestao" id="sugestao" aria-label="Próximas possíveis" data-i18n-aria="pro.sugestao.aria"></aside>
   </section>
   <div data-slot="preparacao" hidden></div>
   <div data-slot="historico" hidden></div>
@@ -92,6 +133,7 @@
 <script src="../motor/scratch.js"></script>
 <script src="../motor/stems.js"></script>
 <script src="../motor/automix.js"></script>
+<script src="../motor/automix-stems.js"></script>
 <script src="../analise/camelot.js"></script>
 <script src="../biblioteca/bpm.js"></script>
 <script src="../biblioteca/biblioteca.js"></script>
@@ -125,14 +167,12 @@
 <script src="js/stems.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/deck.js"></script>
-<script src="js/filtro.js"></script>
 <script src="js/pecas.js"></script>
 <script src="js/ondas.js"></script>
 <script src="js/deck-tela.js"></script>
 <script src="js/mixer.js"></script>
 <script src="js/biblio.js"></script>
 <script src="js/arvore-vista.js"></script>
-<script src="js/sugestao.js"></script>
 <script src="js/arrastar.js"></script>
 <!-- módulos (esqueletos do VB-11 até o dono preencher) -->
 <script src="js/tick.js"></script>

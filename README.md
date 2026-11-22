@@ -1,4 +1,4 @@
-# VbMx Pro — versão de teste
+# VbMx — versão de teste
 
 Mixer profissional que roda no navegador, sem instalar nada. Abra o `index.html` publicado
 (ou sirva a pasta com qualquer servidor estático).

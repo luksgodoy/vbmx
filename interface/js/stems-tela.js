@@ -17,6 +17,7 @@
   const EQ_MIN = -26, EQ_MAX = 6, VOL_MAX = 1.5;
   const FX = [['delay', 'delay'], ['reverb', 'reverb'], ['flanger', 'flanger'], ['phaser', 'phaser'], ['gater', 'gater']];
   const FASES = ['ausente', 'enviando', 'separando', 'baixando', 'pronto', 'erro'];
+  const CHAVE_FASE = { ausente: 'pro.stems.fase-ausente', enviando: 'pro.stems.fase-enviando', separando: 'pro.stems.fase-separando', baixando: 'pro.stems.fase-baixando', pronto: 'pro.stems.fase-pronto', erro: 'pro.stems.fase-erro' };
 
   const tela = {};                 // letra → {el, fase, progresso, erro, local, arrastando, pendente, cancelar, quadro}
   let pedir = null;
@@ -39,7 +40,7 @@
     if (x.fase === 'separando' && x.carregando) return tr('pro.stems.carregando-modelo');
     if (x.fase === 'separando') { const p = num(x.progresso, 0); return tr('pro.stems.separando',{p:Math.round(limitar(p <= 1 ? p * 100 : p, 0, 100))}); }
     if (x.fase === 'erro') return tr('pro.stems.erro',{erro:trm(x.erro) || tr('pro.stems.falhou')});
-    return FASES.includes(x.fase) ? x.fase : 'ausente';
+    return tr(CHAVE_FASE[FASES.includes(x.fase) ? x.fase : 'ausente']);
   }
   const fmtDb = v => (v <= EQ_MIN ? 'KILL' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}`);
   const fmtFiltro = v => (Math.abs(v) < 0.02 ? 'off' : v < 0 ? `LP ${Math.round(-v * 100)}` : `HP ${Math.round(v * 100)}`);

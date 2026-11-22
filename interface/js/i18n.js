@@ -1,13 +1,13 @@
 // VbMx — internacionalização (decisão a confirmar de 2026-11-14, docs/decisoes.md). JS puro, sem biblioteca e sem build.
 // Contrato: docs/contratos.md § VbMxI18n. Teste: node interface/testar-i18n.js.
 //
-// Idiomas: pt-BR (padrão e reserva), en, es, fr. Os dicionários moram em interface/js/i18n/<idioma>.js, um objeto plano
+// Idiomas: en (padrão e reserva), pt-BR, es, fr. Os dicionários moram em interface/js/i18n/<idioma>.js, um objeto plano
 // {chave: texto}; no navegador cada arquivo se registra aqui (<script> depois deste), no Node o módulo os lê por require.
-// Texto com número: chave.one / chave.other (Intl.PluralRules); parâmetros {nome}. Faltou a chave no idioma → pt-BR → a própria chave.
+// Texto com número: chave.one / chave.other (Intl.PluralRules); parâmetros {nome}. Faltou a chave no idioma → en → a própria chave.
 //
 // No HTML: data-i18n (texto), data-i18n-aria (aria-label), data-i18n-title (title), data-i18n-placeholder,
-// data-i18n-attr="atributo:chave" e data-i18n-params='{"n":4}'. O texto escrito no HTML é o pt-BR (vale sem JS e antes da troca).
-// Idioma inicial: escolha salva (localStorage, em try/catch) > navigator.languages/language > pt-BR.
+// data-i18n-attr="atributo:chave" e data-i18n-params='{"n":4}'. O texto escrito no HTML é o pt-BR histórico; a troca para o inglês (padrão) roda ao carregar.
+// Idioma inicial: escolha salva (localStorage, em try/catch) > en. O idioma do navegador NÃO decide (decisão de 22/11/2026: o site abre em inglês).
 (function (raiz, fabrica) {
   const api = fabrica(raiz);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -25,7 +25,7 @@
     { codigo: 'es', curto: 'ES', nome: 'Español' },
     { codigo: 'fr', curto: 'FR', nome: 'Français' },
   ];
-  const PADRAO = 'pt-BR';
+  const PADRAO = 'en';
   const CHAVE = 'vbmx-idioma';
   const dicionarios = {};
   const valido = (c) => IDIOMAS.some((i) => i.codigo === c);
@@ -40,19 +40,16 @@
     const i = IDIOMAS.find((x) => x.codigo.toLowerCase().split('-')[0] === p);
     return i ? i.codigo : null;
   }
-  // escolha salva > idiomas do navegador (na ordem de preferência) > pt-BR
-  function idiomaInicial(armazem, navegador) {
+  // escolha salva > en. O parâmetro navegador fica na assinatura por compatibilidade e é ignorado de propósito.
+  function idiomaInicial(armazem) {
     try { const s = armazem && armazem.getItem(CHAVE); if (valido(s)) return s; } catch (e) { /* localStorage bloqueado: segue */ }
-    const lista = navegador ? (navegador.languages && navegador.languages.length ? Array.from(navegador.languages) : [navegador.language]) : [];
-    for (const tag of lista) { const c = paraSuportado(tag); if (c) return c; }
     return PADRAO;
   }
 
   function criar(opcoes) {
     const o = opcoes || {};
     const armazem = o.armazem === undefined ? (() => { try { return raiz.localStorage || null; } catch (e) { return null; } })() : o.armazem;
-    const navegador = o.navegador === undefined ? (typeof raiz.navigator === 'object' ? raiz.navigator : null) : o.navegador;
-    let atual = idiomaInicial(armazem, navegador);
+    let atual = idiomaInicial(armazem);
     const ouvintes = [];
 
     const dic = () => dicionarios[atual] || {};

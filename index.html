@@ -1,6 +1,558 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=interface/classico.html">
-<title>VbMx</title></head>
-<body><p>Abrindo o <a href="interface/classico.html">VbMx</a>…</p>
-<script>location.replace('interface/classico.html');</script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VbMx Pro · two-deck DJ mixer in your browser</title>
+<meta name="description" content="VbMx Pro is a two-deck DJ mixer that runs in your browser: sync, hotcues, loops, FX, stem separation and MIDI controllers. Your music stays on your device.">
+<link rel="icon" href="data:,">
+<link rel="canonical" href="https://luksgodoy.github.io/vbmx/">
+<link rel="alternate" hreflang="en" href="https://luksgodoy.github.io/vbmx/">
+<link rel="alternate" hreflang="x-default" href="https://luksgodoy.github.io/vbmx/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="VbMx"><meta property="og:url" content="https://luksgodoy.github.io/vbmx/">
+<meta property="og:title" content="VbMx Pro · two-deck DJ mixer in your browser"><meta property="og:locale" content="en">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://luksgodoy.github.io/vbmx/#site","name":"VbMx","url":"https://luksgodoy.github.io/vbmx/","inLanguage":"en"}</script>
+
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<!-- PROPOSAL, not the real page: no page of the site was changed.
+     One view: the LANDING page.
+     Videos and posters come from tutorial/videos/, so open this file from docs/.
+     Colors and fonts are the app's tokens (interface/css/base.css). Mobile-first; wider layouts come in through clamp()
+     and container queries. The shell is exactly one window tall (top bar, stage, pager) and never scrolls vertically.
+     The access button lives in the top bar, a strip of the shell, so it is always visible and never covers content.
+     Videos: only the current panel's video plays (muted, looping, inline); the others pause; reduced motion disables autoplay. -->
+<style>
+:root {
+  --bg: #0d0f12; --bg-2: #14171c; --bg-3: #1b1f26; --line: #262b34; --fg: #e6e8ec; --fg-2: #9aa3b2; --fg-3: #5f6875;
+  --accent: #f2b134; --accent-dark: #2a2108; --ok: #7ad48c;
+  --t-xs: clamp(.72rem, .68rem + .2vw, .82rem);
+  --t-base: clamp(1rem, .95rem + .25vw, 1.125rem);
+  --t-lg: clamp(1.25rem, 1.1rem + .8vw, 1.6rem);
+  --t-xl: clamp(1.6rem, 1.2rem + 2vw, 2.4rem);
+  --t-hero: clamp(2rem, 1.3rem + 3.6vw, 3.8rem);
+  --e1: clamp(.5rem, .4rem + .5vw, .75rem);
+  --e2: clamp(1rem, .8rem + 1vw, 1.5rem);
+  --e3: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  --heading: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { block-size: 100%; margin: 0; overflow: hidden; }
+body { block-size: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--bg); color: var(--fg);
+  font: 400 var(--t-base)/1.45 var(--text); overflow-wrap: break-word; }
+img, video { display: block; max-inline-size: 100%; block-size: auto; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.label { font: 500 var(--t-xs)/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.skip { position: absolute; inset-inline-start: -999rem; }
+.skip:focus { inset-inline-start: var(--e2); inset-block-start: var(--e1); z-index: 30; background: var(--accent); color: #000; padding: .6rem 1rem; border-radius: 4px; }
+
+header.bar { position: relative; z-index: 10; display: flex; align-items: center; gap: var(--e1); min-inline-size: 0;
+  padding: calc(.35rem + env(safe-area-inset-top)) max(var(--e2), env(safe-area-inset-right)) .35rem max(var(--e2), env(safe-area-inset-left));
+  border-block-end: 1px solid var(--line); background: var(--bg); }
+.brand { font: 700 1.5rem/1 var(--heading); letter-spacing: .02em; color: var(--fg); text-decoration: none; min-block-size: 44px; display: inline-flex; align-items: center; gap: .35em; margin-inline-end: auto; }
+.brand b { color: var(--accent); font-weight: 700; }
+.brand small { display: none; font: 500 var(--t-xs)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 44px; min-inline-size: 44px; padding: 0 .7rem; border-radius: 4px; border: 1px solid var(--line);
+  font: 600 .95rem/1 var(--heading); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; color: var(--fg); background: transparent; white-space: nowrap; cursor: pointer; }
+.btn.solid { background: var(--accent); border-color: var(--accent); color: #14110a; }
+.btn:hover { border-color: var(--accent); }
+.btn[disabled] { opacity: .35; cursor: default; border-color: var(--line); }
+.sitenav { display: none; position: absolute; inset-block-start: 100%; inset-inline-end: var(--e2); min-inline-size: 13rem; padding: .3rem;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; flex-direction: column; }
+.sitenav.is-open { display: flex; }
+.sitenav a { display: flex; align-items: center; min-block-size: 44px; padding: 0 .8rem; border-radius: 4px; color: var(--fg); text-decoration: none;
+  font: 600 1rem/1 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
+.sitenav a:hover, .sitenav a[aria-current="true"] { color: var(--accent); }
+@media (min-width: 26rem) { .brand small { display: inline; } }
+@media (min-width: 40rem) { .btn { padding: 0 1.1rem; font-size: 1rem; letter-spacing: .08em; } }
+@media (min-width: 48rem) {
+  .menu-btn { display: none; }
+  .sitenav { display: flex; position: static; flex-direction: row; min-inline-size: 0; padding: 0; background: none; border: 0; gap: .2rem; }
+}
+
+.stage { min-inline-size: 0; min-block-size: 0; display: flex; counter-reset: p; outline-offset: -2px;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none; }
+.stage::-webkit-scrollbar { display: none; }
+.panel { --k: 1; --v: 36; flex: 0 0 100%; inline-size: 100%; block-size: 100%; container: panel / size; overflow: hidden;
+  scroll-snap-align: start; scroll-snap-stop: always; }
+.step-box { counter-increment: p; }
+.fits { min-block-size: 100%; inline-size: min(100%, 78rem); margin-inline: auto; display: grid; align-content: center;
+  gap: calc(var(--e2) * var(--k)); padding: calc(var(--e1) * var(--k)) var(--e2); font-size: calc(var(--t-base) * var(--k)); }
+.fits p { margin: 0 0 .7em; }
+.heading { font: 700 calc(min(var(--t-xl), 8cqb) * var(--k))/1.02 var(--heading); text-transform: uppercase; margin: .3em 0 0; text-wrap: balance; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--e1); }
+
+.hero h1 { font: 700 calc(min(var(--t-hero), 10cqb) * var(--k))/.98 var(--heading); letter-spacing: -.005em; text-transform: uppercase; margin: .35em 0 .3em; max-inline-size: 18ch; text-wrap: balance; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .sub { max-inline-size: 52ch; color: var(--fg-2); }
+.hero small { display: block; margin-block-start: .8em; color: var(--fg-3); font: 400 var(--t-xs)/1.5 var(--mono); }
+.shot { display: none; margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #000; }
+.shot img { inline-size: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+  color: var(--fg-2); text-decoration: none; font: 500 var(--t-xs)/1.2 var(--mono); letter-spacing: .06em; }
+
+.cards { display: grid; gap: 1px; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.card { background: var(--bg-2); padding: .7em .8em; }
+.card .num { font: 500 var(--t-xs)/1 var(--mono); color: var(--accent); }
+.card h3 { font: 600 1.15em/1.1 var(--heading); letter-spacing: .03em; text-transform: uppercase; margin: .3em 0 .25em; }
+.card p { margin: 0; color: var(--fg-2); font-size: .88em; line-height: 1.35; }
+
+.intro h2 { font: 700 calc(min(var(--t-xl) * 1.2, 9cqb) * var(--k))/.98 var(--heading); text-transform: uppercase; margin: .4em 0 .3em; text-wrap: balance; }
+.intro h2 em { font-style: normal; color: var(--accent); }
+.intro p { max-inline-size: 58ch; color: var(--fg-2); }
+.intro p strong { color: var(--fg); font-weight: 500; }
+.index { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.index a { display: flex; align-items: center; gap: .5em; block-size: 100%; min-block-size: 44px; padding: .3em .6em; background: var(--bg-2); color: var(--fg); text-decoration: none;
+  font: 600 .95em/1.1 var(--heading); letter-spacing: .03em; text-transform: uppercase; }
+.index a span { font: 500 var(--t-xs)/1 var(--mono); color: var(--accent); }
+.index a:hover { background: var(--accent-dark); }
+
+.step { display: grid; gap: calc(var(--e2) * var(--k)); align-items: center; }
+.video { position: relative; margin: 0 auto; inline-size: min(100%, calc(var(--v) * 1cqb * 16 / 9)); aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.video video { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.video figcaption { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.bar-t { position: absolute; inset-inline: 0; inset-block-end: 0; block-size: 3px; background: rgba(242, 177, 52, .18); pointer-events: none; }
+.bar-t i { display: block; block-size: 100%; inline-size: 100%; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); }
+.video.playing .bar-t i { animation: fillup var(--dur, 5s) linear infinite; }
+@keyframes fillup { to { transform: scaleX(1); } }
+.toggle { position: absolute; inset-inline-end: .4rem; inset-block-start: .4rem; min-inline-size: 44px; min-block-size: 44px; padding: 0 .7rem; border-radius: 4px; border: 1px solid var(--line);
+  background: rgba(13, 15, 18, .78); color: var(--fg); font: 500 var(--t-xs)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.toggle:hover { border-color: var(--accent); }
+.step h2 { font: 700 calc(min(var(--t-xl), 8cqb) * var(--k))/1.02 var(--heading); text-transform: uppercase; margin: 0 0 .35em; text-wrap: balance; }
+.step h2::before { content: "STEP " counter(p, decimal-leading-zero); display: block; font: 500 var(--t-xs)/1.2 var(--mono); letter-spacing: .12em; color: var(--accent); margin-block-end: .4rem; }
+.step p { margin: 0 0 .6em; color: #c9ccd3; max-inline-size: 56ch; }
+.step p:last-child { margin-block-end: 0; }
+kbd { display: inline-block; font: 500 .82em/1 var(--mono); padding: .2em .42em; border: 1px solid #3a404b; border-block-end-width: 2px; border-radius: 4px; background: var(--bg-3); color: var(--fg); white-space: nowrap; }
+.note { font-size: .92em; color: var(--fg-2); border-inline-start: 2px solid var(--accent); padding-inline-start: .8rem; }
+
+.closing { text-align: center; justify-items: center; }
+.closing .privacy { max-inline-size: 46ch; margin: 0 auto; padding: .8em 1em; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-2); }
+.closing .privacy p { margin: .4em 0 0; }
+.closing h2 { font: 700 calc(var(--t-xl) * var(--k))/1 var(--heading); text-transform: uppercase; margin: 0 0 .4em; }
+.closing p { color: var(--fg-2); margin: 0 auto 1em; max-inline-size: 52ch; }
+.closing .actions { justify-content: center; }
+.closing small { display: block; max-inline-size: 60ch; color: var(--fg-3); font: 400 var(--t-xs)/1.5 var(--mono); border-block-start: 1px solid var(--line); padding-block-start: var(--e1); }
+
+@container panel (min-width: 34rem) and (min-aspect-ratio: 5/4) {
+  .step { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--e3); }
+  .video { inline-size: min(100%, calc(82cqb * 16 / 9)); }
+  .step-box:nth-child(odd) .step .video { order: 2; }
+  .intro, .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: var(--e3); }
+  .shot { display: block; }
+}
+@container panel (min-width: 34rem) and (max-aspect-ratio: 5/4) and (min-height: 44rem) {
+  .shot { display: block; inline-size: min(100%, calc(var(--v) * 1cqb * 16 / 9)); margin-inline: auto; }
+}
+@container panel (min-width: 44rem) {
+  .index a { min-block-size: 52px; }
+  .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .card { padding: 1.1em 1.2em; }
+}
+
+.pager { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--e1);
+  padding: .35rem max(var(--e2), env(safe-area-inset-right)) calc(.35rem + env(safe-area-inset-bottom)) max(var(--e2), env(safe-area-inset-left)); border-block-start: 1px solid var(--line); }
+.arrow { min-inline-size: 48px; min-block-size: 48px; }
+.arrow span { display: none; }
+.autobtn { min-inline-size: 48px; min-block-size: 48px; }
+.autobtn[hidden] { display: none; }
+.where { display: grid; gap: .4rem; justify-items: center; min-inline-size: 0; }
+.where output { font: 500 var(--t-xs)/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-2); }
+.dots { display: flex; gap: 4px; inline-size: min(100%, 28rem); }
+.dots i { flex: 1; block-size: 4px; border-radius: 2px; background: var(--line); transition: background .2s; }
+.dots i.done { background: #6b5415; }
+.dots i.here { background: var(--accent); }
+@media (min-width: 40rem) { .arrow span { display: inline; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .video.playing .bar-t i { animation: none; }
+  .bar-t { display: none; }
+  .stage { scroll-behavior: auto; }
+  .dots i { transition: none; }
+}
+@media (max-width: 25.99rem) { header.bar { gap: .4rem; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#step-1">Skip to the steps</a>
+
+<header class="bar">
+  <a class="brand" href="#home" aria-label="VbMx Pro, home">Vb<b>Mx</b> <small>Pro</small></a>
+  <nav class="sitenav" id="menu" aria-label="Site sections">
+    <a href="#features" data-from="1" data-to="1">Features</a>
+    <a href="#tutorial" data-from="2" data-to="10">Tutorial</a>
+    <a href="#open" data-from="11" data-to="11">Privacy</a>
+  </nav>
+    <button class="btn menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Site menu">☰</button>
+    <a class="btn solid access" id="access" href="interface/classico.html">Open VbMx</a>
+</header>
+
+<main class="stage" id="stage">
+<section class="panel" id="home" data-name="Home" tabindex="-1" aria-label="Home"><div class="fits hero">
+  <div>
+    <span class="label">DJ in the browser · nothing to install</span>
+    <h1>Mix for real, <em>split the stems</em> and play in the browser.</h1>
+    <p class="sub">Two decks, a full mixer and AI stem separation, running on your device. Your music never leaves it.</p>
+    <nav class="actions" aria-label="Where to start">
+      <a class="btn ghost" href="#tutorial">See the tutorial</a>
+      <a class="btn ghost" href="#features">What's inside</a>
+    </nav>
+    <small>Chrome or Edge on a computer · test version · free</small>
+  </div>
+  <figure class="shot"><img src="tutorial/videos/passo-01.jpg" width="960" height="540" alt="The VbMx Pro screen: two decks, the mixer in the middle and the library below."></figure>
+</div></section>
+
+<section class="panel" id="features" data-name="Features" tabindex="-1" aria-label="Features"><div class="fits">
+  <div>
+    <span class="label">What's inside</span>
+    <h2 class="heading">A whole DJ setup, in one tab.</h2>
+  </div>
+  <div class="cards">
+    <article class="card"><span class="num">01</span><h3>Two decks</h3><p>Cue, loop, hotcues, pitch and key lock, with waveform and platter.</p></article>
+    <article class="card"><span class="num">02</span><h3>AI stems</h3><p>Split vocals, drums, bass and the rest of any track and mix each part.</p></article>
+    <article class="card"><span class="num">03</span><h3>Mixer and FX</h3><p>Three-band EQ, filter, crossfader, limiter and per-channel effects.</p></article>
+    <article class="card"><span class="num">04</span><h3>Sync and grid</h3><p>BPM and key detected, sync, quantize and beat grid.</p></article>
+    <article class="card"><span class="num">05</span><h3>Automix</h3><p>Let VbMx blend in the next track for you.</p></article>
+    <article class="card"><span class="num">06</span><h3>PT · EN · ES · FR</h3><p>Interface in four languages, switched on the fly.</p></article>
+  </div>
+</div></section>
+
+<section class="panel" id="tutorial" data-name="Tutorial" tabindex="-1" aria-label="Tutorial"><div class="fits intro">
+  <div>
+    <span class="label">Tutorial · 8 steps · under 1 minute of video</span>
+    <h2>How to use <em>VbMx Pro</em></h2>
+    <p>Each step has a video a few seconds long, <strong>recorded on the VbMx Pro screen itself</strong>, and two sentences telling you where to click. Names shown as keys, like <kbd>SYNC</kbd>, are the labels you see on screen.</p>
+    <p>The videos have no sound and loop. The amber circle is the mouse pointer.</p>
+  </div>
+  <ol class="index">
+    <li><a href="#step-1"><span>01</span>Load the track</a></li>
+    <li><a href="#step-2"><span>02</span>BPM, key and sync</a></li>
+    <li><a href="#step-3"><span>03</span>Grid, quant and snap</a></li>
+    <li><a href="#step-4"><span>04</span>Hotcues</a></li>
+    <li><a href="#step-5"><span>05</span>Loops</a></li>
+    <li><a href="#step-6"><span>06</span>Mixer</a></li>
+    <li><a href="#step-7"><span>07</span>Stems+</a></li>
+    <li><a href="#step-8"><span>08</span>FX and automatic mixing</a></li>
+  </ol>
+</div></section>
+
+<section class="panel step-box" id="step-1" tabindex="-1" aria-label="Step 1 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:5s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-01.jpg" aria-describedby="cap-1"><source src="tutorial/videos/passo-01.mp4" type="video/mp4"></video>
+          <figcaption id="cap-1">Silent video: the pointer grabs the first row of the library, drags it to deck A, which lights up with an amber border, and drops it; the track appears on the deck.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Load a track by dragging it to a deck</h2>
+          <p>In the <kbd>Library</kbd>, grab the track's row and drag it to deck <kbd>A</kbd> or <kbd>B</kbd>. The empty deck says "drag a track here" and lights up when the track is over it.</p>
+          <p class="note">On a short screen the library is folded into the <kbd>LIBRARY ▲</kbd> bar at the foot of the page. The <kbd>A</kbd> and <kbd>B</kbd> buttons on the row load without dragging.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-2" tabindex="-1" aria-label="Step 2 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:5s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-02.jpg" aria-describedby="cap-2"><source src="tutorial/videos/passo-02.mp4" type="video/mp4"></video>
+          <figcaption id="cap-2">Silent video: on deck B, the pointer shows BPM 128.0 and key 9A, clicks SYNC and the BPM becomes 124.0, with the pitch at −3.1% and the note "orig. 128.0".</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Read the BPM and the key, then match with sync</h2>
+          <p>Each deck shows the track's <kbd>BPM</kbd> and <kbd>KEY</kbd> (on the Camelot wheel, like 8A). Click <kbd>SYNC</kbd> and the deck matches the other one's tempo: the <kbd>PITCH</kbd> moves by itself and the original BPM stays noted underneath.</p>
+          <p class="note"><kbd>KEY LOCK</kbd> holds the key when the tempo changes.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-3" tabindex="-1" aria-label="Step 3 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:5s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-03.jpg" aria-describedby="cap-3"><source src="tutorial/videos/passo-03.mp4" type="video/mp4"></video>
+          <figcaption id="cap-3">Silent video: on the top bar the pointer turns SNAP on and opens Grid; the GRID B panel appears on the deck and three clicks on "10 ms ▶" move the first beat from 0.000 s to 0.030 s.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Check the grid, quantize and snap</h2>
+          <p>On the top bar, <kbd>QUANT</kbd> locks cues and loops to the beat and <kbd>SNAP</kbd> locks markers to the grid. <kbd>Grid ▸</kbd> opens each deck's panel: if the grid is off the beat, nudge it with <kbd>◀ 10 ms</kbd> and <kbd>10 ms ▶</kbd>.</p>
+          <p class="note">In the same panel: <kbd>×2</kbd> and <kbd>÷2</kbd> fix a BPM read at half or double, <kbd>TAP</kbd> sets it by tapping and <kbd>RESET</kbd> undoes.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-4" tabindex="-1" aria-label="Step 4 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:4s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-04.jpg" aria-describedby="cap-4"><source src="tutorial/videos/passo-04.mp4" type="video/mp4"></video>
+          <figcaption id="cap-4">Silent video: with deck A playing, one click on hotcue 1 and another on 2 store two points, which show up numbered on the waveform; a new click on 1 sends the track back there.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Set and trigger hotcues</h2>
+          <p>Buttons <kbd>1</kbd> to <kbd>8</kbd> under <kbd>HOTCUES</kbd> store points in the track. On an empty button, a click stores where the track is; on a stored button, a click jumps to that point.</p>
+          <p class="note"><kbd>Delete</kbd> clears the selected hotcue and <kbd>Type</kbd> changes what it is.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-5" tabindex="-1" aria-label="Step 5 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:4s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-05.jpg" aria-describedby="cap-5"><source src="tutorial/videos/passo-05.mp4" type="video/mp4"></video>
+          <figcaption id="cap-5">Silent video: with deck A playing, a click on LOOP paints a green 4-beat stretch on the waveform and the track starts repeating; a click on ½ cuts the stretch in half.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Hold a section in a loop</h2>
+          <p>In <kbd>LOOP A</kbd>, pick the length in beats with <kbd>◂</kbd> and <kbd>▸</kbd> and click <kbd>LOOP</kbd>: the section is marked on the waveform and repeats. <kbd>½</kbd> and <kbd>×2</kbd> shorten and lengthen it without leaving the loop.</p>
+          <p class="note"><kbd>IN</kbd> and <kbd>OUT</kbd> set the start and the end by hand. Click <kbd>LOOP</kbd> again to leave.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-6" tabindex="-1" aria-label="Step 6 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:5s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-06.jpg" aria-describedby="cap-6"><source src="tutorial/videos/passo-06.mp4" type="video/mp4"></video>
+          <figcaption id="cap-6">Silent video: on the mixer, the pointer lowers channel A's LOW, turns channel A's FILTER and drags the crossfader from the middle towards side B.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Mix: EQ, filter and crossfader</h2>
+          <p>Each channel has <kbd>TRIM</kbd>, the three-band EQ <kbd>HI</kbd> <kbd>MID</kbd> <kbd>LOW</kbd>, the <kbd>FILTER</kbd> and <kbd>VOL</kbd>. Take the bass out of the incoming track, open the filter little by little and move the <kbd>crossfader</kbd> from <kbd>A</kbd> to <kbd>B</kbd>.</p>
+          <p class="note">The <kbd>K</kbd> under each band kills that band at once. <kbd>CUE</kbd> sends the channel to the headphones.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-7" tabindex="-1" aria-label="Step 7 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:4s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-07.jpg" aria-describedby="cap-7"><source src="tutorial/videos/passo-07.mp4" type="video/mp4"></video>
+          <figcaption id="cap-7">Silent video: the pointer turns Stems+ on in the top bar; hotcues and loops leave and each deck's STEMS strip takes the space. Then the pointer rests on deck B's STEMS button, without clicking. The separation itself is not shown in the video.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Split the track into stems</h2>
+          <p><kbd>Stems+</kbd>, on the top bar, hides hotcues and loops and gives the space to the stems. On each deck, the <kbd>STEMS</kbd> button splits the track and turns the mode on; while the separation does not exist yet, the deck's strip says "missing".</p>
+          <p class="note">The first time, the browser downloads the separation model, about 90 MB, and the separation only starts after the download. Use Chrome or Edge. The video shows where the control is, not the separation happening.</p>
+        </div>
+  </article>
+</div></section>
+
+
+<section class="panel step-box" id="step-8" tabindex="-1" aria-label="Step 8 of 8"><div class="fits">
+  <article class="step">
+    <figure class="video" style="--dur:5s">
+          <video muted loop playsinline preload="metadata" width="960" height="540" poster="tutorial/videos/passo-08.jpg" aria-describedby="cap-8"><source src="tutorial/videos/passo-08.mp4" type="video/mp4"></video>
+          <figcaption id="cap-8">Silent video: on the FX1 unit, the pointer turns ON and raises the D/W knob with deck A playing; the scene cuts to the library, where the pointer clicks Tree and then Auto.</figcaption>
+          <div class="bar-t" aria-hidden="true"><i></i></div>
+        </figure>
+        <div>
+          <h2>Turn on an effect and let Auto mix</h2>
+          <p>In <kbd>FX1</kbd> or <kbd>FX2</kbd>, pick the effect from the list (Filter, Delay), send it to <kbd>A</kbd> or <kbd>B</kbd>, turn it <kbd>ON</kbd> and dose it with <kbd>D/W</kbd>. For automatic mixing, with a deck playing, click <kbd>Tree</kbd> in the library and then <kbd>Auto</kbd>: VbMx picks the next track and makes the transition.</p>
+          <p class="note">The <kbd>AUTO</kbd> on the top bar is something else: it is the automatic master tempo.</p>
+        </div>
+  </article>
+</div></section>
+
+<section class="panel" id="open" data-name="Open" tabindex="-1" aria-label="Privacy and open VbMx"><div class="fits closing">
+  <div class="privacy">
+    <span class="label">Privacy</span>
+    <p>Your audio stays on your device. Nothing is uploaded, there is no account and no sign-up.</p>
+  </div>
+  <div>
+    <h2>Over to you</h2>
+    <p>Open VbMx Pro, drag in two tracks and repeat the steps. Nothing is installed: it runs in the browser.</p>
+    <nav class="actions" aria-label="Next step">
+      <a class="btn solid" href="interface/classico.html">Open VbMx</a>
+      <a class="btn ghost" href="#step-1">Review the steps</a>
+    </nav>
+  </div>
+  <small>Videos recorded on the VbMx Pro screen with synthetic demo tracks. The amber pointer and the screen crop come from the recording. VbMx Pro · test version · analysis by Essentia.js · stems by htdemucs.</small>
+</div></section>
+</main>
+
+<nav class="pager" aria-label="Panel navigation">
+  <button class="btn arrow" type="button" data-go="-1" aria-label="Previous panel">◀<span>&nbsp;Previous</span></button>
+  <div class="where"><output id="where" aria-live="polite"></output><div class="dots" id="dots" aria-hidden="true"></div></div>
+  <button class="btn autobtn" id="auto" type="button" aria-pressed="false" aria-label="Pause automatic tutorial advance">❚❚</button>
+  <button class="btn arrow" type="button" data-go="+1" aria-label="Next panel"><span>Next&nbsp;</span>▶</button>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+  var stage = document.getElementById('stage');
+  var menu = document.getElementById('menu');
+  var menuBtn = document.querySelector('.menu-btn');
+  var panels = [].slice.call(stage.querySelectorAll('.panel'));
+  var videos = [].slice.call(stage.querySelectorAll('.video video'));
+  var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var where = document.getElementById('where');
+  var dots = document.getElementById('dots');
+  var current = 0;
+
+  var LEVELS = [[1, 36], [.94, 34], [.88, 32], [.84, 30], [.8, 28], [.76, 26], [.72, 24], [.68, 22], [.64, 20], [.6, 18]];
+  function fit() {
+    panels.forEach(function (p) {
+      for (var d = 0; d < LEVELS.length; d++) {
+        p.style.setProperty('--k', LEVELS[d][0]); p.style.setProperty('--v', LEVELS[d][1]);
+        if (p.scrollHeight <= p.clientHeight + 1) break;
+      }
+      p.dataset.level = Math.min(d, LEVELS.length - 1);
+    });
+  }
+
+  function play(v) { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
+  videos.forEach(function (v) {
+    v.muted = true;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'toggle';
+    function label() { v.parentElement.classList.toggle('playing', !v.paused); b.textContent = v.paused ? 'Play' : 'Pause'; b.setAttribute('aria-label', (v.paused ? 'Play' : 'Pause') + " this step's video"); }
+    b.addEventListener('click', function () { if (v.paused) { v.dataset.manual = 'play'; play(v); } else { v.dataset.manual = 'pause'; v.pause(); } });
+    v.addEventListener('play', label); v.addEventListener('pause', label); label();
+    v.parentElement.appendChild(b);
+  });
+  function currentVideo() {
+    var stageLive = !document.hidden;
+    videos.forEach(function (v) {
+      var mine = stageLive && panels.indexOf(v.closest('.panel')) === current;
+      v.autoplay = mine && !calm.matches;
+      if (!mine) { v.pause(); delete v.dataset.manual; return; }
+      if (calm.matches) { if (v.dataset.manual !== 'play') v.pause(); }
+      else if (v.dataset.manual !== 'pause') play(v);
+    });
+  }
+  document.addEventListener('visibilitychange', currentVideo);
+  if (calm.addEventListener) calm.addEventListener('change', currentVideo);
+
+  function nameOf(i) {
+    var p = panels[i], n = panels.filter(function (x) { return x.classList.contains('step-box'); });
+    var k = n.indexOf(p);
+    return k >= 0 ? 'Step ' + ('0' + (k + 1)).slice(-2) + ' of ' + ('0' + n.length).slice(-2) : p.dataset.name;
+  }
+  panels.forEach(function () { dots.appendChild(document.createElement('i')); });
+  function paint() {
+    document.body.dataset.panel = current;
+    where.textContent = nameOf(current);
+    [].forEach.call(dots.children, function (el, i) { el.className = i === current ? 'here' : i < current ? 'done' : ''; });
+    [].forEach.call(menu.querySelectorAll('a[data-from]'), function (a) {
+      a.setAttribute('aria-current', current >= +a.dataset.from && current <= +a.dataset.to ? 'true' : 'false');
+    });
+    [].forEach.call(document.querySelectorAll('[data-go]'), function (b) { var d = +b.dataset.go; b.disabled = (d < 0 && current === 0) || (d > 0 && current === panels.length - 1); });
+    currentVideo();
+  }
+  function go(i, hard) {
+    i = Math.max(0, Math.min(panels.length - 1, i));
+    stage.scrollTo({ left: i * stage.clientWidth, behavior: hard ? 'instant' : 'auto' });
+    if (hard) { current = i; paint(); }
+  }
+  stage.addEventListener('scroll', function () {
+    if (!stage.clientWidth) return;
+    var i = Math.round(stage.scrollLeft / stage.clientWidth);
+    if (i !== current) { current = i; paint(); }
+  }, { passive: true });
+
+  function closeMenu() { menu.classList.remove('is-open'); menuBtn.setAttribute('aria-expanded', 'false'); }
+  menuBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    menuBtn.setAttribute('aria-expanded', menu.classList.toggle('is-open') ? 'true' : 'false');
+  });
+  function goTo(id, hard) {
+    var dest = document.getElementById(id);
+    if (!dest) return false;
+    var i = panels.indexOf(dest);
+    if (i < 0) return false;
+    go(i, hard);
+    return true;
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-go]'); if (b) { go(current + (+b.dataset.go)); return; }
+    var a = e.target.closest('a[href^="#"]');
+    if (a) {
+      var id = a.getAttribute('href').slice(1);
+      closeMenu();
+      if (goTo(id)) { e.preventDefault(); try { history.replaceState(null, '', '#' + id); } catch (x) {} }
+      return;
+    }
+    if (!e.target.closest('#menu')) closeMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeMenu(); return; }
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    var k = e.key, toward = k === 'ArrowRight' || k === 'PageDown' ? current + 1 : k === 'ArrowLeft' || k === 'PageUp' ? current - 1 : k === 'Home' ? 0 : k === 'End' ? panels.length - 1 : null;
+    if (toward === null) return;
+    e.preventDefault(); go(toward);
+  });
+  var lock = 0;
+  stage.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    var now = Date.now(); if (now < lock || Math.abs(e.deltaY) < 8) return;
+    lock = now + 450; go(current + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+
+  /* Tutorial auto-advance: steps 1 to 8 only, loops back to step 1. Test knobs: ?dwell=ms (cap per step) and ?idle=ms (resume delay). */
+  var qs = new URLSearchParams(location.search);
+  var DWELL = +qs.get('dwell') || 12000, IDLE = +qs.get('idle') || 8000;
+  var autoBtn = document.getElementById('auto');
+  var steps = panels.filter(function (x) { return x.classList.contains('step-box'); });
+  var userPaused = false, lastTouch = 0, hovering = false, inView = true, elapsed = 0, cycled = false, lastTick = Date.now(), lastIdx = -1;
+  function touched() { lastTouch = Date.now(); }
+  ['pointerdown', 'touchstart', 'wheel', 'keydown', 'click'].forEach(function (t) {
+    document.addEventListener(t, function (e) { if (e.target !== autoBtn) touched(); }, { passive: true, capture: true });
+  });
+  stage.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'touch') { hovering = true; touched(); } });
+  stage.addEventListener('pointerleave', function () { hovering = false; touched(); });
+  stage.addEventListener('focusin', touched);
+  stage.addEventListener('focusout', touched);
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { inView = en[0].isIntersecting; }, { threshold: .3 }).observe(stage);
+  function paintAuto() {
+    autoBtn.hidden = calm.matches;
+    autoBtn.textContent = userPaused ? '\u25B6' : '\u275A\u275A';
+    autoBtn.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+    autoBtn.setAttribute('aria-label', userPaused ? 'Resume automatic tutorial advance' : 'Pause automatic tutorial advance');
+  }
+  autoBtn.addEventListener('click', function () { userPaused = !userPaused; elapsed = 0; paintAuto(); });
+  if (calm.addEventListener) calm.addEventListener('change', paintAuto);
+  steps.forEach(function (sp) {
+    var v = sp.querySelector('video'), last = 0;
+    v.addEventListener('ended', function () { cycled = true; });
+    v.addEventListener('timeupdate', function () { if (v.currentTime + .5 < last) cycled = true; last = v.currentTime; });
+  });
+  setInterval(function () {
+    var now = Date.now(), dt = now - lastTick; lastTick = now;
+    var k = steps.indexOf(panels[current]);
+    if (k !== lastIdx) { lastIdx = k; elapsed = 0; cycled = false; }
+    if (k < 0 || calm.matches || document.hidden || !inView || userPaused || hovering || now - lastTouch < IDLE) return;
+    elapsed += dt;
+    if (cycled || elapsed >= DWELL) { cycled = false; elapsed = 0; go(panels.indexOf(steps[(k + 1) % steps.length])); }
+  }, 250);
+  paintAuto();
+
+  function redo() { fit(); stage.scrollTo({ left: current * stage.clientWidth, behavior: 'instant' }); }
+  var timer; window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(redo, 80); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redo);
+  fit(); paint();
+  if (location.hash.length > 1) goTo(location.hash.slice(1), true);
+  window.addEventListener('hashchange', function () { goTo(location.hash.slice(1), true); });
+  window.__site = { go: go, current: function () { return current; }, total: panels.length };
+})();
+</script>
+</body>
+</html>

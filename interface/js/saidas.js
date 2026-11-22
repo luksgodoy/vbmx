@@ -131,7 +131,7 @@
     if (s) {
       s.classList.add('fone');
       s.setAttribute('aria-label', tr('pro.saidas.fone-aria'));
-      s.innerHTML = `<span class="nome">FONE</span>
+      s.innerHTML = `<span class="nome">${tr("pro.saidas.fone")}</span>
         <div class="linha-mx"><label class="nome" for="fone-vol">VOL</label>
           <input type="range" id="fone-vol" min="0" max="100" step="1" value="${estado.vol}" aria-label="${tr('pro.saidas.vol-aria')}">
           <span class="val mono" id="fone-vol-v">${estado.vol}</span></div>

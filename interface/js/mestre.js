@@ -157,7 +157,7 @@ function mestrePintar(){
 function mestreMontarPainel(){
   const topo = document.querySelector("header.topo"); if (!topo || document.getElementById("mestre-painel")) return;
   const p = document.createElement("div");
-  p.id = "mestre-painel"; p.className = "mestre-painel"; p.setAttribute("role", "group"); p.setAttribute("aria-label", "Tempo mestre");
+  p.id = "mestre-painel"; p.className = "mestre-painel"; p.setAttribute("role", "group"); p.setAttribute("aria-label", tr("pro.mestre.painel"));
   p.innerHTML = `
     <button class="botao mestre-btn" data-mestre-master aria-pressed="false" title="${tr('pro.mestre.master-t')}">MASTER</button>
     <span class="mestre-quem" data-mestre-quem></span>

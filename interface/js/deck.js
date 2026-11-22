@@ -2,8 +2,8 @@
 function selecionar(id){
   const nova = BIBLIOTECA.find(f=>f.id===id);
   if (!nova || nova.analisavel===false) return;
-  atual = nova; filtroCasa = null;
-  renderBiblio(); renderSugestao(); atualizarEstadoGlobal();
+  atual = nova;
+  renderBiblio(); atualizarEstadoGlobal();
   VbMxUI.emitir("selecao:mudou", { faixa: atual });
 }
 // Soltar/“A”/“B”: carrega SÓ aquele deck e decodifica o arquivo; a faixa vira a referência do motor.
@@ -22,7 +22,6 @@ async function carregarNoDeck(letra, id){
     picos: null, cue: cuesPorFaixa.get(chaveCue(nova)) || 0, previa: false, cacheGeral: null });
   syncSoltar(letra==="A" ? "B" : "A", tr("pro.deck.trocou-faixa",{letra}));   // o seguidor não muda de andamento sozinho
   if (atual!==nova) { atual = nova; VbMxUI.emitir("selecao:mudou", { faixa: atual }); }
-  filtroCasa = null;
   if (typeof nova.obter !== "function") {
     d.carga = ehExemplo ? tr("pro.deck.sem-audio-exemplo") : tr("pro.deck.sem-acesso") + (MODULO_VELHO ? " — " + AVISO_MODULO() : " " + tr("pro.deck.recarregue-pasta"));
     d.cargaCls = "erro"; renderTudo(); return;
@@ -64,7 +63,7 @@ function tocarPausar(letra){
   } else {
     VbMxTocador.tocar(letra);
     if (atual!==d.faixa) {   // quem tocou por último guia as sugestões
-      atual = d.faixa; filtroCasa = null; renderBiblio(); renderSugestao();
+      atual = d.faixa; renderBiblio();
       VbMxUI.emitir("selecao:mudou", { faixa: atual });
     }
     VbMxUI.emitir("deck:tocou", { letra, faixa: d.faixa, posicao: VbMxTocador.posicao(letra) });
@@ -123,7 +122,7 @@ function soltarCupDeck(letra){
   d.cupApertado = false;
   VbMxTocador.soltarCup(letra);
   if (tocandoDeck(letra)) {
-    if (atual!==d.faixa) { atual = d.faixa; filtroCasa = null; renderBiblio(); renderSugestao(); VbMxUI.emitir("selecao:mudou", { faixa: atual }); }
+    if (atual!==d.faixa) { atual = d.faixa; renderBiblio(); VbMxUI.emitir("selecao:mudou", { faixa: atual }); }
     VbMxUI.emitir("deck:tocou", { letra, faixa: d.faixa, posicao: VbMxTocador.posicao(letra) });
   }
   atualizarTransporte(letra);

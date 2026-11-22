@@ -28,7 +28,7 @@ for (const k of AMX_CRITERIOS) {
 }
 
 const amx = { ligado: false, timer: null, baseId: null, plano: null, planoPara: "", mixando: null, carregando: false,
-  escolha: null, tocadas: [], puladas: [], falhas: 0, status: "", replanejou: false };
+  escolha: null, tocadas: [], puladas: [], falhas: 0, status: "", replanejou: false, modo: "" };
 
 function amxLigado() { return amx.ligado; }
 function amxCriterios() { const o = {}; for (const k of AMX_CRITERIOS) o[k] = VbMxPrefs.ler(`automix.criterio-${k}`) !== false; return o; }
@@ -98,6 +98,7 @@ function amxBarraHTML() {
     </span>
     <button type="button" class="alternador" id="amx-outra" title="${tr("pro.amx.outra-t")}">${tr("pro.amx.outra")}</button>
     <button type="button" class="alternador" id="amx-agora" title="${tr("pro.amx.agora-t")}">${tr("pro.amx.agora")}</button>
+    <span class="amx-modo" id="amx-modo">${amx.modo ? esc(tr(amx.modo)) : ""}</span>
     <span class="amx-status" id="amx-status" role="status" aria-live="polite">${esc(amx.status)}</span>
   </div>`;
 }
@@ -181,13 +182,42 @@ function amxIniciar(base) {
   VbMxTocador.buscar(outra, Math.max(0, VbMxAutomix.posicaoDaProxima(plano, e.posicao, taxa)));
   mixerCancelarFade();
   mixerDefinir(null, "xfade", base.letra === "A" ? -100 : 100);   // a próxima entra muda
-  amx.mixando = { de: base.letra, para: outra, plano, deId: base.faixa.id, xfade: null };
+  amx.mixando = { de: base.letra, para: outra, plano, deId: base.faixa.id, xfade: null, stems: amxPrepararStems(base.letra, outra, plano) };
   tocarPausar(outra);
   amxRedesenhar();
 }
 
+// Bass swap por stems (motor/automix-stems.js): só onde os stems JÁ estão carregados nos dois decks (nada é separado aqui);
+// senão o crossfade de sempre, e a barra diz qual modo valeu. Os stems ligados por esta transição desligam ao concluir.
+function amxCarregado(letra) { return typeof VbMxStems !== "undefined" && VbMxStems.estado(letra, "bass") !== null; }
+function amxPrepararStems(de, para, plano) {
+  const S = VbMxAutomixStems, r = S.escolherModo({ plano, saindo: { carregado: amxCarregado(de) }, entrando: { carregado: amxCarregado(para) } });
+  const m = { modo: r.modo, motivo: r.motivo, tv: S.pontoVirada(plano), ligou: [], antes: {} };
+  if (r.modo === "stems") {
+    try {
+      for (const l of [de, para]) {
+        m.antes[l] = S.guardar(VbMxStems, l);
+        if (!VbMxStems.ativo(l)) { VbMxStems.ligar(l, true); m.ligou.push(l); }
+      }
+      if (!S.aplicar(VbMxStems, de, para, 0, m.tv)) throw new Error("stems");
+    } catch (e) { amxSoltarStems(m, de, para); m.modo = "crossfade"; m.motivo = "erro"; }
+  }
+  amx.modo = m.modo === "stems" ? "pro.amx.modo-stems" : m.motivo === "sem-grade" ? "pro.amx.modo-sem-grade" : "pro.amx.modo-crossfade";
+  amxModoNaTela();
+  return m;
+}
+function amxSoltarStems(m, de, para) {
+  if (!m || typeof VbMxStems === "undefined") return;
+  for (const l of [de, para]) { if (m.antes[l]) VbMxAutomixStems.restaurar(VbMxStems, l, m.antes[l]); if (m.ligou.includes(l)) { try { VbMxStems.ligar(l, false); } catch (e) {} } }
+}
+function amxModoNaTela() { const el = document.getElementById("amx-modo"); if (el) el.textContent = amx.modo ? tr(amx.modo) : ""; }
+
 function amxSeguir(progresso) {
-  const m = amx.mixando, v = Math.round(m.de === "A" ? -100 + 200 * progresso : 100 - 200 * progresso);
+  const m = amx.mixando;
+  if (m.stems && m.stems.modo === "stems" && !VbMxAutomixStems.aplicar(VbMxStems, m.de, m.para, progresso, m.stems.tv)) {
+    amxSoltarStems(m.stems, m.de, m.para); m.stems.modo = "crossfade"; amx.modo = "pro.amx.modo-crossfade"; amxModoNaTela();   // os stems falharam no meio: o crossfade segue sozinho
+  }
+  const v = Math.round(m.de === "A" ? -100 + 200 * progresso : 100 - 200 * progresso);
   if (v === m.xfade) return;
   m.xfade = v;
   mixerDefinir(null, "xfade", v);
@@ -196,6 +226,7 @@ function amxSeguir(progresso) {
 function amxConcluir() {
   const m = amx.mixando;
   amxSeguir(1);
+  amxSoltarStems(m.stems, m.de, m.para);
   if (tocandoDeck(m.de)) tocarPausar(m.de);
   if (!amx.tocadas.includes(m.deId)) amx.tocadas.push(m.deId);
   amx.mixando = null; amx.plano = null; amx.planoPara = ""; amx.puladas = []; amx.escolha = null;
@@ -207,7 +238,7 @@ function amxTick() {
   const v = amxVisao(), r = amxDecidir(v);
   if (r.acao === "seguir") amxSeguir(v.mixando.progresso);
   else if (r.acao === "concluir") amxConcluir();
-  else if (r.acao === "abandonar") { amx.mixando = null; amx.plano = null; amx.planoPara = ""; }
+  else if (r.acao === "abandonar") { amxSoltarStems(amx.mixando.stems, amx.mixando.de, amx.mixando.para); amx.mixando = null; amx.plano = null; amx.planoPara = ""; }
   if (v.mixando || !v.base) { amxStatus(r.status); return; }
   const base = arvvBase();
   if (amx.baseId !== base.faixa.id) { amx.baseId = base.faixa.id; amx.puladas = []; amx.falhas = 0; amx.replanejou = false; }
@@ -225,7 +256,7 @@ function amxTick() {
 function amxLigar(ligado) {
   amx.ligado = !!ligado;
   if (amx.timer) { clearInterval(amx.timer); amx.timer = null; }
-  Object.assign(amx, { baseId: null, plano: null, planoPara: "", mixando: null, carregando: false, escolha: null, puladas: [], falhas: 0, replanejou: false, status: "" });
+  Object.assign(amx, { baseId: null, plano: null, planoPara: "", mixando: null, carregando: false, escolha: null, puladas: [], falhas: 0, replanejou: false, status: "", modo: "" });
   if (amx.ligado) { amx.timer = setInterval(amxTick, AMX_TICK_MS); amxTick(); }
   if (typeof renderBiblio === "function") renderBiblio();   // o botão do cabeçalho e a barra mudam
 }

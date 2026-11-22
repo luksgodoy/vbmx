@@ -174,11 +174,11 @@ function hotcuesDesenhar(letra){
   const sel = reg && reg.hotcues[hotcues.sel[letra]];
   const dis = pronto ? "" : "disabled";
   const lista = `<div class="hotcues-lista" role="group" aria-label="${tr("pro.hc.lista",{letra})}">`
-    + `<button data-hc-acao="anterior" ${dis} aria-label="Cue anterior" title="Cue anterior">◀</button>`
+    + `<button data-hc-acao="anterior" ${dis} aria-label="${tr("pro.hc.anterior")}" title="${tr("pro.hc.anterior")}">◀</button>`
     + `<button data-hc-acao="proximo" ${dis} aria-label="${tr("pro.hc.proximo")}" title="${tr("pro.hc.proximo")}">▶</button>`
     + `<span class="hotcues-info" aria-live="polite">${sel ? `${hotcues.sel[letra]+1} · ${VbMxCues.TIPOS[sel.tipo].rotulo} · ${VbMxCues.formatarTempo(sel.t)}${sel.fim ? " → " + VbMxCues.formatarTempo(sel.fim) : ""}` : tr("pro.hc.nenhum")}</span>`
     + `<button data-hc-acao="tipo" ${sel?"":"disabled"} title="${tr("pro.hc.tipo-t")}">${tr("pro.hc.tipo")}</button>`
-    + `<button data-hc-acao="apagar" ${sel?"":"disabled"} title="Apaga o cue selecionado">Apagar</button>`
+    + `<button data-hc-acao="apagar" ${sel?"":"disabled"} title="${tr("pro.hc.apagar-t")}">${tr("pro.hc.apagar")}</button>`
     + `<button data-hc-acao="store" ${dis} title="${tr("pro.hc.store-t")}">STORE</button>`
     + `<button data-hc-acao="map" ${dis} aria-pressed="${hotcues.map[letra]}" class="${hotcues.map[letra]?"ligado":""}" title="${tr("pro.hc.map-t")}">MAP</button></div>`;
   el.innerHTML = `<div class="hotcues-cab"><span class="hotcues-titulo">Hotcues ${letra}</span>`
