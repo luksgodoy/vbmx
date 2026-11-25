@@ -32,7 +32,7 @@
   // bumbo (subida no meio do tick + varredura de pitch de bumbo). A v8 deixava o 1 na caixa e o SYNC fora de fase.
   // 12 em 2026-11-09 (refino por batida): o resultado ganha `ritmo` (tempo refinado e confiança de cada batida, fase por
   // trechos, andamento variável); a grade { bpm, primeira } é a mesma. A v11 não tem `ritmo`.
-  const VERSAO_ANALISE = 12;
+  const VERSAO_ANALISE = 18;
 
   function extensao(nome) {
     const m = /\.([A-Za-z0-9]+)$/.exec(String(nome || ''));
@@ -236,6 +236,9 @@
           if (a && typeof a.duracao === 'number' && a.duracao > 0) r.duracao = a.duracao;
           if (a && gradeValida(a.grade)) r.grade = { bpm: a.grade.bpm, primeira: a.grade.primeira };
           if (a && a.ritmo && Array.isArray(a.ritmo.t)) r.ritmo = a.ritmo; // dado ao lado da grade (VbMxBpm.confiancaEm/tempoSeguindo)
+          if (a && FONTES_ANALISE.includes(a.fonte)) r.fonte = a.fonte; // de qual motor vieram BPM e tom: selo na tela e filtro do cache
+          if (a && a.modoDesconhecido) r.modoDesconhecido = true;
+          if (a && a.gradeDiverge) r.gradeDiverge = true;
           if (!(typeof r.bpm === 'number' && r.bpm > 0) || !/^(?:[1-9]|1[0-2])[AB]$/.test(String(r.camelot))) {
             r = { analisavel: false, erro: 'BPM ou tom não detectado' };
           }
@@ -343,6 +346,26 @@
     return base + ' · ' + f.map(x => `"${x.nome}": ${x.motivo}`).join(' · ') + ' (use × para remover a que não volta).';
   }
 
+  // ---- selo discreto da análise (interface) ------------------------------------------------
+  // `t(chave, params)` é o tradutor da tela. Devolve HTML (só texto traduzido, sem dado de faixa) ou '' sem nada a mostrar.
+  const FONTES_ANALISE = ['tunebat', 'songbpm', 'proprio', 'essentia'];
+  const ROTULO_FONTE = { tunebat: 'biblioteca.selo-tunebat', songbpm: 'biblioteca.selo-songbpm', proprio: 'biblioteca.selo-proprio', essentia: 'biblioteca.selo-essentia' }; // chaves literais: o portão de i18n as acha
+  function seloAnalise(f, t) {
+    if (!f || f.analisavel === false || !t) return '';
+    const sp = (cls, txt, dica) => `<span class="selo-an ${cls}" title="${dica}">${txt}</span>`;
+    let h = '';
+    if (FONTES_ANALISE.includes(f.fonte)) {
+      let dica = t('biblioteca.selo-dica-fonte', { f: t(ROTULO_FONTE[f.fonte]) });
+      if (f.bpmProprio != null || f.camelotProprio) dica += ' · ' + t('biblioteca.selo-dica-proprio', { bpm: f.bpmProprio != null ? Math.round(f.bpmProprio * 10) / 10 : f.bpm, camelot: f.camelotProprio || f.camelot });
+      const dif = f.bpmProprio != null || f.camelotProprio; // o externo discordou do motor próprio: mostra o valor do próprio na tela, não só no tooltip
+      h += sp('selo-fonte selo-f-' + f.fonte, t('biblioteca.selo-prefixo') + ' ' + t(ROTULO_FONTE[f.fonte]), dica);
+      if (dif) h += sp('selo-proprio-val', t('biblioteca.selo-proprio') + ' ' + (f.bpmProprio != null ? Math.round(f.bpmProprio) : Math.round(f.bpm)) + ' · ' + (f.camelotProprio || f.camelot), dica);
+    }
+    if (f.modoDesconhecido) h += sp('selo-modo', t('biblioteca.selo-modo'), t('biblioteca.selo-dica-modo'));
+    if (f.gradeDiverge) h += sp('selo-diverge', '⚠ ' + t('biblioteca.selo-diverge'), t('biblioteca.selo-dica-diverge'));
+    return h;
+  }
+
   // ---- mapeamento para o motor -------------------------------------------------------------
   // Devolve faixas { id, titulo, artista, bpm, camelot, caminho, analisavel, erro? }. Não
   // analisável: bpm/camelot nulos e analisavel:false — o motor as exclui e conta, a tela as marca.
@@ -355,6 +378,11 @@
         if (typeof r.duracao === 'number' && r.duracao > 0) f.duracao = r.duracao; // segundos; liga o selo de auto-loop (VB-53)
         if (gradeValida(r.grade)) f.grade = { bpm: r.grade.bpm, primeira: r.grade.primeira }; // lida por VbMxGrade.daFaixa
         if (r.ritmo && Array.isArray(r.ritmo.t)) f.ritmo = r.ritmo; // confiança por batida e fase por trechos; a grade reta segue valendo
+        if (FONTES_ANALISE.includes(r.fonte)) f.fonte = r.fonte; // origem do BPM/tom: só para o selo da interface
+        if (typeof r.bpmProprio === 'number') f.bpmProprio = r.bpmProprio; // valor do motor próprio quando o externo difere (tooltip do selo)
+        if (typeof r.camelotProprio === 'string') f.camelotProprio = r.camelotProprio;
+        if (r.modoDesconhecido === true) f.modoDesconhecido = true;
+        if (r.gradeDiverge === true) f.gradeDiverge = true;
         return f;
       }
       return Object.assign(base, { bpm: null, camelot: null, analisavel: false, erro: (r && r.erro) || 'não analisada' });
@@ -380,5 +408,5 @@
   return { EXTENSOES, VERSAO_ANALISE, gradeValida, gradeDosTicks, moverGrade, escalarGrade, ehAudio, tituloArtista, chaveCache, varrerDiretorio, varrerLista,
     ehIOS, escolherCaminho, nomeLoteFaixas, stemsDisponiveis,
     armazemMemoria, armazemIndexedDB, BANCO_PASTAS, armazemPastasMemoria, criarMemoriaPastas, acharIgual,
-    juntarLembradas, planejarReabertura, motivoFalha, fraseLembradas, fraseReabertura, criarCache, criarControle, analisarFila, resumoFila, colocarPasta, paraMotor, pastaEfetiva, faixasDasPastas };
+    juntarLembradas, planejarReabertura, motivoFalha, fraseLembradas, fraseReabertura, criarCache, criarControle, analisarFila, resumoFila, colocarPasta, paraMotor, seloAnalise, pastaEfetiva, faixasDasPastas };
 });

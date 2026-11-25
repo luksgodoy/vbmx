@@ -10,7 +10,14 @@
   // as frases de biblioteca/biblioteca.js (resumoFila, fraseReabertura…) saem em pt-BR e são traduzidas aqui por trm (interface/js/msg-motor.js).
   const tr = (chave, params) => (window.VbMxI18n ? window.VbMxI18n.t(chave, params) : chave);
   const trm = (s) => (window.VbMxMsg ? window.VbMxMsg.traduzir(s) : s);
-  const TAXA = 44100, JANELA_S = 90, MAX_S = 480; // JANELA_S: trecho do meio só para o tom; o BPM olha a faixa inteira (até MAX_S, centrada)
+  const TAXA = 44100, JANELA_S = 90, JANELA_TOM_S = 120, MAX_S = 480; // JANELA_S: trecho do meio só para o tom; o BPM olha a faixa inteira (até MAX_S, centrada)
+  // Chave do motor (padrão 'proprio', chroma 'misto' num trecho de JANELA_TOM_S; BPM e tom só do próprio, sem reserva no Essentia nem fonte externa; ?motor=essentia volta ao Essentia, ?chroma=v1 ao chroma antigo, ?chroma=v2 ao anterior): iniciar({ motor: 'proprio', comparar: true }) ou ?motor=proprio&comparar=1 na URL.
+  // Os scripts próprios vão por URL absoluta (o Worker de Blob não resolve caminho relativo), irmãos deste arquivo.
+  const DOC = typeof document !== 'undefined' ? document : null;
+  const AQUI = (DOC && DOC.currentScript && DOC.currentScript.src) || '';
+  const BASE_DOC = (DOC && DOC.baseURI) || 'http://localhost/';
+  const urlDe = (rel) => new URL(rel, AQUI || BASE_DOC).href;
+  const LIBS_PROPRIAS = () => ['../analise/camelot.js', 'dsp.js', 'chroma2.js', 'tom.js', 'ritmo.js', 'motor.js'].map(urlDe); // motor.js por último (o worker o lê assim)
   const CDN = 'https://cdn.jsdelivr.net/npm/essentia.js@0.1.3/dist/';
 
   // Corpo do worker: vira Blob (um Worker de arquivo local não abre em file://). Recebe PCM mono
@@ -32,38 +39,69 @@
       })();
       return pronto;
     }
+    // Essentia: o caminho de sempre. Devolve o formato do painel (sem `motor`).
+    async function viaEssentia(pcm, janela, base) {
+      await iniciar(base);
+      const apagar = (...os) => { for (const o of os) try { o && o.delete && o.delete(); } catch (_) {} };
+      const ticksDe = (r) => { try { return Array.from(essentia.vectorToArray(r.ticks)); } catch (_) { return []; } }; // sem ticks a faixa segue sem grade
+      const vetor = essentia.arrayToVector(pcm);
+      const candidatos = [];
+      for (const metodo of ['multifeature', 'degara']) {
+        try {
+          const r = essentia.RhythmExtractor2013(vetor, 208, metodo, 40);
+          candidatos.push({ nome: metodo, bpm: r.bpm, ticks: ticksDe(r) });
+          apagar(r.ticks, r.estimates, r.bpmIntervals, r.confidence);
+        } catch (_) { /* um estimador que falha não derruba a faixa */ }
+      }
+      // trecho do meio (JANELA_S) para o tom e para o Percival, que é mais lento e rende pouco além disso
+      const n = Math.min(pcm.length, Math.floor(janela * 44100)), ini = Math.floor((pcm.length - n) / 2);
+      const meio = pcm.subarray(ini, ini + n), vmeio = essentia.arrayToVector(meio);
+      try { const p = essentia.PercivalBpmEstimator(vmeio); candidatos.push({ nome: 'percival', bpm: p.bpm }); } catch (_) {}
+      const k = essentia.KeyExtractor(vmeio);
+      apagar(vetor, vmeio);
+      return { candidatos, nota: k.key, escala: k.scale, forca: Math.round(k.strength * 100) / 100 };
+    }
+    // Motor próprio (tom.js + ritmo.js): só carrega os scripts se a chave pedir (padrão Essentia não toca nisto).
+    let propriosCarregados = false;
+    function viaProprio(pcm, janela, libs, chroma, janelaTom) {
+      if (!propriosCarregados) { importScripts.apply(self, libs); propriosCarregados = true; }
+      const seg = chroma === 'misto' ? janelaTom : janela; // o tom 'misto' olha um trecho mais longo
+      const n = Math.min(pcm.length, Math.floor(seg * 44100)), ini = Math.floor((pcm.length - n) / 2);
+      const opcoes = chroma === 'misto' ? { chroma: 'misto' } : chroma === 'v2' ? { chroma: 'v2', chroma2: { nH: 6, s: 0.8 } } : undefined;
+      const tom = self.VbMxTom.analisarTom(pcm.subarray(ini, ini + n), 44100, opcoes);
+      const ritmo = self.VbMxRitmo.analisarRitmo(pcm, 44100);
+      return self.VbMxMotorAnalise.mapearProprio(tom, ritmo);
+    }
     onmessage = async (e) => {
-      const { id, pcm, base, janela } = e.data;
+      const { id, pcm, base, janela, motor, comparar, libs, chroma, janelaTom } = e.data;
       try {
-        await iniciar(base);
-        const apagar = (...os) => { for (const o of os) try { o && o.delete && o.delete(); } catch (_) {} };
-        const ticksDe = (r) => { try { return Array.from(essentia.vectorToArray(r.ticks)); } catch (_) { return []; } }; // sem ticks a faixa segue sem grade
-        const vetor = essentia.arrayToVector(pcm);
-        const candidatos = [];
-        for (const metodo of ['multifeature', 'degara']) {
-          try {
-            const r = essentia.RhythmExtractor2013(vetor, 208, metodo, 40);
-            candidatos.push({ nome: metodo, bpm: r.bpm, ticks: ticksDe(r) });
-            apagar(r.ticks, r.estimates, r.bpmIntervals, r.confidence);
-          } catch (_) { /* um estimador que falha não derruba a faixa */ }
-        }
-        // trecho do meio (JANELA_S) para o tom e para o Percival, que é mais lento e rende pouco além disso
-        const n = Math.min(pcm.length, Math.floor(janela * 44100)), ini = Math.floor((pcm.length - n) / 2);
-        const meio = pcm.subarray(ini, ini + n), vmeio = essentia.arrayToVector(meio);
-        try { const p = essentia.PercivalBpmEstimator(vmeio); candidatos.push({ nome: 'percival', bpm: p.bpm }); } catch (_) {}
-        const k = essentia.KeyExtractor(vmeio);
+        // envelopes antes: o Essentia pode consumir o PCM por cópia, estes só leem
         let graves = null;
         try { graves = envelopeGrave(pcm, 44100); } catch (_) { graves = null; } // sem envelope: grade só dos ticks
         let fluxo = null;
         try { fluxo = fluxoAmplo(pcm, 44100); } catch (_) { fluxo = null; } // sem fluxo: o refino por batida só usa os graves
-        const saida = { id, candidatos, graves, fluxo, nota: k.key, escala: k.scale, forca: Math.round(k.strength * 100) / 100 };
-        apagar(vetor, vmeio);
+        let r;
+        if (motor !== 'proprio' && !comparar) r = Object.assign(await viaEssentia(pcm, janela, base), { motor: 'essentia' }); // padrão: como sempre foi
+        else if (!comparar) {
+          // só o próprio: sem reserva no Essentia; faixa que ele não resolve fica marcada com erro
+          r = Object.assign(viaProprio(pcm, janela, libs, chroma, janelaTom), { motor: 'proprio' });
+          if (!r.candidatos || !r.candidatos.length) { postMessage({ id, semBpm: true, erro: 'sem-bpm' }); return; }
+        } else {
+          importScripts.apply(self, [libs[libs.length - 1]]); // motor.js (último da lista) traz decidir()
+          r = await self.VbMxMotorAnalise.decidir({ motor, comparar, essentia: () => viaEssentia(pcm, janela, base), proprio: () => viaProprio(pcm, janela, libs, chroma, janelaTom) });
+        }
+        const saida = { id, candidatos: r.candidatos, graves, fluxo, nota: r.nota, escala: r.escala, forca: r.forca, motor: r.motor };
+        if (r.fallback) saida.fallback = r.fallback;
+        if (r.comparacao) saida.comparacao = r.comparacao;
         postMessage(saida, (graves ? [graves.valores.buffer].concat(graves.sinal ? [graves.sinal.buffer] : []) : []).concat(fluxo ? [fluxo.valores.buffer] : []));
       } catch (err) { postMessage({ id, erro: String((err && err.message) || err) }); }
     };
   }
 
-  function criarAnalisador() {
+  // [título, artista] para o songbpm, a partir só do NOME do arquivo (sem pastas)
+  const ordemTA = (nome) => { const t = B.tituloArtista(nome); return [t.titulo, t.artista]; };
+
+  function criarAnalisador(cfg) {
     let worker = null, ctx = null, seq = 0;
     const pendentes = new Map();
     function garante() {
@@ -90,13 +128,27 @@
     async function analisar(item) {
       const arquivo = await item.obter();
       const { mono: pcm, inicio, duracao } = await decodificar(arquivo);
+      // songbpm primeiro (só título/artista, nunca caminho; desligado sem ?songbpm=); em paralelo ao motor próprio, que segue dando a grade (o songbpm não dá fase)
+      const sbP = cfg.songbpm && window.VbMxSongbpm ? window.VbMxSongbpm.consultar(...ordemTA(item.nome), { url: cfg.songbpm }).catch(() => null) : Promise.resolve(null);
+      const tbP = cfg.tunebat && window.VbMxTunebat ? window.VbMxTunebat.consultar(...ordemTA(item.nome), { url: cfg.tunebat }).catch(() => null) : Promise.resolve(null);
       const w = garante(), id = ++seq;
-      const r = await new Promise((ok) => { pendentes.set(id, ok); w.postMessage({ id, pcm, base: CDN, janela: JANELA_S }, [pcm.buffer]); });
-      if (r.erro) throw new Error(r.erro);
+      const r = await new Promise((ok) => { pendentes.set(id, ok); w.postMessage({ id, pcm, base: CDN, janela: JANELA_S, janelaTom: JANELA_TOM_S, motor: cfg.motor, comparar: cfg.comparar, chroma: cfg.chroma, libs: cfg.motor === 'proprio' || cfg.comparar ? LIBS_PROPRIAS() : null }, [pcm.buffer]); });
+      if (r.erro) throw new Error(r.semBpm ? tr('pastas.sem-bpm') : r.erro);
       // oitava por consenso, ticks da faixa inteira, ataque do bumbo no envelope, 1 do compasso, um BPM só
       const a = window.VbMxBpm.resolver(r.candidatos, inicio, null, r.graves, r.fluxo);
       if (!a) throw new Error(tr('pastas.sem-bpm'));
-      return { bpm: a.bpm, camelot: window.Camelot.paraCamelot(r.nota, r.escala), forca: r.forca, grade: a.grade, ritmo: a.ritmo || null, duracao };
+      const saida = { bpm: a.bpm, camelot: window.Camelot.paraCamelot(r.nota, r.escala), forca: r.forca, grade: a.grade, ritmo: a.ritmo || null, duracao, fonte: r.motor || 'proprio' };
+      const [tbR, sbR] = await Promise.all([tbP, sbP]); // falha/ausência = null: cai para o próximo (tunebat > songbpm > próprio)
+      const sb = window.VbMxMotorAnalise ? window.VbMxMotorAnalise.combinarExterno(tbR, sbR, Object.assign({ bpm: saida.bpm }, r), saida.bpm) : { fonte: 'proprio' };
+      if (sb.fonte !== 'proprio') { // BPM e tom do externo; a grade continua a do motor próprio (avisa se os dois BPM discordam)
+        const camProprio = saida.camelot;
+        saida.camelot = window.Camelot.paraCamelot(sb.nota, sb.escala);
+        if (sb.bpmProprio != null || camProprio !== saida.camelot) { saida.bpmProprio = saida.bpm; saida.camelotProprio = camProprio; }
+        saida.bpm = sb.bpm; saida.fonte = sb.fonte; saida.modoDesconhecido = sb.modoDesconhecido;
+        if (sb.gradeDiverge) saida.gradeDiverge = true;
+      }
+      if (r.comparacao) saida.comparacao = r.comparacao; // só com `comparar`: o outro motor, ao lado; não mexe no resultado oficial
+      return saida;
     }
     return { analisar, fechar() { try { worker && worker.terminate(); } catch (_) {} try { ctx && ctx.close(); } catch (_) {} worker = ctx = null; } };
   }
@@ -120,9 +172,23 @@
   const ambiente = () => ({ temPicker: typeof window.showDirectoryPicker === 'function', userAgent: navigator.userAgent, plataforma: navigator.platform, toques: navigator.maxTouchPoints });
   const lembraSoComPicker = () => tr('pastas.nao-lembra');
 
-  function iniciar({ montarEm, aoMudar, preferencia, aoDesenhar }) {
+  function iniciar({ montarEm, aoMudar, preferencia, aoDesenhar, motor, comparar }) {
+    const url = typeof URLSearchParams === 'function' ? new URLSearchParams((window.location && window.location.search) || '') : { get: () => null };
+    // ?zerar=1: esquece as pastas lembradas e todas as análises guardadas (os dois bancos desta biblioteca) e recarrega limpo
+    if (url.get('zerar') === '1' && window.indexedDB && window.location) {
+      const apagar = (nome) => new Promise((ok) => { const r = window.indexedDB.deleteDatabase(nome); r.onsuccess = r.onerror = r.onblocked = () => ok(); });
+      Promise.all([apagar('vbmx-biblioteca'), apagar(B.BANCO_PASTAS)]).then(() => { const u = new URL(window.location.href); u.searchParams.delete('zerar'); window.location.replace(u.toString()); });
+      return;
+    }
+    // BPM e tom vêm do motor próprio. Fonte externa só quando pedida na URL (?tunebat=<url> ou ?songbpm=<url>).
+    const externo = (nome) => (url.get(nome) === 'off' ? null : (url.get(nome) || null));
+    const cfg = { tunebat: externo('tunebat'), songbpm: externo('songbpm'), motor: motor || url.get('motor') || 'proprio', comparar: comparar != null ? !!comparar : url.get('comparar') === '1', chroma: url.get('chroma') || 'misto' };
     const pastas = []; // { chave, nome, handle?, itens, resultados:[{item,resultado}], lembrada?, erro? }
-    const cache = criarCacheDoNavegador();
+    // só o próprio: análise guardada de outra fonte (Essentia, Tunebat, songbpm) ou sem fonte anotada não vale e a faixa é refeita
+    const guardado = criarCacheDoNavegador();
+    const soProprio = cfg.motor === 'proprio' && !cfg.comparar && !cfg.tunebat && !cfg.songbpm;
+    const cache = !soProprio ? guardado : { get ativo() { return guardado.ativo; }, gravar: guardado.gravar,
+      ler: async (...chave) => { const r = await guardado.ler(...chave); return r && r.fonte !== 'proprio' ? null : r; } };
     const memoria = criarMemoriaDoNavegador();
     const caminho = B.escolherCaminho(ambiente()); // 'diretorio' | 'pasta' | 'faixas'
     let analisador = null, controle = null, ocupado = false, progresso = null, aviso = '';
@@ -217,7 +283,7 @@
         if (!gravou) lembrou = tr('pastas.sem-indexeddb');
       } else lembrou = lembraSoComPicker();
       aviso = tr('pastas.encontradas', { n: pasta.itens.length, nome: pasta.nome, repetida: substituiu ? tr('pastas.repetida') : '' });
-      ocupado = true; controle = B.criarControle(); analisador = analisador || criarAnalisador(); desenhar();
+      ocupado = true; controle = B.criarControle(); analisador = analisador || criarAnalisador(cfg); desenhar();
       try {
         const r = await analisarPasta(pasta);
         aviso = trm(B.resumoFila(r, pasta.itens.length)) + lembrou;
@@ -233,7 +299,7 @@
         p.itens = await B.varrerDiretorio(p.handle, { cancelado: () => controle && controle.cancelado });
         if (!p.itens.length) return tr('pastas.sem-audio-curto');
         p.lembrada = false; p.erro = ''; p.resultados = [];
-        analisador = analisador || criarAnalisador();
+        analisador = analisador || criarAnalisador(cfg);
         await analisarPasta(p);
         return null;
       } catch (e) { return trm(B.motivoFalha(e)); }

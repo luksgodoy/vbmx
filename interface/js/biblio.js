@@ -133,7 +133,7 @@ function biblioLinha(x, i, total){
   return `
     <div class="${cls}" data-chave="${ch}" data-i="${i}" ${sem?`data-sem-analise title="${esc(trm(x.erro)||tr("pro.bib.nao-analisada"))}"`:`data-faixa="${x.id}" draggable="true" role="button" tabindex="0" title="${tr("pro.bib.linha-tit")}"`}>
       <span class="capa" style="--cor:${sem?"var(--fg-3)":corCamelot(x.camelot)}" aria-hidden="false">${esc(biblioIniciais(x.artista))}<button type="button" class="c-cor cor-ponto${x.cor?" cor-"+x.cor:""}" data-cor-ciclo="1" title="${x.cor?esc(x.cor)+" — "+tr("pro.bib.cor-mudar"):tr("pro.bib.cor-colorir")}" aria-label="${tr("pro.bib.cor-aria", { c: x.cor?esc(x.cor):tr("pro.bib.nenhuma") })}"></button></span>
-      <span class="c-tit" title="${esc(x.titulo)}">${esc(x.titulo)}${biblioSeloLoop(x)}<span class="sub">${sem?tr("pro.bib.nao-analisada"):esc(x.artista)}</span></span>
+      <span class="c-tit" title="${esc(x.titulo)}">${esc(x.titulo)}${biblioSeloLoop(x)}${sem?"":window.VbMxBiblioteca.seloAnalise(x, tr)}<span class="sub">${sem?tr("pro.bib.nao-analisada"):esc(x.artista)}</span></span>
       <span class="c-art" title="${sem?"":esc(x.artista)}">${sem?`<span class="sem-tom">${tr("pro.bib.nao-analisada")}</span>`:esc(x.artista)}</span>
       <span class="c-bpm mono">${sem?"—":fmtBpm(x.bpm)}</span>
       ${sem?`<span class="chave">—</span>`:chave(x.camelot)}

@@ -132,3 +132,11 @@
 /* cabeçalho fixo: a lista rola por baixo */
 .lista-cab { position: sticky; top: 0; z-index: 2; background: var(--bg-2); }
 .grupo-cab { top: 26px; }
+
+/* selo discreto da análise (fonte, modo?, grade diverge): ao lado do tom, sem competir com ele */
+.selo-an { margin-left: 4px; padding: 0 4px; border: 1px solid var(--fg-3); border-radius: 3px; font-family: var(--fonte-dados); font-size: 9px; line-height: 14px; letter-spacing: .02em; color: var(--fg-3); white-space: nowrap; vertical-align: middle; }
+.selo-an.selo-diverge { color: #f2b134; border-color: currentColor; }
+
+.selo-an.selo-f-tunebat { color: #5ec27a; border-color: currentColor; }
+.selo-an.selo-f-songbpm { color: #5aa9e6; border-color: currentColor; }
+.selo-an.selo-proprio-val { opacity: .8; }
