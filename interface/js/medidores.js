@@ -1,12 +1,12 @@
 // ===================== medidores.js — medidores de nível: slot mixer-medidores; lê VbMxCadeia.derivar =====================
 // Dono: VB-16, refeito como LEDs na proposta C (2026-11-07). Um <canvas> no slot do mixer com quatro colunas de 18 LEDs
-// (verde → âmbar → vermelho, escala em dBFS de VbMxMixer.LEDS_DB): A e B (derivação "pre-fader": depois do trim, EQ e filtro,
-// antes do fader — o que o canal entrega) e o master estéreo, L e R (derivação "master" → ChannelSplitter(2) → um analisador por
-// lado). Cada coluna tem pico retido (segura 1,2 s, cai a 30 dB/s) e um CLIPE pegajoso (pico ≥ 0,999) que só apaga no clique
+// (verde → âmbar → vermelho, escala em dBFS de VbMxMixer.LEDS_DB), da esquerda para a direita A · L R · B (decisão do Lucas,
+// 2026-11-25): A e B (derivação "pre-fader": depois do trim, EQ e filtro, antes do fader — o que o canal entrega) nas pontas e o
+// master estéreo, L e R (derivação "master" → ChannelSplitter(2) → um analisador por lado), no meio. Cada coluna tem pico retido (segura 1,2 s, cai a 30 dB/s) e um CLIPE pegajoso (pico ≥ 0,999) que só apaga no clique
 // do canvas. Os números (balística, limiares) vêm de VbMxMixer; aqui só ficam os AnalyserNode e o desenho. Redesenha a no
 // máximo 30 quadros por segundo (10 com movimento reduzido) e só com a aba visível. O leitor de tela recebe um role="meter"
 // escondido por coluna, atualizado a 2 Hz. No carregamento só declara; o DOM entra em VbMxUI.aoIniciar.
-const MEDIDORES_COLUNAS = [["A", "A"], ["B", "B"], ["L", "L"], ["R", "R"]];   // id, rótulo
+const MEDIDORES_COLUNAS = [["A", "A"], ["L", "L"], ["R", "R"], ["B", "B"]];   // id, rótulo; a ordem aqui é a da tela e a do leitor de tela
 const MEDIDORES_COR = { verde: "#4cc38a", ambar: "#e6b34a", vermelho: "#e5655b" };
 const medidores = { analisadores: {}, medidores: {}, buffer: null, ultimo: 0, ultimoAria: 0, rodando: false, canvas: null, aria: {}, ultimos: {}, intervalo: 1000 / 30 };
 
@@ -63,9 +63,9 @@ function medidoresDesenhar(){
   c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
   const N = VbMxMixer.LEDS_DB.length, CLIP = 8, ROT = 12, gap = 2, areaH = H - CLIP - 4 - ROT, ledH = (areaH - gap * (N - 1)) / N;
   // estreito (entre os canais, ~50 px): sem régua, colunas finas; largo (o desenho antigo): régua e colunas de 22 px
-  const largo = W >= 140, regua = largo ? 24 : 0, gCol = largo ? 6 : 2, gGrupo = largo ? 26 : 6;
-  const colW = Math.max(4, Math.min(22, Math.floor((W - regua - gCol * 2 - gGrupo) / 4))), total = regua + colW * 4 + gCol * 2 + gGrupo, x0 = Math.max(0, (W - total) / 2);
-  const xDe = k => x0 + regua + Math.floor(k / 2) * (2 * colW + gCol + gGrupo) + (k % 2) * (colW + gCol);   // dois grupos: canais A/B e master L/R
+  const largo = W >= 140, regua = largo ? 24 : 0, gCol = largo ? 6 : 2, gGrupo = largo ? 16 : 5;
+  const colW = Math.max(4, Math.min(22, Math.floor((W - regua - gCol - gGrupo * 2) / 4))), total = regua + colW * 4 + gCol + gGrupo * 2, x0 = Math.max(0, (W - total) / 2);
+  const vaoAte = [0, gGrupo, gGrupo + gCol, 2 * gGrupo + gCol], xDe = k => x0 + regua + k * colW + vaoAte[k];   // três medidores: A, master L R, B
   c.font = (largo ? 8 : 7) + "px 'JetBrains Mono', monospace"; c.textBaseline = "middle";
   if (largo) for (const mrc of [-40, -30, -20, -12, -6, 0]) {   // régua: o LED mais próximo do valor
     const i = VbMxMixer.LEDS_DB.reduce((m, d, j) => Math.abs(d - mrc) < Math.abs(VbMxMixer.LEDS_DB[m] - mrc) ? j : m, 0), y = CLIP + 4 + (N - 1 - i) * (ledH + gap) + ledH / 2;
